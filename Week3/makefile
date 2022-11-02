@@ -4,11 +4,14 @@ LIBS = -lm
 
 all: main
 
-main: main.o account.o utils.o error.o linkedlist.o
-	${CC} main.o account.o utils.o error.o linkedlist.o -o main
+main: main.o account.o utils.o error.o linkedlist.o network.o
+	${CC} main.o account.o utils.o error.o linkedlist.o network.o -o main
 
 main.o: main.c
 	${CC} ${CFLAGS} main.c
+
+network.o: network.c
+	${CC} ${CFLAGS} network.c
 
 linkedlist.o: linkedlist.c
 	${CC} ${CFLAGS} linkedlist.c
@@ -23,4 +26,4 @@ error.o: error.c
 	${CC} ${CFLAGS} error.c
 
 clean:
-	rm -f *.o *~
+	rm -f *.o *~ | rm -rf main
