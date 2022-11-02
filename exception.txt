@@ -1,0 +1,206 @@
+#include <stdio.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+#include "network.h"
+#include "log.h"
+
+// ? Xử lý dns 8.8.8.8 và không dns
+int domain_to_ip(const char *domain_name) {
+  struct addrinfo addrConfig, *response, *ipList;
+  int errcode;
+  char addrStr[100];
+  void *ptr;
+
+  // Config type information returned
+  memset (&addrConfig, 0, sizeof (addrConfig));
+  addrConfig.ai_family = PF_UNSPEC;     // protocol family unspecified
+  addrConfig.ai_socktype = SOCK_STREAM; // socket stream for tcp
+  addrConfig.ai_flags |= AI_CANONNAME;
+
+  // send request to dns server to get ip address
+  errcode = getaddrinfo (domain_name, NULL, &addrConfig, &response);
+  if (errcode != 0) {
+    perror ("getaddrinfo");
+    return -1;
+  }
+
+  ipList = response;
+  int first = 0;
+
+  log_success("Domain name: %s", domain_name);
+  while (ipList) {
+//    inet_ntop(ipList->ai_family, ipList->ai_addr->sa_data, addrStr, 100);
+    // If is IPv6 then ignore
+    if(ipList->ai_family == AF_INET6) break;
+
+    if (ipList->ai_family == AF_INET) {
+      // ptr points to ﬁrst byte of a block of memory containing the numeric address to convert.
+      ptr = &((struct sockaddr_in *) ipList->ai_addr)->sin_addr; // IPv4 address
+    }
+
+    // Convert UPv4 numeric address to readable address and assign to addrStr variable
+    inet_ntop (ipList->ai_family, ptr, addrStr, INET_ADDRSTRLEN);
+    if(first == 0) {
+      printf("Official IP:\n\t%s\n", addrStr);
+    }
+    else {
+      if(first == 1) {
+        printf("Alias IP: \n");
+      }
+      printf ("\t%s\n", addrStr);
+    }
+
+    ipList = ipList->ai_next;
+    first++;
+  }
+
+  freeaddrinfo(response);
+  return 0;
+}
+
+
+int ip_to_domain(const char *ip) {
+  struct sockaddr_in sa;    /* input */
+  socklen_t len;            /* input */
+  char hostname[NI_MAXHOST];
+
+  memset(&sa, 0, sizeof(struct sockaddr_in));
+
+  /* For IPv4*/
+  sa.sin_family = AF_INET;
+  sa.sin_addr.s_addr = inet_addr(ip);
+  len = sizeof(struct sockaddr_in);
+
+  if (getnameinfo((struct sockaddr *) &sa, len, hostname, sizeof(hostname),
+                  NULL, 0, NI_NAMEREQD)) {
+    printf("could not resolve hostname\n");
+  }
+  else {
+    printf("Hostname: %s\n", hostname);
+  }
+  return 0;
+}
+
+
+#include <stdio.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+#include "network.h"
+#include "log.h"
+
+// ? Xử lý dns 8.8.8.8 và không dns
+int domain_to_ip(const char *domain_name) {
+  struct addrinfo addrConfig, *response, *ipList;
+  int errcode;
+  char addrStr[100];
+  void *ptr;
+
+  // Config type information returned
+  memset (&addrConfig, 0, sizeof (addrConfig));
+  addrConfig.ai_family = PF_UNSPEC;     // protocol family unspecified
+  addrConfig.ai_socktype = SOCK_STREAM; // socket stream for tcp
+  addrConfig.ai_flags |= AI_CANONNAME;
+
+  // send request to dns server to get ip address
+  errcode = getaddrinfo (domain_name, NULL, &addrConfig, &response);
+  if (errcode != 0) {
+    perror ("getaddrinfo");
+    return -1;
+  }
+
+  ipList = response;
+  int first = 0;
+
+  log_success("Domain name: %s", domain_name);
+  while (ipList) {
+//    inet_ntop(ipList->ai_family, ipList->ai_addr->sa_data, addrStr, 100);
+    // If is IPv6 then ignore
+    if(ipList->ai_family == AF_INET6) break;
+
+    if (ipList->ai_family == AF_INET) {
+      // ptr points to ﬁrst byte of a block of memory containing the numeric address to convert.
+      ptr = &((struct sockaddr_in *) ipList->ai_addr)->sin_addr; // IPv4 address
+    }
+
+    // Convert UPv4 numeric address to readable address and assign to addrStr variable
+    inet_ntop (ipList->ai_family, ptr, addrStr, INET_ADDRSTRLEN);
+    if(first == 0) {
+      printf("Official IP:\n\t%s\n", addrStr);
+    }
+    else {
+      if(first == 1) {
+        printf("Alias IP: \n");
+      }
+      printf ("\t%s\n", addrStr);
+    }
+
+    ipList = ipList->ai_next;
+    first++;
+  }
+
+  freeaddrinfo(response);
+  return 0;
+}
+
+
+int ip_to_domain(const char *ip) {
+  struct sockaddr_in sa;    /* input */
+  socklen_t len;         /* input */
+  char hbuf[NI_MAXHOST];
+
+  memset(&sa, 0, sizeof(struct sockaddr_in));
+
+  /* For IPv4*/
+  sa.sin_family = AF_INET;
+  sa.sin_addr.s_addr = inet_addr(ip);
+  len = sizeof(struct sockaddr_in);
+
+  if (getnameinfo((struct sockaddr *) &sa, len, hbuf, sizeof(hbuf),
+                  NULL, 0, NI_NAMEREQD)) {
+    printf("could not resolve hostname\n");
+  }
+  else {
+    printf("host=%s\n", hbuf);
+
+
+    struct hostent *he;
+    struct in_addr addr;
+    inet_aton(ip, &addr);
+    he = gethostbyaddr(&addr, sizeof(addr), AF_INET);
+
+    printf("Host name: %s\n", he->h_name);
+
+    if ( ip ) {
+      char node[NI_MAXHOST] = { '\0' } ;
+      int res = 0;
+      struct sockaddr_in sa;
+      sa.sin_family = AF_INET;
+      if ( !strcmp( ip, "IP_ADDRESS12") ) {
+        printf("IP_ADDRESS8     tracert_Windows: KnownHostName1\n") ;
+        return 0 ;
+      }
+      if ( !strcmp( ip, "IP_ADDRESS6") ) {
+        printf( "IP_ADDRESS6 tracert_Windows: KnownHostName2\n") ;
+        return 0 ;
+      }
+      inet_pton(AF_INET, ip, &sa.sin_addr);
+      res = getnameinfo((struct sockaddr*)&sa, sizeof(sa), node, sizeof(node), NULL, 0, 0);
+      if (res) {
+        printf("%s\n", gai_strerror(res));
+        return 1;
+      }
+      printf( "%s     %s\n", ip, node);
+      return 0;
+    }
+    else {
+      return 1 ;
+    }
+  }
+  return 0;
+}
