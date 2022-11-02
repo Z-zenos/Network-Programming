@@ -102,8 +102,20 @@ void input(char *label, char *str, const int MAX_LENGTH_INPUT, bool isHide) {
         continue;
       }
 
+      // Check space in input
+      int space = 0, err = 0;
+      for(space = 0; space < strlen(user_input); space++)
+        if(user_input[space] == ' ') {
+          err_error(ERR_INPUT_INVALID);
+          err = 1;
+          break;
+        }
+      if(err == 1)
+        continue;
+
       strcpy(user_input, strtrim(user_input));
       if (sscanf(user_input, "%[^\n]s", str) == 1) {
+
         return;
       }
     }
@@ -187,6 +199,32 @@ ssize_t getpasswd (char **pw, size_t sz, int mask, FILE *fp) {
   return idx; /* number of chars in passwd    */
 }
 
+int str_count_word(char *sentence) {
+  int counted = 0; // result
+  // state:
+  const char *it = sentence;
+  int inword = 0;
+
+  do
+    switch (*it) {
+      case '\0':
+      case ' ':
+      case '\t':
+      case '\n':
+      case '\r': // TODO others?
+        if (inword) {
+          inword = 0;
+          counted++;
+        }
+        break;
+      default:
+        inword = 1;
+    }
+  while (*it++);
+
+  return counted;
+}
+
 void load_data(XOR_LL *ll) {
   FILE *fp = fopen(USER_FILE, "r");
 
@@ -202,6 +240,12 @@ void load_data(XOR_LL *ll) {
   while(fgets(line, BUFFER, fp)) {
     acc = malloc(sizeof(*acc));
     sscanf(line, "%s %s %d", acc->username, acc->password, &acc->status);
+
+    if(str_count_word(line) != 3) {
+      err_error(ERR_SERVER_ERROR);
+      exit(EXIT_FAILURE);
+    }
+
     xor_ll_push_tail(ll, acc, sizeof(acc));
 
     if(acc->status == -1) {
