@@ -15,7 +15,10 @@ typedef enum {
     ERR_NON_LOG_IN,
     ERR_PASSWORD_INCORRECT,
     ERR_USERNAME_INCORRECT,
-    ERR_SERVER_ERROR
+    ERR_SERVER_ERROR,
+    ERR_INVALID_IPv4,
+    ERR_RESOLVE_IP,
+    ERR_INVALID_HOSTNAME
 } ErrorCode;
 
 void err_error(ErrorCode);

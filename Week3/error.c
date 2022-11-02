@@ -2,7 +2,7 @@
 #include "log.h"
 #include "error.h"
 
-#define NUM_OF_ERRORS 14
+#define NUM_OF_ERRORS 17
 
 struct ErrorMessage {
   ErrorCode errorCode;
@@ -24,6 +24,9 @@ struct ErrorMessage errors[NUM_OF_ERRORS] = {
 {ERR_PASSWORD_INCORRECT, "Password incorrect."},
 {ERR_USERNAME_INCORRECT, "Username incorrect."},
 {ERR_SERVER_ERROR, "Internal server error."},
+{ERR_INVALID_IPv4, "Invalid IP address."},
+{ERR_RESOLVE_IP, "Can't not resolve hostname."},
+{ERR_INVALID_HOSTNAME, "Invalid hostname."},
 };
 
 void err_error(ErrorCode err) {
