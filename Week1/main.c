@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
   char input[1000];
   int opt;
   do {
+//    load_data(&acc_ll);
     printf("\nUSER MANAGEMENT PROGRAM\n");
     printf("=======================\n");
     printf("[1]. Register\n");
