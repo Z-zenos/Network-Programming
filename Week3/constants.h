@@ -1,6 +1,7 @@
 
 #define MAX_USERNAME 50
 #define MAX_PASSWORD 50
+#define MAX_HOMEPAGE 254
 #define BUFFER 1000
 #define ACTIVATION_CODE "20194705"
 #define USER_FILE "account.txt"
