@@ -26,7 +26,7 @@ struct ErrorMessage errors[NUM_OF_ERRORS] = {
 {ERR_SERVER_ERROR, "Internal server error."},
 {ERR_INVALID_IPv4, "Invalid IP address."},
 {ERR_RESOLVE_IP, "Can't not resolve hostname."},
-{ERR_INVALID_HOSTNAME, "Invalid hostname."},
+{ERR_INVALID_DOMAIN_NAME, "Invalid domain name."},
 {ERR_INVALID_HOMEPAGE_ADDRESS, "Invalid homepage address."},
 };
 
