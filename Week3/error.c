@@ -16,7 +16,7 @@ struct ErrorMessage errors[NUM_OF_ERRORS] = {
 {ERR_ACCOUNT_NOT_FOUND, "Account not found."},
 {ERR_ACTIVATION_CODE_INCORRECT, "Activation code incorrect."},
 {ERR_INPUT_EMPTY, "Input empty."},
-{ERR_INPUT_INVALID, "Input invalid."},
+{ERR_INPUT_INVALID, "Input invalid(no have space, tab)."},
 {ERR_OPEN_FILE, "Can't open file."},
 {ERR_OPTION, "Bad option."},
 {ERR_MEMORY_FULL, "Memory full."},
