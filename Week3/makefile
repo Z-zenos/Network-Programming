@@ -2,7 +2,7 @@ CFLAGS = -g -c -Wall
 CC = gcc
 LIBS = -lm 
 
-all: main
+build: clean | main
 
 main: main.o account.o utils.o error.o linkedlist.o network.o
 	${CC} main.o account.o utils.o error.o linkedlist.o network.o -o main
