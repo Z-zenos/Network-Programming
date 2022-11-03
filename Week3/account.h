@@ -19,7 +19,7 @@ typedef struct _account_ {
 
     // enum int status = [ 1, 0, 2 ];
     int status;
-    char homepage[254];
+    char homepage[MAX_HOMEPAGE];
     int num_time_wrong_password;
     int num_time_wrong_code;
 } Account;

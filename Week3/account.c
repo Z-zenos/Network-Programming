@@ -26,7 +26,7 @@ void _set_current_user_(Account acc) {
 void _reset_current_user_() {
   strcpy(curr_user.username, "");
   strcpy(curr_user.password, "");
-  strcpy(curr_user.homepage, "");;
+  strcpy(curr_user.homepage, "");
 }
 
 void signup(XOR_LL *ll) {
