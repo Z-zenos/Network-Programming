@@ -19,17 +19,13 @@ int main(int argc, char *argv[]) {
   int opt;
   do {
     load_data(&acc_ll);
-    printf("\nUSER MANAGEMENT PROGRAM\n");
-    printf("=======================\n");
-    printf("[1]. Register\n");
-    printf("[2]. Activate\n");
-    printf("[3]. Sign in\n");
-    printf("[4]. Search\n");
-    printf("[5]. Change password\n");
-    printf("[6]. Signout\n");
-    printf("[7]. Homepage with domain name\n");
-    printf("[8]. Homepage with IP address\n");
-    printf("Your choice (1-6, other to quit): ");
+    printf("\n\tUSER MANAGEMENT PROGRAM\n");
+    printf("\t=======================\n");
+    printf("%-30s%s\n", "[1]. Register", "[5]. Change password");
+    printf("%-30s%s\n", "[2]. Activate", "[6]. Sign out");
+    printf("%-30s%s\n", "[3]. Sign in",  "[7]. Homepage with domain name");
+    printf("%-30s%s\n", "[4]. Search",   "[8]. Homepage with IP address");
+    printf("Your choice (1-8, other to quit): ");
     scanf("%[^\n]s", input);
     clear_buffer();
 
