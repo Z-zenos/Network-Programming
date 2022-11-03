@@ -19,14 +19,14 @@ bool validate_ip(const char *ip) {
   return valid != 0;
 }
 
-bool validate_hostname(const char *hostname) {
-  char hostname_tmp[BUFFER];
-  strcpy(hostname_tmp, hostname);
+bool validate_domain_name(const char *domain_name) {
+  char domain_name_tmp[BUFFER];
+  strcpy(domain_name_tmp, domain_name);
   regex_t regex;
   int valid;
   valid = regcomp(&regex, "^[a-zA-Z0-9][-a-zA-Z0-9]+[a-zA-Z0-9].[a-z]{2,3}(.[a-z]{2,3})?(.[a-z]{2,3})?$", REG_EXTENDED);
   if (valid == 0) {
-    int ret = regexec(&regex, hostname_tmp, (size_t)0, NULL, 0);
+    int ret = regexec(&regex, domain_name_tmp, (size_t)0, NULL, 0);
     regfree(&regex);
     return !ret ? true : false;
   }
@@ -36,9 +36,9 @@ bool validate_hostname(const char *hostname) {
 }
 
 // ? Xử lý dns 8.8.8.8 và không dns
-bool hostname_to_ip(char *hostname) {
-  if(!validate_hostname(hostname))  {
-    err_error(ERR_INVALID_HOSTNAME);
+bool domain_name_to_ip(char *domain_name) {
+  if(!validate_domain_name(domain_name))  {
+    err_error(ERR_INVALID_DOMAIN_NAME);
     return false;
   }
 
@@ -54,7 +54,7 @@ bool hostname_to_ip(char *hostname) {
   addrConfig.ai_flags |= AI_CANONNAME;
 
   // send request to dns server to get ip address
-  errcode = getaddrinfo (hostname, NULL, &addrConfig, &response);
+  errcode = getaddrinfo (domain_name, NULL, &addrConfig, &response);
   if (errcode != 0) {
     perror ("getaddrinfo");
     return false;
@@ -64,7 +64,7 @@ bool hostname_to_ip(char *hostname) {
   int first = 0;
 
   while (ipList) {
-    // If is IPv6 then ignore
+    // Ignore Ipv6
     if(ipList->ai_family == AF_INET6) break;
 
     if (ipList->ai_family == AF_INET) {
@@ -72,10 +72,10 @@ bool hostname_to_ip(char *hostname) {
       ptr = &((struct sockaddr_in *) ipList->ai_addr)->sin_addr; // IPv4 address
     }
 
-    // Convert UPv4 numeric address to readable address and assign to addrStr variable
+    // Convert IPv4 numeric address to readable address and assign to addrStr variable
     inet_ntop (ipList->ai_family, ptr, addrStr, INET_ADDRSTRLEN);
     if(first == 0) {
-      log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", hostname);
+      log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", domain_name);
       printf("Official IP:\n\t%s\n", addrStr);
     }
     else {
@@ -95,48 +95,49 @@ bool hostname_to_ip(char *hostname) {
 }
 
 
-bool ip_to_hostname(char *ip) {
+bool ip_to_domain_name(char *ip) {
   if(!validate_ip(ip))  {
     err_error(ERR_INVALID_IPv4);
     return false;
   }
 
-  // Solution 1: Use getnameinfo
+  // Solution 1: Use getnameinfo - EFFICIENTLY SOLUTION
   /*
   struct sockaddr_in sa;
   socklen_t len;
-  char hostname[NI_MAXHOST];
+  char domain_name[NI_MAXHOST];
 
   memset(&sa, 0, sizeof(struct sockaddr_in));
   sa.sin_family = AF_INET;
   sa.sin_addr.s_addr = inet_addr(ip);
   len = sizeof(struct sockaddr_in);
 
-  if (getnameinfo((struct sockaddr *) &sa, len, hostname, sizeof(hostname),NULL, 0, NI_NAMEREQD)) {
+  if (getnameinfo((struct sockaddr *) &sa, len, domain_name, sizeof(domain_name),NULL, 0, NI_NAMEREQD)) {
     err_error(ERR_RESOLVE_IP);
     return false;
   }
   else {
     log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", ip);
-    printf("Official name: %s\n", hostname);
+    printf("Official name: %s\n", domain_name);
 
     return true;
   }
    */
 
   // Solution 2: Use gethostbyaddr
-  struct hostent *hostname;
+  // NOTE gethostbyaddr is absolute
+  struct hostent *domain_name;
   struct in_addr ipAddr;
 
   inet_aton(ip, &ipAddr);
-  hostname = gethostbyaddr(&ipAddr, sizeof(ipAddr), AF_INET);
-  if (hostname) {
+  domain_name = gethostbyaddr(&ipAddr, sizeof(ipAddr), AF_INET);
+  if (domain_name) {
     int i = 0;
     log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", ip);
-    printf("Official name:\n\t%s\n", hostname->h_name);
-    while (hostname->h_aliases[i] != NULL) {
+    printf("Official name:\n\t%s\n", domain_name->h_name);
+    while (domain_name->h_aliases[i] != NULL) {
       if(i == 0) printf("Alias name:");
-      printf("\n\t%s", hostname->h_aliases[i++]);
+      printf("\n\t%s", domain_name->h_aliases[i++]);
     }
     return true;
   }
