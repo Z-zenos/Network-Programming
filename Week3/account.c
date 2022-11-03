@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "network.h"
 #include "account.h"
 #include "error.h"
 #include "linkedlist.h"
@@ -15,14 +16,17 @@ extern Account curr_user;
 void _set_current_user_(Account acc) {
   strcpy(curr_user.username, acc.username);
   strcpy(curr_user.password, acc.password);
+  strcpy(curr_user.homepage, acc.homepage);
   curr_user.status = acc.status;
+  curr_user.num_time_wrong_password = acc.num_time_wrong_password;
+  curr_user.num_time_wrong_code = acc.num_time_wrong_code;
 }
 
 // Logout user
 void _reset_current_user_() {
   strcpy(curr_user.username, "");
   strcpy(curr_user.password, "");
-  curr_user.status = 2;
+  strcpy(curr_user.homepage, "");;
 }
 
 void signup(XOR_LL *ll) {
@@ -50,13 +54,20 @@ void signup(XOR_LL *ll) {
 
     strcpy(new_account->username, username_input);
     input("Password", new_account->password, MAX_PASSWORD, true);
+    input("Homepage", new_account->homepage, MAX_HOMEPAGE, false);
+
+    if(!validate_domain_name(new_account->homepage) && !validate_ip(new_account->homepage)) {
+      err_error(ERR_INVALID_HOMEPAGE_ADDRESS);
+      return;
+    }
 
     // Default status = idle
     new_account->status = 2;
+    new_account->num_time_wrong_password = new_account->num_time_wrong_code = 0;
 
     xor_ll_push_tail(ll, new_account, sizeof *new_account);
-    log_success("Register successfully!");
     save_data(*ll);
+    log_success("Register successfully!");
   }
 }
 
@@ -78,7 +89,7 @@ void activate(XOR_LL *ll) {
     acc->status == 1 ||
     acc->status == -1
   ) {
-    log_info("Account activated.");
+    log_info("Can't activate account signing in.");
     return;
   }
 
@@ -90,11 +101,16 @@ void activate(XOR_LL *ll) {
     return;
   }
 
-  int numTimesInputCode = 0;
+  // Neu nhap sai 2 lan -> con 1 lan nhap dung xong thoat ra vao lai thi so lan nhap con lai co la 1 khong
   char code[BUFFER];
   do {
     // Reset activation code
     strcpy(code, "");
+
+    // Input activation code
+    if(acc->num_time_wrong_code < MAX_WRONG_CODE && acc->num_time_wrong_code > 0) {
+      log_warn("You remain %d time(s) input activation code!", MAX_WRONG_CODE - acc->num_time_wrong_code);
+    }
     printf("Activation code: ");
     scanf("%[^\n]s", code);
     clear_buffer();
@@ -114,13 +130,14 @@ void activate(XOR_LL *ll) {
 
       log_success("Activate account successfully.");
       acc->status = 1;
+      acc->num_time_wrong_code = 0;
       save_data(*ll);
       return;
     }
 
     err_error(ERR_ACTIVATION_CODE_INCORRECT);
-    log_warn("You remain %d time(s) input password!", 4 - ++numTimesInputCode);
-  } while(numTimesInputCode < 4);
+    ++acc->num_time_wrong_code;
+  } while(acc->num_time_wrong_code < MAX_WRONG_CODE);
 
   // Block account
   acc->status = 0;
@@ -139,57 +156,64 @@ void signin(XOR_LL *ll) {
   input("Username", acc->username, MAX_USERNAME, false);
   acc = search_account(*ll, acc->username);
 
+  // If account not found then return main menu
   if(!acc) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
     return;
   }
 
+  // Check status of account(if account blocked/not activated -> return main menu)
+  if(acc->status == 0) {
+    err_error(ERR_ACCOUNT_BLOCKED);
+    log_warn("Please activate account or login with other accounts.");
+    return;
+  }
+
+  if(acc->status == 2) {
+    err_error(ERR_ACCOUNT_NON_ACTIVATED);
+    log_warn("Please activate account or login with other accounts.");
+    return;
+  }
+
   char password_input[MAX_PASSWORD];
-  int numInputPassword = 0;
 
   do {
     // Reset password input
     strcpy(password_input, "");
+
+    // Input password
+    if(acc->num_time_wrong_password < MAX_WRONG_PASSWORD && acc->num_time_wrong_password > 0) {
+      log_warn("You remain %d time(s) input password!", MAX_WRONG_PASSWORD - acc->num_time_wrong_password);
+    }
     printf("Password: ");
     char *p = password_input;
-    getpasswd (&p, MAX_PASSWORD, '*', stdin);
+    getpasswd (&p, MAX_PASSWORD, '*', stdin);   // Hide password = *
     printf("\n");
 
-    // Check if activation code is empty
+    // Check if password is empty
     if(strlen(password_input) == 0) {
       err_error(ERR_INPUT_EMPTY);
       continue;
     }
 
+    // Check user input = password of account
     if(strcmp(acc->password, password_input) != 0) {
       err_error(ERR_PASSWORD_INCORRECT);
-      log_warn("You remain %d time(s) input password!", 3 - ++numInputPassword);
+      ++acc->num_time_wrong_password;
       continue;
     }
+
     // If password correct
     else {
-      // Check status of account
-      if(acc->status == 0) {
-        err_error(ERR_ACCOUNT_BLOCKED);
-        log_warn("Please activate account or login with other accounts.");
-        return;
-      }
-
-      if(acc->status == 2) {
-        err_error(ERR_ACCOUNT_NON_ACTIVATED);
-        log_warn("Please activate account or login with other accounts.");
-        return;
-      }
-
       acc->status = -1;
-      _set_current_user_(*acc);
+      acc->num_time_wrong_password = 0;
       logged_in = 1;
+      _set_current_user_(*acc);
       save_data(*ll);
       log_success("Log in successfully!");
       return;
     }
-
-  } while (numInputPassword < 3);
+  } while (acc->num_time_wrong_password < MAX_WRONG_PASSWORD);
 
   // If user input password incorrect more 3 times -> account blocked
   err_error(ERR_ACCOUNT_BLOCKED);
@@ -251,6 +275,11 @@ void change_password(XOR_LL *ll) {
   }
 
   input("New password", password_input, MAX_PASSWORD, true);
+  if(strcmp(password_input, curr_user.password) == 0) {
+    log_warn("New password equal old password. Please try again...");
+    return;
+  }
+
   Account *acc = search_account(*ll, curr_user.username);
   strcpy(acc->password, password_input);
   _set_current_user_(*acc);
@@ -281,4 +310,36 @@ void signout(XOR_LL *ll) {
   save_data(*ll);
   _reset_current_user_();
   log_success("You are logged out.");
+}
+
+void get_domain() {
+  // Check user login-ed
+  if(!logged_in) {
+    err_error(ERR_NON_LOG_IN);
+    return;
+  }
+
+  // If homepage is ipv4 address then convert to hostname ant print
+  if(!validate_domain_name(curr_user.homepage)) {
+    ip_to_domain_name(curr_user.homepage);
+    return;
+  }
+
+  log_success("Domain name: %s\n", curr_user.homepage);
+}
+
+void get_ipv4() {
+  // Check user login-ed
+  if(!logged_in) {
+    err_error(ERR_NON_LOG_IN);
+    return;
+  }
+
+  // If homepage is domain_name then convert to ipv4 address ant print
+  if(!validate_ip(curr_user.homepage)) {
+    domain_name_to_ip(curr_user.homepage);
+    return;
+  }
+
+  log_success("IPv4 address: %s\n", curr_user.homepage);
 }
