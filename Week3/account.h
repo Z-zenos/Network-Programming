@@ -35,3 +35,5 @@ void change_password(XOR_LL*);
 void signout(XOR_LL*);
 void _set_current_user_(Account);
 void _reset_current_user_();
+void get_domain();
+void get_ipv4();
