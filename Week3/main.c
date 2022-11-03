@@ -13,12 +13,11 @@ int main(int argc, char *argv[]) {
 
   XOR_LL acc_ll = XOR_LL_INITIALISER;
   xor_ll_init(&acc_ll);
-//  load_data(&acc_ll);
+  load_data(&acc_ll);
 
   char input[1000];
   int opt;
   do {
-    load_data(&acc_ll);
     printf("\n\tUSER MANAGEMENT PROGRAM\n");
     printf("\t=======================\n");
     printf("%-30s%s\n", "[1]. Register", "[5]. Change password");
@@ -63,11 +62,11 @@ int main(int argc, char *argv[]) {
         break;
 
       case 7:
-//        signout(&acc_ll);
+        get_domain();
         break;
 
       case 8:
-//        signout(&acc_ll);
+        get_ipv4();
         break;
 
       default:
