@@ -2,7 +2,7 @@
 #include "log.h"
 #include "error.h"
 
-#define NUM_OF_ERRORS 17
+#define NUM_OF_ERRORS 20
 
 struct ErrorMessage {
   ErrorCode errorCode;
@@ -27,6 +27,7 @@ struct ErrorMessage errors[NUM_OF_ERRORS] = {
 {ERR_INVALID_IPv4, "Invalid IP address."},
 {ERR_RESOLVE_IP, "Can't not resolve hostname."},
 {ERR_INVALID_HOSTNAME, "Invalid hostname."},
+{ERR_INVALID_HOMEPAGE_ADDRESS, "Invalid homepage address."},
 };
 
 void err_error(ErrorCode err) {
