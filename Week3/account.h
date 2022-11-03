@@ -16,8 +16,12 @@ typedef struct _account_ {
      *          0: blocked
      *          2: idle
      */
-    int status;
+
     // enum int status = [ 1, 0, 2 ];
+    int status;
+    char homepage[254];
+    int num_time_wrong_password;
+    int num_time_wrong_code;
 } Account;
 
 extern Account curr_user;
