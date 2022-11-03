@@ -13,12 +13,12 @@ int main(int argc, char *argv[]) {
 
   XOR_LL acc_ll = XOR_LL_INITIALISER;
   xor_ll_init(&acc_ll);
-  load_data(&acc_ll);
+//  load_data(&acc_ll);
 
   char input[1000];
   int opt;
   do {
-//    load_data(&acc_ll);
+    load_data(&acc_ll);
     printf("\nUSER MANAGEMENT PROGRAM\n");
     printf("=======================\n");
     printf("[1]. Register\n");
@@ -27,11 +27,13 @@ int main(int argc, char *argv[]) {
     printf("[4]. Search\n");
     printf("[5]. Change password\n");
     printf("[6]. Signout\n");
+    printf("[7]. Homepage with domain name\n");
+    printf("[8]. Homepage with IP address\n");
     printf("Your choice (1-6, other to quit): ");
     scanf("%[^\n]s", input);
     clear_buffer();
 
-    if(!(strlen(input) == 1 && (input[0] > 48 && input[0] < 55))) {
+    if(!(strlen(input) == 1 && (input[0] > 48 && input[0] < 57))) {
       // Exit program
       xor_ll_destroy(&acc_ll);
       log_info("Thank for using my app :)\n");
@@ -62,6 +64,14 @@ int main(int argc, char *argv[]) {
 
       case 6:
         signout(&acc_ll);
+        break;
+
+      case 7:
+//        signout(&acc_ll);
+        break;
+
+      case 8:
+//        signout(&acc_ll);
         break;
 
       default:
