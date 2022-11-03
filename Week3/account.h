@@ -34,4 +34,4 @@ void search(XOR_LL);
 void change_password(XOR_LL*);
 void signout(XOR_LL*);
 void _set_current_user_(Account);
-void _reset_currect_user();
+void _reset_current_user_();
