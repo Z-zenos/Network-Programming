@@ -10,11 +10,11 @@ ruby ruby4417 1 localhost
 go go4038 0 xn--fiqa61au8b7zsevnm8ak20mc4a87e.xn--fiqs8s
 perl perl3243 0 127.0.0.1
 sql sql123 1 google.com
-scala scala1817 1　zurich.co.jp
+scala scala1817 1 zurich.co.jp
 matlab matlab789 0 viblo.asia
 swift swift1000 1 stackoverflow.com
 mongo mongo123 0 schooler.sun-asterisk.com
-kpl kpl123 1 google.com
+kpl kpl123 -1 google.com
 bash bash12345 2 9gag.com
 linux linux123 2 man7.org
 window window123 2 google.com
@@ -23,7 +23,8 @@ assembly ass123 1 dbgk.bn-ent.net
 BASIC BAS123 2 216.58.200.238
 dart dart123 0 216.58.200.238
 haskell has123 0 127.000.000.1
-kotlin kot 1 vn.got-it.ai
+kotlin kot 0 vn.got-it.ai
 lua lua123 0 192.168.1.1
-MATLAB MAT123 2 8.8.8.8
+MATLAB MAT123 0 8.8.8.8
 .NET .NE123 1 8.8.8.8
+typescript typ123 2 youtube.com
