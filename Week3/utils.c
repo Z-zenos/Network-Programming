@@ -70,6 +70,17 @@ char *strtrim(char *str) {
   return str;
 }
 
+bool has_space(char *str) {
+  // Check space in input
+  int space = 0;
+  for(space = 0; space < strlen(str); space++)
+    if(str[space] == ' ' || str[space] == '\t') {
+      return true;
+    }
+
+  return false;
+}
+
 /**
  * @brief Get user input from terminal
  * 
@@ -103,19 +114,13 @@ void input(char *label, char *str, const int MAX_LENGTH_INPUT, bool isHide) {
       }
 
       // Check space in input
-      int space = 0, err = 0;
-      for(space = 0; space < strlen(user_input); space++)
-        if(user_input[space] == ' ') {
-          err_error(ERR_INPUT_INVALID);
-          err = 1;
-          break;
-        }
-      if(err == 1)
+      if(has_space(user_input)) {
+        err_error(ERR_INPUT_INVALID);
         continue;
+      }
 
       strcpy(user_input, strtrim(user_input));
       if (sscanf(user_input, "%[^\n]s", str) == 1) {
-
         return;
       }
     }
@@ -239,9 +244,9 @@ void load_data(XOR_LL *ll) {
 
   while(fgets(line, BUFFER, fp)) {
     acc = malloc(sizeof(*acc));
-    sscanf(line, "%s %s %d", acc->username, acc->password, &acc->status);
+    sscanf(line, "%s %s %d %s", acc->username, acc->password, &acc->status, acc->homepage);
 
-    if(str_count_word(line) != 3) {
+    if(str_count_word(line) != 4) {
       err_error(ERR_SERVER_ERROR);
       exit(EXIT_FAILURE);
     }
@@ -275,7 +280,7 @@ void save_data(XOR_LL ll) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
   XOR_LL_LOOP_HTT_RST(&ll, &itr) {
     Account *acc = (Account*)itr.node_data.ptr;
-    fprintf(fp, "%s %s %d\n", acc->username, acc->password, acc->status);
+    fprintf(fp, "%s %s %d %s\n", acc->username, acc->password, acc->status, acc->homepage);
   }
 
   remove("account.txt");
