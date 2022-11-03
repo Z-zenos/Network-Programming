@@ -124,7 +124,7 @@ bool ip_to_hostname(char *ip) {
   }
    */
 
-  // Solution 2: User gethostbyaddr
+  // Solution 2: Use gethostbyaddr
   struct hostent *hostname;
   struct in_addr ipAddr;
 
