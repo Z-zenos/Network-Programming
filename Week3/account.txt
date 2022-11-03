@@ -1,21 +1,29 @@
-zenos 12345 1
-hedspi hedspi99999 1
-soict soict12345 0
-java java26269 1
-javascript javascript24248 1
-csharp csharp13523 2
-python python11757 1
-cplusplus cplusplus8584 0
-ruby ruby4417 1
-go go4038 0
-perl perl3243 0
-sql sql123 1
-scala scala1817 1
-matlab matlab789 0
-swift swift1000 1
-mongo mongo123 2
-kpl kpl123 1
-bash bash12345 2
-linux linux123 2
-window window123 2
-mac mac123 0
+zenos 12345 1 social.msdn.microsoft.com
+hedspi hedspi99999 1 google.com
+soict soict12345 0 はじめよう.みんな
+java java26269 1 facebook.com
+javascript javascript24248 1 xn--80ak6aa92e.com
+csharp csharp13523 2 en.wikipedia.org
+python python11757 1 google.com
+cplusplus cplusplus8584 0 dora-world.com
+ruby ruby4417 1 localhost
+go go4038 0 xn--fiqa61au8b7zsevnm8ak20mc4a87e.xn--fiqs8s
+perl perl3243 0 127.0.0.1
+sql sql123 1 google.com
+scala scala1817 1　zurich.co.jp
+matlab matlab789 0 viblo.asia
+swift swift1000 1 stackoverflow.com
+mongo mongo123 0 schooler.sun-asterisk.com
+kpl kpl123 1 google.com
+bash bash12345 2 9gag.com
+linux linux123 2 man7.org
+window window123 2 google.com
+mac mac123 0 kurume-it.ac.jp
+assembly ass123 1 dbgk.bn-ent.net
+BASIC BAS123 2 216.58.200.238
+dart dart123 0 216.58.200.238
+haskell has123 0 127.000.000.1
+kotlin kot 1 vn.got-it.ai
+lua lua123 0 192.168.1.1
+MATLAB MAT123 2 8.8.8.8
+.NET .NE123 1 8.8.8.8
