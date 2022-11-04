@@ -1,30 +1,30 @@
-zenos zen123 1 social.msdn.microsoft.com
-hedspi hed123 1 google
-soict soi123 0 gist.github.com
-java jav123 1 facebook.com
-javascript js123 1 xn--80ak6aa92e.com
-csharp csh123 1 en.wikipedia.org
-python python11757 2 google.com
-cplusplus cplusplus8584 0 dora-world.com
-ruby ruby4417 1 localhost
-go go123 1 xn--fiqa61au8b7zsevnm8ak20mc4a87e.xn--fiqs8s
-perl per123 1 127.0.0.1
-sql sql123 1 google.com
-scala scala1817 1 zurich.co.jp
-matlab matlab789 1 viblo.asia
-swift swift1000 0 stackoverflow.com
-mongo mongo123 1 schooler.sun-asterisk.com
-kpl kpl123 2 google.com
-bash bash12345 1 9gag.com
-linux linux123 1 man7.org
-window window123 2 google.com
-mac mac123 1 kurume-it.ac.jp
-assembly ass123 1 dbgk.bn-ent.net
-BASIC BAS123 2 216.58.200.238
-dart dart123 1 216.58.200.238
-haskell has123 0 127.000.000.1
-kotlin kot 1 vn.got-it.ai
-lua lua123 0 192.168.1.1
-MATLAB MAT123 0 8.8.8.8
-.NET .NE123 1 8.8.8.8
-typescript typ123 2 youtube.com
+zenos zen123 1 0 0 social.msdn.microsoft.com
+hedspi hed123 1 0 0 google
+soict soi123 0 0 0 gist.github.com
+java jav123 1 0 0 facebook.com
+javascript js123 1 0 0 xn--80ak6aa92e.com
+csharp csh123 1 0 0 en.wikipedia.org
+python python11757 2 0 0 google.com
+cplusplus cplusplus8584 0 0 0 dora-world.com
+ruby ruby4417 0 0 4 localhost
+go go123 1 0 0 xn--fiqa61au8b7zsevnm8ak20mc4a87e.xn--fiqs8s
+perl per123 1 0 0 127.0.0.1
+sql sql123 1 0 0 google.com
+scala scala1817 1 0 0 zurich.co.jp
+matlab matlab789 1 0 0 viblo.asia
+swift swift1000 0 0 0 stackoverflow.com
+mongo mongo123 1 0 4 schooler.sun-asterisk.com
+kpl kpl123 2 2 0 google.com
+bash bash12345 1 0 0 9gag.com
+linux linux123 1 0 0 man7.org
+window window123 2 0 0 google.com
+mac mac123 1 0 0 kurume-it.ac.jp
+assembly ass123 1 0 0 dbgk.bn-ent.net
+BASIC BAS123 2 0 0 216.58.200.238
+dart dart123 1 0 0 216.58.200.238
+haskell has123 0 0 0 127.000.000.1
+kotlin kot 1 0 0 vn.got-it.ai
+lua lua123 0 0 0 192.168.1.1
+MATLAB MAT123 0 0 0 8.8.8.8
+.NET .NE123 1 0 0 8.8.8.8
+typescript typ123 2 0 0 youtube.com
