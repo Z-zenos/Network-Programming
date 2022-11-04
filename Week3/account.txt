@@ -14,7 +14,7 @@ scala scala1817 1 0 0 zurich.co.jp
 matlab matlab789 1 0 0 viblo.asia
 swift swift1000 2 0 0 stackoverflow.com
 mongo mongo123 0 0 4 schooler.sun-asterisk.com
-kpl kpl123 2 2 0 google.com
+kpl kpl123 0 5 0 google.com
 bash bash12345 1 0 0 9gag.com
 linux linux123 1 0 0 man7.org
 window window123 2 0 0 google.com
@@ -23,7 +23,7 @@ assembly ass123 1 0 0 dbgk.bn-ent.net
 BASIC BAS123 2 0 0 216.58.200.238
 dart dart123 1 0 0 216.58.200.238
 haskell has123 2 0 0 127.000.000.1
-kotlin kot 1 0 0 vn.got-it.ai
+kotlin kot 1 0 4 vn.got-it.ai
 lua lua123 2 0 0 192.168.1.1
 MATLAB MAT123 2 0 0 8.8.8.8
 .NET .NE123 1 0 0 8.8.8.8
