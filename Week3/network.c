@@ -1,14 +1,19 @@
+// YOU MUST SPECIFY THE UNIT WIDTH BEFORE THE INCLUDE OF THE pcre.h
+#define PCRE2_CODE_UNIT_WIDTH 8
+
 #include <stdio.h>
 #include <string.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <regex.h>
+#include <pcre2.h>
+#include <stdbool.h>
 
 #include "network.h"
 #include "log.h"
 #include "error.h"
 #include "constants.h"
+
 
 bool validate_ip(const char *ip) {
   struct sockaddr_in sa;
@@ -22,20 +27,83 @@ bool validate_ip(const char *ip) {
 bool validate_domain_name(const char *domain_name) {
   char domain_name_tmp[BUFFER];
   strcpy(domain_name_tmp, domain_name);
-  regex_t regex;
-  int valid;
-  valid = regcomp(&regex, "^[a-zA-Z0-9][-a-zA-Z0-9]+[a-zA-Z0-9].[a-z]{2,3}(.[a-z]{2,3})?(.[a-z]{2,3})?$", REG_EXTENDED);
-  if (valid == 0) {
-    int ret = regexec(&regex, domain_name_tmp, (size_t)0, NULL, 0);
-    regfree(&regex);
-    return !ret ? true : false;
+
+  pcre2_code *re;
+  PCRE2_SPTR pattern;
+  PCRE2_SPTR subject;
+  int errornumber;
+  int rc;
+  PCRE2_SIZE erroroffset;
+  PCRE2_SIZE *ovector;
+  size_t subject_length;
+  pcre2_match_data *match_data;
+
+  char * RegexStr = "((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9])|\blocalhost\b";
+
+  pattern = (PCRE2_SPTR)RegexStr;           // This is where you pass your REGEX
+  subject = (PCRE2_SPTR)domain_name_tmp;    // This is where you pass your buffer that will be checked.
+  subject_length = strlen((char *)subject);
+
+  re = pcre2_compile(
+    pattern,               /* the pattern */
+    PCRE2_ZERO_TERMINATED, /* indicates pattern is zero-terminated */
+    0,                     /* default options */
+    &errornumber,          /* for error number */
+    &erroroffset,          /* for error offset */
+    NULL                   /* use default compile context */
+  );
+
+  /* Compilation failed: print the error message and exit. */
+  if (re == NULL) {
+    PCRE2_UCHAR buffer[256];
+    pcre2_get_error_message(errornumber, buffer, sizeof(buffer));
+    err_error(ERR_SERVER_ERROR);
+    return 1;
   }
-  else {
+
+  match_data = pcre2_match_data_create_from_pattern(re, NULL);
+
+  rc = pcre2_match(
+    re,
+    subject,              /* the subject string */
+    subject_length,       /* the length of the subject */
+    0,                    /* start at offset 0 in the subject */
+    0,                    /* default options */
+    match_data,           /* block for storing the result */
+    NULL
+  );
+
+  if (rc < 0) {
+    switch(rc) {
+      case PCRE2_ERROR_NOMATCH: //printf("No match\n"); //
+        pcre2_match_data_free(match_data);
+        pcre2_code_free(re);
+        return false;
+        /*
+          Handle other special cases if you like
+        */
+      default:
+        err_error(ERR_INVALID_DOMAIN_NAME);
+    }
+    pcre2_match_data_free(match_data);   /* Release memory used for the match */
+    pcre2_code_free(re);
     return false;
   }
+
+  ovector = pcre2_get_ovector_pointer(match_data);
+
+  if (ovector[0] > ovector[1]) {
+    err_error(ERR_SERVER_ERROR);
+    pcre2_match_data_free(match_data);
+    pcre2_code_free(re);
+    return false;
+  }
+
+  pcre2_match_data_free(match_data);
+  pcre2_code_free(re);
+  return true;
 }
 
-// ? Xử lý dns 8.8.8.8 và không dns
 bool domain_name_to_ip(char *domain_name) {
   if(!validate_domain_name(domain_name))  {
     err_error(ERR_INVALID_DOMAIN_NAME);
