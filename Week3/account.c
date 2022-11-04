@@ -133,12 +133,15 @@ void activate(XOR_LL *ll) {
       log_success("Activate account successfully.");
       acc->status = 1;
       acc->num_time_wrong_code = 0;
+      acc->num_time_wrong_password = 0;
       save_data(*ll);
       return;
     }
 
     err_error(ERR_ACTIVATION_CODE_INCORRECT);
     ++acc->num_time_wrong_code;
+
+    if(acc->num_time_wrong_code == MAX_WRONG_CODE) break;
     save_data(*ll);
 
     do {
@@ -213,6 +216,7 @@ void signin(XOR_LL *ll) {
     // Check user input = password of account
     if(strcmp(acc->password, password_input) == 0) {
       acc->status = -1;
+      acc->num_time_wrong_code = 0;
       acc->num_time_wrong_password = 0;
       logged_in = 1;
       _set_current_user_(*acc);
@@ -223,6 +227,9 @@ void signin(XOR_LL *ll) {
 
     err_error(ERR_PASSWORD_INCORRECT);
     ++acc->num_time_wrong_password;
+
+    if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) break;
+
     save_data(*ll);
     do {
       input("Would you like to continue? (y/n): ", opt, 1, false);
@@ -234,10 +241,10 @@ void signin(XOR_LL *ll) {
 
   // If user input password incorrect more 3 times -> account blocked
   if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) {
-    err_error(ERR_ACCOUNT_BLOCKED);
     acc->status = 0;
     save_data(*ll);
     log_warn("You have entered the wrong password more than 3 times.");
+    err_error(ERR_ACCOUNT_BLOCKED);
   }
 }
 
