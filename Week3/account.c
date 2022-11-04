@@ -255,7 +255,7 @@ void search(XOR_LL ll) {
   if(acc->status == 0) strcpy(status, "\033[91;1;5mBlocked\033[0m");
   else if(acc->status == 1 || acc->status == -1) strcpy(status, "\x1b[1;38;5;47mActive\x1b[0m");
   else if(acc->status == 2) strcpy(status, "\x1b[1;38;5;226mNot activated\x1b[0m");
-  log_success("\n    Username: %s\n    Status: %s", acc->username, status);
+  log_success("\n    Username: %s\n    Homepage: %s\n    Status: %s", acc->username, acc->homepage, status);
 }
 
 void change_password(XOR_LL *ll) {
