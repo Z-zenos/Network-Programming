@@ -109,7 +109,7 @@ void input(char *label, char *str, const int MAX_LENGTH_INPUT, bool isHide) {
     // Check input if empty
     if (strlen(user_input) > 0) {
       if(strlen(user_input) > MAX_LENGTH_INPUT) {
-        log_error("%s can only contain up to %d characters.\n", label, MAX_LENGTH_INPUT);
+        log_error("You can only enter up to %d character.\n", MAX_LENGTH_INPUT);
         continue;
       }
 
@@ -244,9 +244,9 @@ void load_data(XOR_LL *ll) {
 
   while(fgets(line, BUFFER, fp)) {
     acc = malloc(sizeof(*acc));
-    sscanf(line, "%s %s %d %s", acc->username, acc->password, &acc->status, acc->homepage);
+    sscanf(line, "%s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
 
-    if(str_count_word(line) != 4) {
+    if(str_count_word(line) != 6) {
       err_error(ERR_SERVER_ERROR);
       exit(EXIT_FAILURE);
     }
@@ -280,7 +280,7 @@ void save_data(XOR_LL ll) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
   XOR_LL_LOOP_HTT_RST(&ll, &itr) {
     Account *acc = (Account*)itr.node_data.ptr;
-    fprintf(fp, "%s %s %d %s\n", acc->username, acc->password, acc->status, acc->homepage);
+    fprintf(fp, "%s %s %d %d %d %s\n", acc->username, acc->password, acc->status, acc->num_time_wrong_code, acc->num_time_wrong_password, acc->homepage);
   }
 
   remove("account.txt");
@@ -291,7 +291,6 @@ void save_data(XOR_LL ll) {
 }
 
 void loading() {
-
   long i;
   float progress = 0.0;
   int c = 0, x = 0, last_c = 0;
