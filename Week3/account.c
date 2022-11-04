@@ -103,6 +103,8 @@ void activate(XOR_LL *ll) {
 
   // Neu nhap sai 2 lan -> con 1 lan nhap dung xong thoat ra vao lai thi so lan nhap con lai co la 1 khong
   char code[BUFFER];
+  char opt[BUFFER];
+
   do {
     // Reset activation code
     strcpy(code, "");
@@ -137,12 +139,22 @@ void activate(XOR_LL *ll) {
 
     err_error(ERR_ACTIVATION_CODE_INCORRECT);
     ++acc->num_time_wrong_code;
+    save_data(*ll);
+
+    do {
+      input("Would you like to continue? (y/n): ", opt, 1, false);
+    } while(!(opt[0] == 'y' || opt[0] == 'n'));
+    if(opt[0] == 'y') continue;
+    else if(opt[0] == 'n') break;
+
   } while(acc->num_time_wrong_code < MAX_WRONG_CODE);
 
   // Block account
-  acc->status = 0;
-  save_data(*ll);
-  err_error(ERR_ACCOUNT_BLOCKED);
+  if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
+    acc->status = 0;
+    save_data(*ll);
+    err_error(ERR_ACCOUNT_BLOCKED);
+  }
 }
 
 void signin(XOR_LL *ll) {
@@ -176,10 +188,12 @@ void signin(XOR_LL *ll) {
   }
 
   char password_input[MAX_PASSWORD];
+  char opt[BUFFER];
 
   do {
     // Reset password input
     strcpy(password_input, "");
+    strcpy(opt, "");
 
     // Input password
     if(acc->num_time_wrong_password < MAX_WRONG_PASSWORD && acc->num_time_wrong_password > 0) {
@@ -197,14 +211,7 @@ void signin(XOR_LL *ll) {
     }
 
     // Check user input = password of account
-    if(strcmp(acc->password, password_input) != 0) {
-      err_error(ERR_PASSWORD_INCORRECT);
-      ++acc->num_time_wrong_password;
-      continue;
-    }
-
-    // If password correct
-    else {
+    if(strcmp(acc->password, password_input) == 0) {
       acc->status = -1;
       acc->num_time_wrong_password = 0;
       logged_in = 1;
@@ -213,13 +220,25 @@ void signin(XOR_LL *ll) {
       log_success("Log in successfully!");
       return;
     }
+
+    err_error(ERR_PASSWORD_INCORRECT);
+    ++acc->num_time_wrong_password;
+    save_data(*ll);
+    do {
+      input("Would you like to continue? (y/n): ", opt, 1, false);
+    } while(!(opt[0] == 'y' || opt[0] == 'n'));
+
+    if(opt[0] == 'y') continue;
+    else if(opt[0] == 'n') break;
   } while (acc->num_time_wrong_password < MAX_WRONG_PASSWORD);
 
   // If user input password incorrect more 3 times -> account blocked
-  err_error(ERR_ACCOUNT_BLOCKED);
-  acc->status = 0;
-  save_data(*ll);
-  log_warn("You have entered the wrong password more than 3 times.");
+  if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) {
+    err_error(ERR_ACCOUNT_BLOCKED);
+    acc->status = 0;
+    save_data(*ll);
+    log_warn("You have entered the wrong password more than 3 times.");
+  }
 }
 
 Account *search_account(XOR_LL ll, char *username) {
