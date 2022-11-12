@@ -15,6 +15,12 @@ struct addrinfo *servAddr;
 struct sockaddr_storage clntAddr; // Client address
 ssize_t numBytesRcvd;
 
+void http_clear(char *method, char *request, char *response) {
+  strcpy(method, "");
+  strcpy(request, "");
+  strcpy(response, "");
+}
+
 bool compare_sockaddr(const struct sockaddr *addr1, const struct sockaddr *addr2) {
   if (addr1 == NULL || addr2 == NULL)
     return addr1 == addr2;
@@ -68,7 +74,14 @@ void print_socketaddr(const struct sockaddr *address, FILE *stream) {
 
 void requestify(char *method, char *request) {
   /* TEMPLATE: METHOD REQUEST */
-  sprintf(request, "%s %s", method, request);
+  char request_tpl[BUFFER];
+  sprintf(request_tpl, "%s %s", method, request);
+  strcpy(request, request_tpl);
+}
+
+bool parse_request(char *method, char *request) {
+  sscanf(request, "%s %[^\n]s", method, request);
+  return SUCCESS;
 }
 
 int server_init_connect(char *service) {
@@ -143,6 +156,15 @@ int get_request(char *method, char *request, char *response) {
     err_error(ERR_GET_REQUEST_FAILED);
     return FAIL;
   }
+
+  request[numBytesRcvd] = '\0';
+
+  // Split method and pure request
+  if(!parse_request(method, request)) {
+    err_error(ERR_SERVER_ERROR);
+    return FAIL;
+  }
+
   fputs("Handling client ", stdout);
   print_socketaddr((struct sockaddr *) &clntAddr, stdout);
   fputc('\n', stdout);
@@ -150,7 +172,7 @@ int get_request(char *method, char *request, char *response) {
   return SUCCESS;
 }
 
-int get_response(char *method, char *request, char *response) {
+int get_response(char *request, char *response) {
   // Receive a response
   struct sockaddr_storage fromAddr;
   size_t requestLength = strlen(request);
@@ -159,7 +181,7 @@ int get_response(char *method, char *request, char *response) {
   socklen_t fromAddrLen = sizeof(fromAddr);
   //  char response[MAX_MESSAGE + 1]; // I/O Buffer
   ssize_t numBytes = recvfrom(sock, response, MAX_MESSAGE, 0, (struct sockaddr *) &fromAddr, &fromAddrLen);
-  if (numBytes < 0 || numBytes != requestLength) {
+  if (numBytes < 0) {
     err_error(ERR_GET_RESPONSE_FAILED);
     return FAIL;
   }
@@ -169,19 +191,20 @@ int get_response(char *method, char *request, char *response) {
     err_error(ERR_UNKNOWN_RESOURCE);
     return FAIL;
   }
+
   response[requestLength] = '\0';
-  //  printf("Received: %s\n", response);
+
+
   return SUCCESS;
 }
 
+// RESPONSE: STATUS_CODE STATUS DATA(MESSAGE)
 int send_response(char *method, char *request, char *response) {
-  if(!get_request(method, request, response)) {
-    return FAIL;
-  }
 
-  // Send received datagram back to the client
-  ssize_t numBytesSent = sendto(sock, request, numBytesRcvd, 0, (struct sockaddr *) &clntAddr, sizeof(clntAddr));
-  if (numBytesSent < 0 || numBytesSent != numBytesRcvd) {
+  // Send response back to the client
+  size_t responseLength = strlen(response);
+  ssize_t numBytesSent = sendto(sock, response, responseLength, 0, (struct sockaddr *) &clntAddr, sizeof(clntAddr));
+  if (numBytesSent < 0) {
     err_error(ERR_SEND_RESPONSE_FAILED);
     return FAIL;
   }
@@ -191,14 +214,14 @@ int send_response(char *method, char *request, char *response) {
 
 // method: get, post, patch
 int send_request(char *method, char *request, char *response) {
+  requestify(method, request);
+
   // Length of request
   size_t requestLength = strlen(request);
   if (requestLength > MAX_MESSAGE) {
     err_error(ERR_REQUEST_TOO_LONG);
     return FAIL;
   }
-
-  requestify(method, request);
 
   // Send the string to the server
   ssize_t numBytes = sendto(sock, request, requestLength, 0, servAddr->ai_addr, servAddr->ai_addrlen);
@@ -207,5 +230,5 @@ int send_request(char *method, char *request, char *response) {
     return FAIL;
   }
 
-  return get_response(method, request, response) ? SUCCESS : FAIL;
+  return SUCCESS;
 }
