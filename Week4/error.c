@@ -2,7 +2,7 @@
 #include "log.h"
 #include "error.h"
 
-#define NUM_OF_ERRORS 30
+#define NUM_OF_ERRORS 40
 
 struct ErrorMessage {
   ErrorCode errorCode;
@@ -39,6 +39,7 @@ struct ErrorMessage errors[NUM_OF_ERRORS] = {
 {ERR_UNKNOWN_RESOURCE, "Received response from unknown source."},
 {ERR_INITIALIZE_SOCKET_FAILED, "Initialize socket failed."},
 {ERR_SERVER_NOT_FOUND, "Server not found."},
+{ERR_REGISTER_ACCOUNT_FAILED, "Register new account failed."},
 };
 
 void err_error(ErrorCode err) {

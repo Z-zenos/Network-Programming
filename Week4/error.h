@@ -31,6 +31,7 @@ typedef enum {
     ERR_UNKNOWN_RESOURCE,
     ERR_INITIALIZE_SOCKET_FAILED,
     ERR_SERVER_NOT_FOUND,
+    ERR_REGISTER_ACCOUNT_FAILED,
 } ErrorCode;
 
 void err_error(ErrorCode);
