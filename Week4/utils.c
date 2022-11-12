@@ -25,6 +25,10 @@ void clear_buffer() {
   while ((c = getchar()) != '\n' && c != EOF);
 }
 
+bool str_start_with(char *str, char *pre) {
+  return strncmp(pre, str, strlen(pre)) == 0;
+}
+
 /**
  * @brief           Remove whitespace at begin and end of string.
  * @param string    Input string
@@ -336,8 +340,4 @@ bool is_number(char *str) {
   }
 
   return true;
-}
-
-bool verify_port(int port) {
-
 }
