@@ -13,6 +13,10 @@
 extern int logged_in;
 extern Account curr_user;
 
+char method[10] = "";
+char request[BUFFER] = "";
+char response[BUFFER] = "";
+
 // Set current user
 void _set_current_user_(Account acc) {
   strcpy(curr_user.username, acc.username);
@@ -30,31 +34,31 @@ void _reset_current_user_() {
   strcpy(curr_user.homepage, "");
 }
 
-Account *search_account(XOR_LL ll, char *username) {
-  char account_route[BUFFER];
-  sprintf(account_route, "/accounts/%s", username);
-  send_request("GET", account_route, "");
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-
-  XOR_LL_LOOP_HTT_RST(&ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0) {
-      return acc;
-    }
-  }
-
-  return NULL;
+void accountify(Account *acc, char *str) {
+  sscanf(str, "%s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
 }
 
-void signup(XOR_LL *ll) {
-  if(!ll) return;
+Account *search_account(char *username) {
+  http_clear(method, request, response);
+  strcpy(method, "GET");
+  sprintf(request, "/accounts/%s", username);
+  send_request(method, request, response);
+  get_response(request, response);
+  if(strcmp(response, "") == 0)
+    return NULL;
+  Account *acc = malloc(sizeof(acc));
+  accountify(acc, response);
+  return acc;
+}
+
+void signup() {
 
   printf("\n===== Register =====\n");
 
   Account *new_account = NULL;
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
-  new_account = search_account(*ll, username_input);
+  new_account = search_account(username_input);
 
   // Check account if exist
   if(new_account) {
@@ -82,9 +86,23 @@ void signup(XOR_LL *ll) {
     new_account->status = 2;
     new_account->num_time_wrong_password = new_account->num_time_wrong_code = 0;
 
-    xor_ll_push_tail(ll, new_account, sizeof *new_account);
-    save_data(*ll);
-    log_success("Register successfully!");
+    http_clear(method, request, response);
+    strcpy(method, "POST");
+
+    sprintf(
+      request,
+      "/accounts?data: %s %s %d %d %d %s",
+      new_account->username, new_account->password, new_account->status, new_account->num_time_wrong_code, new_account->num_time_wrong_password, new_account->homepage
+    );
+
+    send_request(method, request, response);
+    get_response(request, response);
+    if(strcmp(response, "") == 0) {
+      err_error(ERR_REGISTER_ACCOUNT_FAILED);
+      return;
+    }
+    sscanf(response, "201 success %[^\n]s", response);
+    log_success("%s", response);
   }
 }
 
@@ -93,7 +111,7 @@ void activate(XOR_LL *ll) {
 
   Account *acc = malloc(sizeof(acc));
   input("Username", acc->username, MAX_USERNAME, false);
-  acc = search_account(*ll, acc->username);
+  acc = search_account(acc->username);
 
   if(!acc) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
@@ -186,7 +204,7 @@ void signin(XOR_LL *ll) {
   printf("\n===== Sign in =====\n");
   Account *acc = malloc(sizeof *acc);
   input("Username", acc->username, MAX_USERNAME, false);
-  acc = search_account(*ll, acc->username);
+  acc = search_account(acc->username);
 
   // If account not found then return main menu
   if(!acc) {
@@ -274,7 +292,7 @@ void search(XOR_LL ll) {
   printf("\n===== Search =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
-  Account *acc = search_account(ll, username_input);
+  Account *acc = search_account(username_input);
 
   if(!acc) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
@@ -310,7 +328,7 @@ void change_password(XOR_LL *ll) {
     return;
   }
 
-  Account *acc = search_account(*ll, curr_user.username);
+  Account *acc = search_account(curr_user.username);
   strcpy(acc->password, password_input);
   _set_current_user_(*acc);
   save_data(*ll);
@@ -334,7 +352,7 @@ void signout(XOR_LL *ll) {
     return;
   }
 
-  Account *acc = search_account(*ll, username_input);
+  Account *acc = search_account(username_input);
   acc->status = 1;
   logged_in = 0;
   save_data(*ll);

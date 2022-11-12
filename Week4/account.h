@@ -20,16 +20,16 @@ typedef struct _account_ {
     // enum int status = [ 1, 0, 2 ];
     int status;
     char homepage[MAX_HOMEPAGE];
-    int num_time_wrong_password;
     int num_time_wrong_code;
+    int num_time_wrong_password;
 } Account;
 
 extern Account curr_user;
 
-void signup(XOR_LL*);
+void signup();
 void activate(XOR_LL*);
 void signin(XOR_LL*);
-Account *search_account(XOR_LL, char*);
+Account *search_account(char*);
 void search(XOR_LL);
 void change_password(XOR_LL*);
 void signout(XOR_LL*);
