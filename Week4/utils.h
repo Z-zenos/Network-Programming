@@ -3,12 +3,12 @@
 #include "linkedlist.h"
 
 void clear_buffer();
-ssize_t getpasswd(char**, size_t, int, FILE*);
+ssize_t getpasswd(char **, size_t, int, FILE *);
 void loading();
-void load_data(XOR_LL*);
-void input(char*, char*, int, bool);
-bool has_space(char*);
-char *strtrim(char*);
+void load_data(XOR_LL *);
+void input(char *, char *, int, bool);
+bool has_space(char *);
+char *strtrim(char *);
+bool str_start_with(char *, char *);
 void save_data(XOR_LL);
-bool verify_port(int);
-bool is_number(char*);
+bool is_number(char *);
