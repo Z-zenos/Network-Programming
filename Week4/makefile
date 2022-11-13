@@ -4,8 +4,8 @@ LIBS = -lm
 
 build: clean | client server
 
-client: client.o account.o utils.o error.o linkedlist.o network.o http.o
-	${CC} client.o account.o utils.o error.o linkedlist.o network.o http.o -lpcre2-8 -o client
+client: client.o account.o utils.o error.o network.o http.o linkedlist.o
+	${CC} client.o account.o utils.o error.o network.o http.o linkedlist.o -lpcre2-8 -o client
 
 server: server.o account.o utils.o error.o linkedlist.o network.o http.o
 	${CC} server.o account.o utils.o error.o linkedlist.o network.o http.o -lpcre2-8 -o server
