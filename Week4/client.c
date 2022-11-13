@@ -6,10 +6,8 @@
 #include "constants.h"
 #include "error.h"
 #include "http.h"
-#include "linkedlist.h"
 #include "log.h"
 #include "network.h"
-#include "search.h"
 #include "utils.h"
 
 int main(int argc, char *argv[]) {
@@ -21,10 +19,6 @@ int main(int argc, char *argv[]) {
 
   client_init_connect(argv[1], argv[2]);
   loading();
-
-  XOR_LL acc_ll = XOR_LL_INITIALISER;
-  xor_ll_init(&acc_ll);
-  load_data(&acc_ll);
 
   char input[1000];
   int opt;
@@ -40,20 +34,24 @@ int main(int argc, char *argv[]) {
     clear_buffer();
 
     if(!(strlen(input) == 1 && (input[0] > 48 && input[0] < 57))) {
-      // Exit program
-      xor_ll_destroy(&acc_ll);
       log_info("Thank for using my app :)\n");
       exit(EXIT_SUCCESS);
     }
 
     opt = input[0] - 48;
+    if(opt >=4 && opt <= 8) {
+      if(!logged_in) {
+        err_error(ERR_NON_LOG_IN);
+        continue;
+      }
+    }
     switch(opt) {
       case 1:
-        signup(&acc_ll);
+        signup();
         break;
 
       case 2:
-        activate(&acc_ll);
+        activate();
         break;
 
       case 3:
@@ -61,15 +59,15 @@ int main(int argc, char *argv[]) {
         break;
 
       case 4:
-        search(acc_ll);
+        search();
         break;
 
       case 5:
-        change_password(&acc_ll);
+        change_password();
         break;
 
       case 6:
-        signout(&acc_ll);
+        signout();
         break;
 
       case 7:
@@ -84,5 +82,4 @@ int main(int argc, char *argv[]) {
         break;
     }
   } while(1);
-  return SUCCESS;
 }
