@@ -196,11 +196,12 @@ int logout(char *request, char *response) {
 }
 
 int getIPv4(char *request, char *response) {
-  char ipv4[BUFFER];
-  sscanf(request, "/accounts/ipv4/%s", ipv4);
+  char domain[BUFFER];
+  sscanf(request, "/accounts/ipv4/%s", domain);
 
   char ipv4List[BUFFER];
-  domain_name_to_ip(curr_user.homepage, ipv4List);
+  memset(ipv4List, 0, BUFFER);
+  domain_name_to_ip(domain, ipv4List);
   if(strlen(ipv4List) == 0) {
     sprintf(response, "%s", "404 fail Can't find ipv4 address");
     return FAIL;
@@ -211,11 +212,12 @@ int getIPv4(char *request, char *response) {
 }
 
 int getDomain(char *request, char *response) {
-  char domain[BUFFER];
-  sscanf(request, "/accounts/domain/%s", domain);
+  char ipv4[BUFFER];
+  sscanf(request, "/accounts/domain/%s", ipv4);
 
   char domainList[BUFFER];
-  ip_to_domain_name(curr_user.homepage, domainList);
+  memset(domainList, 0, BUFFER);
+  ip_to_domain_name(ipv4, domainList);
   if(strlen(domainList) == 0) {
     sprintf(response, "%s", "404 fail Can't find domain name");
     return FAIL;
