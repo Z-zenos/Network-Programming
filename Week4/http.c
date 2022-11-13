@@ -10,15 +10,52 @@
 #include "constants.h"
 #include "error.h"
 
+#define NUM_OF_CODE 10
+
+struct HTTPStatus {
+    HttpCode httpCode;
+    int code;
+    char *message;
+};
+
+struct HTTPStatus statuses[NUM_OF_CODE] = {
+  { _200_, 200, "OK" },
+  { _201_, 201, "Created" },
+  { _202_, 202, "Accepted" },
+  { _204_, 204, "No Content" },
+  { _400_, 400, "Bas Request" },
+  { _401_, 401, "Unauthorized" },
+  { _403_, 403, "Forbidden" },
+  { _404_, 404, "Not Found" },
+  { _500_, 500, "Internal Server Error" },
+};
+
+int http_code(HttpCode code) {
+  for (int i = 0; i < NUM_OF_CODE; i++)
+    if (statuses[i].httpCode == code) {
+      return statuses[i].code;
+    }
+  return 0;
+}
+
+char *http_message(HttpCode code) {
+  for (int i = 0; i < NUM_OF_CODE; i++)
+    if (statuses[i].httpCode == code) {
+      return statuses[i].message;
+    }
+  return NULL;
+}
+
 int sock;
 struct addrinfo *servAddr;
 struct sockaddr_storage clntAddr; // Client address
 ssize_t numBytesRcvd;
 
 void http_clear(char *method, char *request, char *response) {
-  strcpy(method, "");
-  strcpy(request, "");
-  strcpy(response, "");
+  memset(method, 0, 10);
+  memset(request, 0, BUFFER);
+  memset(response, 0, BUFFER);
+
 }
 
 bool compare_sockaddr(const struct sockaddr *addr1, const struct sockaddr *addr2) {
@@ -146,7 +183,7 @@ int client_init_connect(char *server, char *port) {
   return SUCCESS;
 }
 
-int get_request(char *method, char *request, char *response) {
+int get_request(char *method, char *request) {
   // Set Length of client address structure (in-out parameter)
   socklen_t clntAddrLen = sizeof(clntAddr);
 
@@ -175,7 +212,6 @@ int get_request(char *method, char *request, char *response) {
 int get_response(char *request, char *response) {
   // Receive a response
   struct sockaddr_storage fromAddr;
-  size_t requestLength = strlen(request);
 
   // Set length of from address structure (in-out parameter)
   socklen_t fromAddrLen = sizeof(fromAddr);
@@ -192,14 +228,14 @@ int get_response(char *request, char *response) {
     return FAIL;
   }
 
-  response[requestLength] = '\0';
-
-
-  return SUCCESS;
+  response[numBytes] = '\0';
+  int code;
+  sscanf(response, "%d", &code);
+  return code;
 }
 
 // RESPONSE: STATUS_CODE STATUS DATA(MESSAGE)
-int send_response(char *method, char *request, char *response) {
+int send_response(char *response) {
 
   // Send response back to the client
   size_t responseLength = strlen(response);
