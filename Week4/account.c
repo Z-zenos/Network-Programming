@@ -34,7 +34,7 @@ int verify_username(char *username, int *num_time_wrong_code, int *num_time_wron
   sprintf(request, "/accounts/verify/username/%s", username);
 
   send_request(method, request);
-  int code = get_response(request, response);
+  int code = get_response(response);
 
   if(!num_time_wrong_code && !num_time_wrong_password)
     sscanf(response, "200 success %s", username);
@@ -51,7 +51,7 @@ int verify_password(char *username, char *password) {
   sprintf(request, "/accounts/verify/password/%s %s", username, password);
 
   send_request(method, request);
-  int code = get_response(request, response);
+  int code = get_response(response);
 
   if(code == 200) return SUCCESS;
   if(code == 404) return FAIL;
@@ -64,7 +64,7 @@ Account *search_account(char *username) {
   sprintf(request, "/accounts/search/%s", username);
 
   send_request(method, request);
-  int code = get_response(request, response);
+  int code = get_response(response);
   if (code == 200) {
     Account *acc = (Account *) malloc(sizeof(*acc));
     sscanf(response, "200 success %s %d %s", acc->username, &acc->status, acc->homepage);
@@ -101,7 +101,7 @@ void signup() {
     strcpy(method, "POST");
     sprintf(request, "/accounts/register?data: %s %s %s", new_account->username, new_account->password, new_account->homepage);
     send_request(method, request);
-    int code = get_response(request, response);
+    int code = get_response(response);
     if(code != 201) {
       err_error(ERR_REGISTER_ACCOUNT_FAILED);
       return;
@@ -162,7 +162,7 @@ void activate() {
     strcpy(method, "POST");
     sprintf(request, "/accounts/activate?data: %s %s", username_input, activation_code);
     send_request(method, request);
-    int code = get_response(request, response);
+    int code = get_response(response);
 
     // Activate code correct but account has been activated.
     switch (code) {
@@ -235,7 +235,7 @@ void signin() {
     strcpy(method, "POST");
     sprintf(request, "/accounts/authen?data: %s %s", username_input, password_input);
     send_request(method, request);
-    int code = get_response(request, response);
+    int code = get_response(response);
     Account *acc = (Account *) malloc(sizeof *acc);
 
     switch (code) {
@@ -316,7 +316,7 @@ void change_password() {
   strcpy(method, "PATCH");
   sprintf(request, "/accounts/updatePassword?data: %s %s", curr_user.username, new_password);
   send_request(method, request);
-  int code = get_response(request, response);
+  int code = get_response(response);
   if(code == 200) {
     log_success("%s", response);
     return;
@@ -339,7 +339,7 @@ void signout() {
   strcpy(method, "PATCH");
   sprintf(request, "/accounts/logout?data: %s", curr_user.username);
   send_request(method, request);
-  int code = get_response(request, response);
+  int code = get_response(response);
   if(code == 202) {
     logged_in = 0;
     _reset_current_user_();
@@ -356,7 +356,7 @@ void get_domain() {
     strcpy(method, "GET");
     sprintf(request, "/accounts/domain/%s", curr_user.homepage);
     send_request(method, request);
-    int code = get_response(request, response);
+    int code = get_response(response);
 
     char domain[MAX_HOMEPAGE];
     if(code == 200) {
@@ -378,7 +378,7 @@ void get_ipv4() {
     strcpy(method, "GET");
     sprintf(request, "/accounts/ipv4/%s", curr_user.homepage);
     send_request(method, request);
-    int code = get_response(request, response);
+    int code = get_response(response);
 
     char ipv4List[MAX_HOMEPAGE];
     if(code == 200) {

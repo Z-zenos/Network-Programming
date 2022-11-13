@@ -208,7 +208,7 @@ int get_request(char *method, char *request) {
   return SUCCESS;
 }
 
-int get_response(char *request, char *response) {
+int get_response(char *response) {
   // Receive a response
   struct sockaddr_storage fromAddr;
 

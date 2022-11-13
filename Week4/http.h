@@ -28,7 +28,7 @@ void requestify(char *, char *);
 int server_init_connect(char *);
 int client_init_connect(char *, char *);
 int get_request(char *, char *);
-int get_response(char *, char *);
+int get_response(char *);
 int send_request(char *, char *);
 int send_response(char *);
 void http_clear(char *, char *, char *);
