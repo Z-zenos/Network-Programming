@@ -23,7 +23,7 @@ struct HTTPStatus statuses[NUM_OF_CODE] = {
   { _201_, 201, "Created" },
   { _202_, 202, "Accepted" },
   { _204_, 204, "No Content" },
-  { _400_, 400, "Bas Request" },
+  { _400_, 400, "Bad Request" },
   { _401_, 401, "Unauthorized" },
   { _403_, 403, "Forbidden" },
   { _404_, 404, "Not Found" },
@@ -53,9 +53,8 @@ ssize_t numBytesRcvd;
 
 void http_clear(char *method, char *request, char *response) {
   memset(method, 0, 10);
-  memset(request, 0, BUFFER);
-  memset(response, 0, BUFFER);
-
+  memset(request, 0, MAX_REQUEST_LENGTH);
+  memset(response, 0, MAX_RESPONSE_LENGTH);
 }
 
 bool compare_sockaddr(const struct sockaddr *addr1, const struct sockaddr *addr2) {
@@ -111,7 +110,7 @@ void print_socketaddr(const struct sockaddr *address, FILE *stream) {
 
 void requestify(char *method, char *request) {
   /* TEMPLATE: METHOD REQUEST */
-  char request_tpl[BUFFER];
+  char request_tpl[MAX_REQUEST_LENGTH];
   sprintf(request_tpl, "%s %s", method, request);
   strcpy(request, request_tpl);
 }
@@ -249,7 +248,7 @@ int send_response(char *response) {
 }
 
 // method: get, post, patch
-int send_request(char *method, char *request, char *response) {
+int send_request(char *method, char *request) {
   requestify(method, request);
 
   // Length of request
