@@ -104,7 +104,7 @@ bool validate_domain_name(const char *domain_name) {
   return true;
 }
 
-bool domain_name_to_ip(char *domain_name) {
+bool domain_name_to_ip(char *domain_name, char *ipv4List) {
   if(!validate_domain_name(domain_name))  {
     err_error(ERR_INVALID_DOMAIN_NAME);
     return false;
@@ -143,14 +143,12 @@ bool domain_name_to_ip(char *domain_name) {
     // Convert IPv4 numeric address to readable address and assign to addrStr variable
     inet_ntop (ipList->ai_family, ptr, addrStr, INET_ADDRSTRLEN);
     if(first == 0) {
-      log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", domain_name);
-      printf("Official IP:\n\t%s\n", addrStr);
+//      log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", domain_name);
+      strcat(ipv4List, addrStr);
     }
     else {
-      if(first == 1) {
-        printf("Alias IP: \n");
-      }
-      printf ("\t%s\n", addrStr);
+      strcat(ipv4List, " ");
+      strcat(ipv4List, addrStr);
     }
 
     ipList = ipList->ai_next;
@@ -158,12 +156,11 @@ bool domain_name_to_ip(char *domain_name) {
   }
 
   freeaddrinfo(response);
-  if(!first) log_warn("Not found information");
   return true;
 }
 
 
-bool ip_to_domain_name(char *ip) {
+bool ip_to_domain_name(char *ip, char *domainList) {
   if(!validate_ip(ip))  {
     err_error(ERR_INVALID_IPv4);
     return false;
@@ -201,16 +198,18 @@ bool ip_to_domain_name(char *ip) {
   domain_name = gethostbyaddr(&ipAddr, sizeof(ipAddr), AF_INET);
   if (domain_name) {
     int i = 0;
-    log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", ip);
-    printf("Official name:\n\t%s\n", domain_name->h_name);
+//    log_success("GET / HTTP/1.1 \x1b[1;38;5;47m200\x1b[0m \x1b[4;38;5;226m%s\x1b[0m\r", ip);
+//    printf("Official name:\n\t%s\n", domain_name->h_name);
+    strcat(domainList, domain_name->h_name);
     while (domain_name->h_aliases[i] != NULL) {
-      if(i == 0) printf("Alias name:");
-      printf("\n\t%s", domain_name->h_aliases[i++]);
+//      if(i == 0) printf("Alias name:");
+//      printf("\n\t%s", domain_name->h_aliases[i++]);
+      strcat(domainList, " ");
+      strcat(domainList, domain_name->h_aliases[i++]);
     }
     return true;
   }
   else {
-    err_error(ERR_RESOLVE_IP);
     return false;
   }
 }
