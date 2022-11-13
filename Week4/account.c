@@ -6,49 +6,52 @@
 #include "account.h"
 #include "error.h"
 #include "http.h"
-#include "linkedlist.h"
 #include "log.h"
 #include "utils.h"
 
 extern int logged_in;
 extern Account curr_user;
 
-char method[10] = "";
-char request[BUFFER] = "";
-char response[BUFFER] = "";
+char method[MAX_HTTP_METHOD], request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH];
 
 // Set current user
 void _set_current_user_(Account acc) {
   strcpy(curr_user.username, acc.username);
-  strcpy(curr_user.password, acc.password);
+  memset(curr_user.password, 0, MAX_PASSWORD);
   strcpy(curr_user.homepage, acc.homepage);
-  curr_user.status = acc.status;
-  curr_user.num_time_wrong_password = acc.num_time_wrong_password;
-  curr_user.num_time_wrong_code = acc.num_time_wrong_code;
 }
 
 // Logout user
 void _reset_current_user_() {
-  strcpy(curr_user.username, "");
-  strcpy(curr_user.password, "");
-  strcpy(curr_user.homepage, "");
+  memset(curr_user.username, 0, MAX_USERNAME);
+  memset(curr_user.password, 0, MAX_PASSWORD);
+  memset(curr_user.homepage, 0, MAX_HOMEPAGE);
 }
 
-void accountify(Account *acc, char *str) {
-  sscanf(str, "200 success %s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
-}
-
-int verify_account(char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
+int verify_username(char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
   http_clear(method, request, response);
   strcpy(method, "GET");
-  sprintf(request, "/verify/%s", username);
+  sprintf(request, "/accounts/verify/username/%s", username);
 
-  send_request(method, request, response);
+  send_request(method, request);
   int code = get_response(request, response);
 
   if(!num_time_wrong_code && !num_time_wrong_password)
-    sscanf(response, "200 success %s", response);
-  else sscanf(response, "200 success %s %d %d", response, num_time_wrong_code, num_time_wrong_password);
+    sscanf(response, "200 success %s", username);
+  else sscanf(response, "200 success %s %d %d", username, num_time_wrong_code, num_time_wrong_password);
+
+  if(code == 200) return SUCCESS;
+  if(code == 404) return FAIL;
+  return FAIL;
+}
+
+int verify_password(char *username, char *password) {
+  http_clear(method, request, response);
+  strcpy(method, "GET");
+  sprintf(request, "/accounts/verify/password/%s %s", username, password);
+
+  send_request(method, request);
+  int code = get_response(request, response);
 
   if(code == 200) return SUCCESS;
   if(code == 404) return FAIL;
@@ -58,16 +61,16 @@ int verify_account(char *username, int *num_time_wrong_code, int *num_time_wrong
 Account *search_account(char *username) {
   http_clear(method, request, response);
   strcpy(method, "GET");
-  sprintf(request, "/accounts/%s", username);
+  sprintf(request, "/accounts/search/%s", username);
 
-  send_request(method, request, response);
-  get_response(request, response);
-
-  if(strcmp(response, "") == 0)
-    return NULL;
-  Account *acc = (Account *)malloc(sizeof(*acc));
-  accountify(acc, response);
-  return acc;
+  send_request(method, request);
+  int code = get_response(request, response);
+  if (code == 200) {
+    Account *acc = (Account *) malloc(sizeof(*acc));
+    sscanf(response, "200 success %s %d %s", acc->username, &acc->status, acc->homepage);
+    return acc;
+  }
+  else return NULL;
 }
 
 void signup() {
@@ -77,17 +80,13 @@ void signup() {
   input("Username", username_input, MAX_USERNAME, false);
 
   // Check account if exist
-  if(verify_account(username_input, NULL, NULL)) {
+  if(verify_username(username_input, NULL, NULL)) {
     err_error(ERR_ACCOUNT_EXISTED);
     return;
   }
   else {
     // Create new account
     Account *new_account = (Account *)malloc(sizeof(*new_account));
-    if(!new_account) {
-      err_error(ERR_MEMORY_FULL);
-      return;
-    }
 
     strcpy(new_account->username, username_input);
     input("Password", new_account->password, MAX_PASSWORD, true);
@@ -98,20 +97,10 @@ void signup() {
       return;
     }
 
-    // Default status = idle
-    new_account->status = 2;
-    new_account->num_time_wrong_password = new_account->num_time_wrong_code = 0;
-
     http_clear(method, request, response);
     strcpy(method, "POST");
-
-    sprintf(
-      request,
-      "/accounts?data: %s %s %d %d %d %s",
-      new_account->username, new_account->password, new_account->status, new_account->num_time_wrong_code, new_account->num_time_wrong_password, new_account->homepage
-    );
-
-    send_request(method, request, response);
+    sprintf(request, "/accounts/register?data: %s %s %s", new_account->username, new_account->password, new_account->homepage);
+    send_request(method, request);
     int code = get_response(request, response);
     if(code != 201) {
       err_error(ERR_REGISTER_ACCOUNT_FAILED);
@@ -121,78 +110,79 @@ void signup() {
   }
 }
 
-void activate(XOR_LL *ll) {
+void activate() {
   printf("\n===== Activate Account =====\n");
+  char username_input[MAX_USERNAME];
+  input("Username", username_input, MAX_USERNAME, false);
 
-  Account *acc = malloc(sizeof(acc));
-  input("Username", acc->username, MAX_USERNAME, false);
-  acc = search_account(acc->username);
-
-  if(!acc) {
-    err_error(ERR_ACCOUNT_NOT_FOUND);
+  // Can't activate account yourself
+  if(strcmp(curr_user.username, username_input) == 0) {
+    log_warn("Can't activate account signing in.");
     return;
   }
 
-  // Can't activate account yourself
-  if(
-    strcmp(acc->username, curr_user.username) == 0 ||
-    acc->status == 1 ||
-    acc->status == -1
-  ) {
-    log_info("Can't activate account signing in.");
+  int num_time_wrong_code, num_time_wrong_password;
+  if(!verify_username(username_input, &num_time_wrong_code, &num_time_wrong_password)) {
+    err_error(ERR_ACCOUNT_NOT_FOUND);
     return;
   }
 
   char password_input[MAX_PASSWORD];
   input("Password", password_input, MAX_PASSWORD, true);
 
-  if(strcmp(acc->password, password_input) != 0) {
+  if(!verify_password(username_input, password_input)) {
     err_error(ERR_PASSWORD_INCORRECT);
     return;
   }
 
-  // Neu nhap sai 2 lan -> con 1 lan nhap dung xong thoat ra vao lai thi so lan nhap con lai co la 1 khong
-  char code[BUFFER];
+  char activation_code[MAX_ACTIVATE_CODE_LENGTH];
   char opt[BUFFER];
 
   do {
     // Reset activation code
-    strcpy(code, "");
+    strcpy(activation_code, "");
+    strcpy(opt, "");
+
+    if(num_time_wrong_code < MAX_WRONG_CODE && num_time_wrong_code > 0) {
+      log_warn("You remain %d time(s) input activation code!", MAX_WRONG_CODE - num_time_wrong_code);
+    }
 
     // Input activation code
-    if(acc->num_time_wrong_code < MAX_WRONG_CODE && acc->num_time_wrong_code > 0) {
-      log_warn("You remain %d time(s) input activation code!", MAX_WRONG_CODE - acc->num_time_wrong_code);
-    }
     printf("Activation code: ");
-    scanf("%[^\n]s", code);
+    scanf("%[^\n]s", activation_code);
     clear_buffer();
 
     // Check if activation code is empty
-    if(strlen(code) == 0) {
+    if(strlen(activation_code) == 0) {
       err_error(ERR_INPUT_EMPTY);
       continue;
     }
 
-    // If activation code is true => change status to active
-    if(strcmp(code, ACTIVATION_CODE) == 0) {
-      if(acc->status == 1 || acc->status == -1) {
-        log_info("Account activated.");
+    http_clear(method, request, response);
+    strcpy(method, "POST");
+    sprintf(request, "/accounts/activate?data: %s %s", username_input, activation_code);
+    send_request(method, request);
+    int code = get_response(request, response);
+
+    // Activate code correct but account has been activated.
+    switch (code) {
+      case 200:
+        log_success("%s", response);
         return;
-      }
 
-      log_success("Activate account successfully.");
-      acc->status = 1;
-      acc->num_time_wrong_code = 0;
-      acc->num_time_wrong_password = 0;
-      save_data(*ll);
-      return;
+      case 204:
+        log_warn("%s", response);
+        return;
+
+      case 400:
+        sscanf(response, "400 fail %d %[^\n]s", &num_time_wrong_code, response);
+        log_error("%s", response);
+        break;
+
+      case 403:
+        log_error("%s", response);
+        return;
     }
-
-    err_error(ERR_ACTIVATION_CODE_INCORRECT);
-    ++acc->num_time_wrong_code;
-
-    if(acc->num_time_wrong_code == MAX_WRONG_CODE) break;
-    save_data(*ll);
 
     do {
       input("Would you like to continue? (y/n): ", opt, 1, false);
@@ -200,14 +190,7 @@ void activate(XOR_LL *ll) {
     if(opt[0] == 'y') continue;
     else if(opt[0] == 'n') break;
 
-  } while(acc->num_time_wrong_code < MAX_WRONG_CODE);
-
-  // Block account
-  if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
-    acc->status = 0;
-    save_data(*ll);
-    err_error(ERR_ACCOUNT_BLOCKED);
-  }
+  } while(num_time_wrong_code < MAX_WRONG_CODE);
 }
 
 void signin() {
@@ -219,11 +202,9 @@ void signin() {
   printf("\n===== Sign in =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
+  int num_time_wrong_code, num_time_wrong_password;
 
-  int num_time_wrong_code;
-  int num_time_wrong_password;
-  // If account not found then return main menu
-  if(!verify_account(username_input, &num_time_wrong_code, &num_time_wrong_password)) {
+  if(!verify_username(username_input, &num_time_wrong_code, &num_time_wrong_password)) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
     return;
   }
@@ -252,51 +233,50 @@ void signin() {
 
     http_clear(method, request, response);
     strcpy(method, "POST");
-    sprintf(request, "/authen?data: %s %s", username_input, password_input);
-    send_request(method, request, response);
+    sprintf(request, "/accounts/authen?data: %s %s", username_input, password_input);
+    send_request(method, request);
     int code = get_response(request, response);
+    Account *acc = (Account *) malloc(sizeof *acc);
 
-    // Username and password correct and account is currently active.
-    if(code == 202) {
-      Account *acc = (Account *) malloc(sizeof *acc);
-      sscanf(response, "202 success %s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
-      logged_in = 1;
-      _set_current_user_(*acc);
-      log_success("%s", response);
-      return;
-    }
-    // Username and password correct but account is blocked or not active
-    else if(code == 403) {
-      sscanf(response, "403 fail %[^\n]s", response);
-      log_error("%s", response);
-      log_warn("Please activate account or login with other account.");
-      return;
-    }
-    // Password incorrect
-    err_error(ERR_PASSWORD_INCORRECT);
-    sscanf(response, "401 fail %d %d", &num_time_wrong_code, &num_time_wrong_password);
+    switch (code) {
+      // Username and password correct and account is currently active.
+      case 202:
+        sscanf(response, "202 success %s %s", acc->username, acc->homepage);
+        logged_in = 1;
+        _set_current_user_(*acc);
+        log_success("%s", response);
+        return;
 
-    // If user input password incorrect more 3 times -> account blocked
-    if(num_time_wrong_password == MAX_WRONG_PASSWORD) {
-      log_warn("You have entered the wrong password more than 3 times.");
-      err_error(ERR_ACCOUNT_BLOCKED);
+      // Password incorrect
+      case 400:
+        err_error(ERR_PASSWORD_INCORRECT);
+        sscanf(response, "401 fail %d %d", &num_time_wrong_code, &num_time_wrong_password);
+        break;
+
+      // Username and password correct but account is blocked or not active
+      case 401:
+        sscanf(response, "401 fail %[^\n]s", response);
+        log_error("%s", response);
+        log_warn("Please activate account or login with other account.");
+        return;
+
+      // If user input password incorrect more 3 times -> account blocked
+      case 403:
+        sscanf(response, "403 fail %d %[^\n]s", &num_time_wrong_password, response);
+        log_error("%s", response);
+        return;
     }
 
     do {
       input("Would you like to continue? (y/n): ", opt, 1, false);
     } while(!(opt[0] == 'y' || opt[0] == 'n'));
-
     if(opt[0] == 'y') continue;
     else if(opt[0] == 'n') break;
+
   } while (num_time_wrong_password < MAX_WRONG_PASSWORD);
 }
 
-void search(XOR_LL ll) {
-  if(!logged_in) {
-    err_error(ERR_NON_LOG_IN);
-    return;
-  }
-
+void search() {
   printf("\n===== Search =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
@@ -314,42 +294,37 @@ void search(XOR_LL ll) {
   log_success("\n    Username: %s\n    Homepage: %s\n    Status: %s", acc->username, acc->homepage, status);
 }
 
-void change_password(XOR_LL *ll) {
-  if(!logged_in) {
-    err_error(ERR_NON_LOG_IN);
-    return;
-  }
-
+void change_password() {
   printf("\n===== Change Password =====\n");
-  char password_input[MAX_PASSWORD];
-  input("Old password", password_input, MAX_PASSWORD, true);
+  char old_password[MAX_PASSWORD];
+  input("Old password", old_password, MAX_PASSWORD, true);
 
   // Compare password input and old password
-  if(strcmp(curr_user.password, password_input) != 0) {
+  if(!verify_password(curr_user.username, old_password)) {
     err_error(ERR_PASSWORD_INCORRECT);
     return;
   }
 
-  input("New password", password_input, MAX_PASSWORD, true);
-  if(strcmp(password_input, curr_user.password) == 0) {
+  char new_password[MAX_PASSWORD];
+  input("New password", new_password, MAX_PASSWORD, true);
+  if(strcmp(new_password, old_password) == 0) {
     log_warn("New password equal old password. Please try again...");
     return;
   }
 
-  Account *acc = search_account(curr_user.username);
-  strcpy(acc->password, password_input);
-  _set_current_user_(*acc);
-  save_data(*ll);
-  log_success("Change password successfully.");
-}
-
-void signout(XOR_LL *ll) {
-  // Check user login-ed
-  if(!logged_in) {
-    err_error(ERR_NON_LOG_IN);
+  http_clear(method, request, response);
+  strcpy(method, "PATCH");
+  sprintf(request, "/accounts/updatePassword?data: %s %s", curr_user.username, new_password);
+  send_request(method, request);
+  int code = get_response(request, response);
+  if(code == 200) {
+    log_success("%s", response);
     return;
   }
+  log_error("%s", response);
+}
 
+void signout() {
   printf("\n===== Sign out =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
@@ -360,40 +335,58 @@ void signout(XOR_LL *ll) {
     return;
   }
 
-  Account *acc = search_account(username_input);
-  acc->status = 1;
-  logged_in = 0;
-  save_data(*ll);
-  _reset_current_user_();
-  log_success("You are logged out.");
+  http_clear(method, request, response);
+  strcpy(method, "PATCH");
+  sprintf(request, "/accounts/logout?data: %s", curr_user.username);
+  send_request(method, request);
+  int code = get_response(request, response);
+  if(code == 202) {
+    logged_in = 0;
+    _reset_current_user_();
+    log_success("%s", response);
+    return;
+  }
+  log_error("%s", response);
 }
 
 void get_domain() {
-  // Check user login-ed
-  if(!logged_in) {
-    err_error(ERR_NON_LOG_IN);
-    return;
-  }
-
-  // If homepage is ipv4 address then convert to hostname ant print
+  printf("\n===== Homepage Domain =====\n");
   if(!validate_domain_name(curr_user.homepage)) {
-    ip_to_domain_name(curr_user.homepage);
+    http_clear(method, request, response);
+    strcpy(method, "GET");
+    sprintf(request, "/accounts/domain/%s", curr_user.homepage);
+    send_request(method, request);
+    int code = get_response(request, response);
+
+    char domain[MAX_HOMEPAGE];
+    if(code == 200) {
+      sscanf(response, "200 success %[^\n]s", domain);
+      log_success("Domain name: %s\n", domain);
+      return;
+    }
+    log_warn("%s", response);
     return;
   }
-
   log_success("Domain name: %s\n", curr_user.homepage);
 }
 
 void get_ipv4() {
-  // Check user login-ed
-  if(!logged_in) {
-    err_error(ERR_NON_LOG_IN);
-    return;
-  }
-
+  printf("\n===== Homepage IPv4 address =====\n");
   // If homepage is domain_name then convert to ipv4 address ant print
   if(!validate_ip(curr_user.homepage)) {
-    domain_name_to_ip(curr_user.homepage);
+    http_clear(method, request, response);
+    strcpy(method, "GET");
+    sprintf(request, "/accounts/ipv4/%s", curr_user.homepage);
+    send_request(method, request);
+    int code = get_response(request, response);
+
+    char ipv4List[MAX_HOMEPAGE];
+    if(code == 200) {
+      sscanf(response, "200 success %[^\n]s", ipv4List);
+      log_success("IPv4 address: %s\n", ipv4List);
+      return;
+    }
+    log_warn("%s", response);
     return;
   }
 

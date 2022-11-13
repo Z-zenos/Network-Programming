@@ -27,12 +27,12 @@ typedef struct _account_ {
 extern Account curr_user;
 
 void signup();
-void activate(XOR_LL*);
+void activate();
 void signin();
 Account *search_account(char*);
-void search(XOR_LL);
-void change_password(XOR_LL*);
-void signout(XOR_LL*);
+void search();
+void change_password();
+void signout();
 void _set_current_user_(Account);
 void _reset_current_user_();
 void get_domain();
