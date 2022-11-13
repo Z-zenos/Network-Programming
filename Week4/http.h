@@ -23,7 +23,7 @@ char *http_message(HttpCode);
 
 
 bool compare_sockaddr(const struct sockaddr *, const struct sockaddr *);
-void print_socketaddr(const struct sockaddr *, FILE *);
+char *get_socketaddr(const struct sockaddr *);
 void requestify(char *, char *);
 int server_init_connect(char *);
 int client_init_connect(char *, char *);

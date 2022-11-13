@@ -23,8 +23,9 @@ assembly ass123 1 0 0 dbgk.bn-ent.net
 BASIC BAS123 2 0 0 216.58.200.238
 dart dart123 1 0 0 216.58.200.238
 haskell has123 2 0 0 127.000.000.1
-kotlin kot 1 0 4 vn.got-it.ai
+kotlin kot123 1 0 0 vn.got-it.ai
 lua lua123 2 0 0 192.168.1.1
 MATLAB MAT123 2 0 0 8.8.8.8
 .NET .NE123 1 0 0 8.8.8.8
 typescript typ123 2 0 0 youtube.com
+vithon vit123 2 0 0 dantri.vn

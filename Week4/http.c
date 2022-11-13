@@ -1,10 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <time.h>
 
 #include "http.h"
 #include "constants.h"
@@ -19,15 +21,15 @@ struct HTTPStatus {
 };
 
 struct HTTPStatus statuses[NUM_OF_CODE] = {
-  { _200_, 200, "OK" },
-  { _201_, 201, "Created" },
-  { _202_, 202, "Accepted" },
-  { _204_, 204, "No Content" },
-  { _400_, 400, "Bad Request" },
-  { _401_, 401, "Unauthorized" },
-  { _403_, 403, "Forbidden" },
-  { _404_, 404, "Not Found" },
-  { _500_, 500, "Internal Server Error" },
+        { _200_, 200, "OK" },
+        { _201_, 201, "Created" },
+        { _202_, 202, "Accepted" },
+        { _204_, 204, "No Content" },
+        { _400_, 400, "Bad Request" },
+        { _401_, 401, "Unauthorized" },
+        { _403_, 403, "Forbidden" },
+        { _404_, 404, "Not Found" },
+        { _500_, 500, "Internal Server Error" },
 };
 
 int http_code(HttpCode code) {
@@ -75,10 +77,10 @@ bool compare_sockaddr(const struct sockaddr *addr1, const struct sockaddr *addr2
   else return false;
 }
 
-void print_socketaddr(const struct sockaddr *address, FILE *stream) {
+char *get_socketaddr(const struct sockaddr *address) {
   // Test for address and stream
-  if (address == NULL || stream == NULL)
-    return;
+  if (address == NULL)
+    return NULL;
 
   void *numericAddress; // Pointer to binary address
   // Buffer to contain result (IPv6 sufficient to hold IPv4)
@@ -95,16 +97,16 @@ void print_socketaddr(const struct sockaddr *address, FILE *stream) {
       port = ntohs(((struct sockaddr_in6 *) address)->sin6_port);
       break;
     default:
-      fputs("[unknown type]", stream); // Unhandled type
-      return;
+      return "unknown";
   }
+
   // Convert binary to printable address
   if (inet_ntop(address->sa_family, numericAddress, addrBuffer, sizeof(addrBuffer)) == NULL)
-    fputs("[invalid address]", stream); // Unable to convert
+    return "unknown";
   else {
-    fprintf(stream, "%s", addrBuffer);
-    if (port != 0) // Zero not valid in any socket addr
-      fprintf(stream, "-%u", port);
+    char *addr = (char*)calloc(BUFFER, sizeof(char));
+    sprintf(addr, "%s:%u", addrBuffer, port);
+    return addr;
   }
 }
 
@@ -115,9 +117,8 @@ void requestify(char *method, char *request) {
   strcpy(request, request_tpl);
 }
 
-bool parse_request(char *method, char *request) {
+void parse_request(char *method, char *request) {
   sscanf(request, "%s %[^\n]s", method, request);
-  return SUCCESS;
 }
 
 int server_init_connect(char *service) {
@@ -196,15 +197,12 @@ int get_request(char *method, char *request) {
   request[numBytesRcvd] = '\0';
 
   // Split method and pure request
-  if(!parse_request(method, request)) {
-    err_error(ERR_SERVER_ERROR);
-    return FAIL;
-  }
+  parse_request(method, request);
 
-  fputs("Handling client ", stdout);
-  print_socketaddr((struct sockaddr *) &clntAddr, stdout);
-  fputc('\n', stdout);
-  printf("REQUEST: %s\n", request);
+  char req_time[100];
+  time_t now = time(0);
+  strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+  printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &clntAddr), method, request, numBytesRcvd);
   return SUCCESS;
 }
 
