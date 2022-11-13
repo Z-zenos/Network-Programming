@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         break;
 
       case 3:
-        signin(&acc_ll);
+        signin();
         break;
 
       case 4:
