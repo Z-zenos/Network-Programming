@@ -35,39 +35,55 @@ void _reset_current_user_() {
 }
 
 void accountify(Account *acc, char *str) {
-  sscanf(str, "%s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
+  sscanf(str, "200 success %s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
+}
+
+int verify_account(char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
+  http_clear(method, request, response);
+  strcpy(method, "GET");
+  sprintf(request, "/verify/%s", username);
+
+  send_request(method, request, response);
+  int code = get_response(request, response);
+
+  if(!num_time_wrong_code && !num_time_wrong_password)
+    sscanf(response, "200 success %s", response);
+  else sscanf(response, "200 success %s %d %d", response, num_time_wrong_code, num_time_wrong_password);
+
+  if(code == 200) return SUCCESS;
+  if(code == 404) return FAIL;
+  return FAIL;
 }
 
 Account *search_account(char *username) {
   http_clear(method, request, response);
   strcpy(method, "GET");
   sprintf(request, "/accounts/%s", username);
+
   send_request(method, request, response);
   get_response(request, response);
+
   if(strcmp(response, "") == 0)
     return NULL;
-  Account *acc = malloc(sizeof(acc));
+  Account *acc = (Account *)malloc(sizeof(*acc));
   accountify(acc, response);
   return acc;
 }
 
 void signup() {
-
   printf("\n===== Register =====\n");
 
-  Account *new_account = NULL;
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
-  new_account = search_account(username_input);
 
   // Check account if exist
-  if(new_account) {
+  if(verify_account(username_input, NULL, NULL)) {
     err_error(ERR_ACCOUNT_EXISTED);
     return;
   }
   else {
     // Create new account
-    new_account = malloc(sizeof(*new_account));
+    Account *new_account = (Account *)malloc(sizeof(*new_account));
     if(!new_account) {
       err_error(ERR_MEMORY_FULL);
       return;
@@ -96,12 +112,11 @@ void signup() {
     );
 
     send_request(method, request, response);
-    get_response(request, response);
-    if(strcmp(response, "") == 0) {
+    int code = get_response(request, response);
+    if(code != 201) {
       err_error(ERR_REGISTER_ACCOUNT_FAILED);
       return;
     }
-    sscanf(response, "201 success %[^\n]s", response);
     log_success("%s", response);
   }
 }
@@ -195,33 +210,21 @@ void activate(XOR_LL *ll) {
   }
 }
 
-void signin(XOR_LL *ll) {
+void signin() {
   if(logged_in) {
     log_warn("You are logged in.");
     return;
   }
 
   printf("\n===== Sign in =====\n");
-  Account *acc = malloc(sizeof *acc);
-  input("Username", acc->username, MAX_USERNAME, false);
-  acc = search_account(acc->username);
+  char username_input[MAX_USERNAME];
+  input("Username", username_input, MAX_USERNAME, false);
 
+  int num_time_wrong_code;
+  int num_time_wrong_password;
   // If account not found then return main menu
-  if(!acc) {
+  if(!verify_account(username_input, &num_time_wrong_code, &num_time_wrong_password)) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
-    return;
-  }
-
-  // Check status of account(if account blocked/not activated -> return main menu)
-  if(acc->status == 0) {
-    err_error(ERR_ACCOUNT_BLOCKED);
-    log_warn("Please activate account or login with other accounts.");
-    return;
-  }
-
-  if(acc->status == 2) {
-    err_error(ERR_ACCOUNT_NON_ACTIVATED);
-    log_warn("Please activate account or login with other accounts.");
     return;
   }
 
@@ -233,9 +236,8 @@ void signin(XOR_LL *ll) {
     strcpy(password_input, "");
     strcpy(opt, "");
 
-    // Input password
-    if(acc->num_time_wrong_password < MAX_WRONG_PASSWORD && acc->num_time_wrong_password > 0) {
-      log_warn("You remain %d time(s) input password!", MAX_WRONG_PASSWORD - acc->num_time_wrong_password);
+    if(num_time_wrong_password < MAX_WRONG_PASSWORD && num_time_wrong_password > 0) {
+      log_warn("You remain %d time(s) input password!", MAX_WRONG_PASSWORD - num_time_wrong_password);
     }
     printf("Password: ");
     char *p = password_input;
@@ -248,39 +250,45 @@ void signin(XOR_LL *ll) {
       continue;
     }
 
-    // Check user input = password of account
-    if(strcmp(acc->password, password_input) == 0) {
-      acc->status = -1;
-      acc->num_time_wrong_code = 0;
-      acc->num_time_wrong_password = 0;
+    http_clear(method, request, response);
+    strcpy(method, "POST");
+    sprintf(request, "/authen?data: %s %s", username_input, password_input);
+    send_request(method, request, response);
+    int code = get_response(request, response);
+
+    // Username and password correct and account is currently active.
+    if(code == 202) {
+      Account *acc = (Account *) malloc(sizeof *acc);
+      sscanf(response, "202 success %s %s %d %d %d %s", acc->username, acc->password, &acc->status, &acc->num_time_wrong_code, &acc->num_time_wrong_password, acc->homepage);
       logged_in = 1;
       _set_current_user_(*acc);
-      save_data(*ll);
-      log_success("Log in successfully!");
+      log_success("%s", response);
       return;
     }
-
+    // Username and password correct but account is blocked or not active
+    else if(code == 403) {
+      sscanf(response, "403 fail %[^\n]s", response);
+      log_error("%s", response);
+      log_warn("Please activate account or login with other account.");
+      return;
+    }
+    // Password incorrect
     err_error(ERR_PASSWORD_INCORRECT);
-    ++acc->num_time_wrong_password;
+    sscanf(response, "401 fail %d %d", &num_time_wrong_code, &num_time_wrong_password);
 
-    if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) break;
+    // If user input password incorrect more 3 times -> account blocked
+    if(num_time_wrong_password == MAX_WRONG_PASSWORD) {
+      log_warn("You have entered the wrong password more than 3 times.");
+      err_error(ERR_ACCOUNT_BLOCKED);
+    }
 
-    save_data(*ll);
     do {
       input("Would you like to continue? (y/n): ", opt, 1, false);
     } while(!(opt[0] == 'y' || opt[0] == 'n'));
 
     if(opt[0] == 'y') continue;
     else if(opt[0] == 'n') break;
-  } while (acc->num_time_wrong_password < MAX_WRONG_PASSWORD);
-
-  // If user input password incorrect more 3 times -> account blocked
-  if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) {
-    acc->status = 0;
-    save_data(*ll);
-    log_warn("You have entered the wrong password more than 3 times.");
-    err_error(ERR_ACCOUNT_BLOCKED);
-  }
+  } while (num_time_wrong_password < MAX_WRONG_PASSWORD);
 }
 
 void search(XOR_LL ll) {

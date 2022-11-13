@@ -28,7 +28,7 @@ extern Account curr_user;
 
 void signup();
 void activate(XOR_LL*);
-void signin(XOR_LL*);
+void signin();
 Account *search_account(char*);
 void search(XOR_LL);
 void change_password(XOR_LL*);
