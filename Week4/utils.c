@@ -263,13 +263,7 @@ void load_data(XOR_LL *ll) {
     }
   }
 
-  if(strlen(curr_user.username)) {
-    char name[MAX_USERNAME];
-    strcpy(name, curr_user.username);
-    log_info(strcat(name, ", have a nice day :)"));
-  }
-  else
-    log_info("Have a nice day :)");
+  printf("Server running...\n");
   fclose(fp);
 }
 
