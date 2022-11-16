@@ -28,6 +28,19 @@ void _reset_current_user_() {
   memset(curr_user.homepage, 0, MAX_HOMEPAGE);
 }
 
+void secretify(char *str) {
+  char uname[MAX_USERNAME], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  int code;
+  sscanf(str, "%d success %s %s %s %s", &code, uname, alphas, numbers, curr_user.homepage);
+
+  FILE *fs = fopen("secret_tmp.txt", "w");
+  rewind(fs);
+  fprintf(fs, "%s %s %s", uname, alphas, numbers);
+  remove("secret.txt");
+  rename("secret_tmp.txt", "secret.txt");
+  fclose(fs);
+}
+
 int verify_username(char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
   http_clear(method, request, response);
   strcpy(method, "GET");
@@ -106,7 +119,8 @@ void signup() {
       err_error(ERR_REGISTER_ACCOUNT_FAILED);
       return;
     }
-    log_success("%s", response);
+    secretify(response);
+    log_success("Register successfully");
   }
 }
 
@@ -237,14 +251,15 @@ void signin() {
     send_request(method, request);
     int code = get_response(response);
     Account *acc = (Account *) malloc(sizeof *acc);
-
+    char tmp1[BUFFER], tmp2[BUFFER];
     switch (code) {
       // Username and password correct and account is currently active.
       case 202:
-        sscanf(response, "202 success %s %s", acc->username, acc->homepage);
+        sscanf(response, "202 success %s %s %s %s", acc->username, tmp1, tmp2, acc->homepage);
         logged_in = 1;
         _set_current_user_(*acc);
-        log_success("%s", response);
+        secretify(response);
+        log_success("Login successfully");
         return;
 
       // Password incorrect
@@ -263,6 +278,7 @@ void signin() {
       // If user input password incorrect more 3 times -> account blocked
       case 403:
         sscanf(response, "403 fail %d %[^\n]s", &num_time_wrong_password, response);
+        remove("secret.txt");
         log_error("%s", response);
         return;
     }
@@ -318,7 +334,8 @@ void change_password() {
   send_request(method, request);
   int code = get_response(response);
   if(code == 200) {
-    log_success("%s", response);
+    secretify(response);
+    log_success("Update password successfully");
     return;
   }
   log_error("%s", response);
@@ -343,6 +360,7 @@ void signout() {
   if(code == 202) {
     logged_in = 0;
     _reset_current_user_();
+    remove("secret.txt");
     log_success("%s", response);
     return;
   }
