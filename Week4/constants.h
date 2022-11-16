@@ -15,6 +15,8 @@
 #define MAX 50000
 #define WIDTH 100
 
+#define KEY 12
+
 #define SUCCESS 1
 #define FAIL 0
 
