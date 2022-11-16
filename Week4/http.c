@@ -199,7 +199,7 @@ int client_init_connect(char *server, char *port) {
       send_request(method, request);
       int code = get_response(response);
       char greeting[100];
-      if(code == 200) {
+      if(code == 201) {
         sscanf(response, "201 success %s %s %[^\n]s", curr_user.username, curr_user.homepage, greeting);
         printf("\x1b[1;38;5;202m%s\x1b[0m]\n", greeting);
         logged_in = 1;
