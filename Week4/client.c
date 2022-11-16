@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
     return FAIL;
   }
 
-  client_init_connect(argv[1], argv[2]);
   loading();
+  client_init_connect(argv[1], argv[2]);
 
   char input[1000];
   int opt;
