@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "account.h"
 #include "constants.h"
@@ -13,21 +14,105 @@
 XOR_LL acc_ll = XOR_LL_INITIALISER;
 char gmethod[MAX_HTTP_METHOD], grequest[MAX_REQUEST_LENGTH], gresponse[MAX_RESPONSE_LENGTH];
 
+void encrypt(char *password, int key) {
+  unsigned int i;
+  for(i = 0; i < strlen(password); ++i) {
+    password[i] = password[i] - key;
+  }
+}
+
+void decrypt(char *password, int key) {
+  unsigned int i;
+  for(i = 0; i < strlen(password); ++i) {
+    password[i] = password[i] + key;
+  }
+}
+
+bool isValidPassword(char *password) {
+  int i, passLen = strlen(password);
+  for(i = 0; i < passLen; i++)
+    if(isalnum(password[i]) == 0)
+      return FAIL;
+  return SUCCESS;
+}
+
+void encryptPassword(char *password, char *token, char *alphas, char *numbers) {
+  int ia = 0, in = 0, it, i, passLen = strlen(password);
+  strcpy(token, password);
+  it = passLen;
+  for(i = 0; i < passLen; i++) {
+    if(isdigit(password[i])) {
+      numbers[in++] = password[i];
+      it += sprintf(&token[it], " %d", i);
+    }
+    else
+      alphas[ia++] = password[i];
+  }
+  token[it] = '\0';
+  alphas[ia] = '\0';
+  numbers[in] = '\0';
+
+  encrypt(token, KEY);
+  encrypt(alphas, KEY);
+  encrypt(numbers, KEY);
+}
+
+int comparePassword(char *password, char *password_input, char *alphas, char *numbers) {
+  char password_tmp[MAX_PASSWORD];
+  strcpy(password_tmp, password);
+  decrypt(password_tmp, KEY);
+  decrypt(alphas, KEY);
+  if(!strlen(alphas) && !strlen(numbers)) {
+    sscanf(password_tmp, "%s", password_tmp);
+    return strcmp(password_tmp, password_input) == 0 ? SUCCESS : FAIL;
+  }
+  else if(!strlen(numbers)) {
+    return strcmp(password_tmp, alphas) == 0 ? SUCCESS : FAIL;
+  }
+  else {
+    char position[BUFFER] = "", pwd[MAX_PASSWORD];
+    sscanf(password_tmp, "%s %[^\n]s", pwd, position);
+    decrypt(numbers, KEY);
+
+    char *token;
+    int i = 0, ia = 0, in = 0, passLen = strlen(pwd);
+    char passwordEncrypted[MAX_PASSWORD];
+
+    token = strtok(position, " ");
+    int pos = (int)strtol(token, NULL, 10);
+
+    for(i = 0; i < passLen; i++) {
+      if(i == pos) {
+        passwordEncrypted[i] = numbers[in++];
+        token = strtok(position, " ");
+        pos = token && (int)strtol(token, NULL, 10);
+        continue;
+      }
+      passwordEncrypted[i] = alphas[ia++];
+    }
+
+    passwordEncrypted[i] = '\0';
+    return strcmp(pwd, passwordEncrypted) ? SUCCESS : FAIL;
+  }
+}
+
 int verifyPassword(char *request, char *response) {
   char username[MAX_USERNAME], password[MAX_PASSWORD];
   sscanf(request, "/accounts/verify/password/%s %s", username, password);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0 && strcmp(acc->password, password) == 0) {
-      // responsify
-      sprintf(response, "%s", "200 success Password correct");
-      return SUCCESS;
+  if(isValidPassword(password)) {
+    XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
+    XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
+      Account *acc = (Account *) itr.node_data.ptr;
+      if (strcmp(acc->username, username) == 0 && comparePassword(acc->password, password, "", "")) {
+        // responsify
+        sprintf(response, "%s", "200 success Password correct");
+        return SUCCESS;
+      }
     }
   }
 
-  strcpy(response, "404 fail Password incorrect");
+  strcpy(response, "400 fail Password incorrect");
   return FAIL;
 }
 
@@ -69,13 +154,23 @@ int createAccount(char *request, char *response) {
   Account *new_acc = (Account *)malloc(sizeof(*new_acc));
   sscanf(request, "/accounts/register?data: %s %s %s", new_acc->username, new_acc->password, new_acc->homepage);
 
+  if(!isValidPassword(new_acc->password)) {
+    sprintf(response, "%s", "400 fail Password incorrect");
+    return FAIL;
+  }
+
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+
+  encryptPassword(new_acc->password, token, alphas, numbers);
+  strcpy(new_acc->password, token);
+
   // Default status = idle
   new_acc->status = 2;
   new_acc->num_time_wrong_password = new_acc->num_time_wrong_code = 0;
 
   xor_ll_push_tail(&acc_ll, new_acc, sizeof *new_acc);
   save_data(acc_ll);
-  sprintf(response, "%s", "201 success Register successfully");
+  sprintf(response, "201 success %s %s %s %s", new_acc->username, alphas, numbers, new_acc->homepage);
   return SUCCESS;
 }
 
@@ -83,18 +178,48 @@ int updatePassword(char *request, char *response) {
   char username[MAX_USERNAME], new_password[MAX_PASSWORD];
   sscanf(request, "/accounts/updatePassword?data: %s %s", username, new_password);
 
+  if(!isValidPassword(new_password)) {
+    sprintf(response, "%s", "400 fail Password incorrect");
+    return FAIL;
+  }
+
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
   XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
     Account *acc = (Account*)itr.node_data.ptr;
     if(strcmp(acc->username, username) == 0) {
       strcpy(acc->password, new_password);
+
+      char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+      encryptPassword(acc->password, token, alphas, numbers);
+      strcpy(acc->password, token);
+
       save_data(acc_ll);
-      sprintf(response, "%s", "200 success Update password successfully");
+      sprintf(response, "200 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
       return SUCCESS;
     }
   }
 
   sprintf(response, "%s", "400 fail Update password failed");
+  return FAIL;
+}
+
+int rememberAccount(char *request, char *response) {
+  char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
+  sscanf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
+
+  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
+  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
+    Account *acc = (Account*)itr.node_data.ptr;
+    if(strcmp(acc->username, username) == 0){
+      if(comparePassword(acc->password, "", alphas, numbers)) {
+        acc->status = -1;
+        save_data(acc_ll);
+        sprintf(response, "201 success %s %s Hello %s, have a nice day !", acc->username, acc->homepage, acc->username);
+        return SUCCESS;
+      }
+    }
+  }
+
   return FAIL;
 }
 
@@ -141,7 +266,7 @@ int login(char *request, char *response) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
   XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
     Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0 && strcmp(acc->password, password) == 0) {
+    if(strcmp(acc->username, username) == 0 && comparePassword(acc->password, password, "", "")) {
       // Check status of account(if account blocked/not activated -> return main menu)
       if(acc->status == 0) {
         sprintf(response, "%s", "401 fail Account blocked");
@@ -156,8 +281,12 @@ int login(char *request, char *response) {
       acc->status = -1;
       acc->num_time_wrong_code = 0;
       acc->num_time_wrong_password = 0;
+      char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+      encryptPassword(password, token, alphas, numbers);
+      strcpy(acc->password, token);
       save_data(acc_ll);
-      sprintf(response, "202 success %s %s", acc->username, acc->homepage);
+
+      sprintf(response, "202 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
       return SUCCESS;
     }
     else if(strcmp(acc->username, username) == 0) {
@@ -238,6 +367,7 @@ void server_listen() {
     get_request(gmethod, grequest);
 
     if(strcmp(gmethod, "GET") == 0) {
+      route("/accounts/remember/", rememberAccount) ||
       route("/accounts/verify/username/", verifyUsername) ||
       route("/accounts/verify/password/", verifyPassword) ||
       route("/accounts/ipv4/", getIPv4) ||
