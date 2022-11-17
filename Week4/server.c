@@ -119,6 +119,20 @@ int comparePassword(char *password, char *password_input, char *alphas, char *nu
   }
 }
 
+int verifyUsername(char *request, char *response) {
+  char username[MAX_USERNAME];
+  sscanf(request, "/accounts/verify/username/%s", username);
+
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "404 fail Account not exist");
+    return FAIL;
+  }
+
+  sprintf(response, "200 success %s %d %d", acc->username, acc->num_time_wrong_code, acc->num_time_wrong_password);
+  return SUCCESS;
+}
+
 int verifyPassword(char *request, char *response) {
   char username[MAX_USERNAME], password[MAX_PASSWORD];
   sscanf(request, "/accounts/verify/password/%s %s", username, password);
@@ -143,81 +157,6 @@ int verifyPassword(char *request, char *response) {
   return FAIL;
 }
 
-int verifyUsername(char *request, char *response) {
-  char username[MAX_USERNAME];
-  sscanf(request, "/accounts/verify/username/%s", username);
-
-  Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "404 fail Account not exist");
-    return FAIL;
-  }
-
-  sprintf(response, "200 success %s %d %d", acc->username, acc->num_time_wrong_code, acc->num_time_wrong_password);
-  return SUCCESS;
-}
-
-int getAccount(char *request, char *response) {
-  char username[MAX_USERNAME];
-  sscanf(request, "/accounts/search/%s", username);
-
-  Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "404 fail Account not exist");
-    return FAIL;
-  }
-
-  sprintf(response, "200 success %s %d %s", acc->username, acc->status, acc->homepage);
-  return SUCCESS;
-}
-
-int createAccount(char *request, char *response) {
-  Account *new_acc = (Account *)malloc(sizeof(*new_acc));
-  sscanf(request, "/accounts/register?data: %s %s %s", new_acc->username, new_acc->password, new_acc->homepage);
-
-  if(!isValidPassword(new_acc->password)) {
-    sprintf(response, "%s", "400 fail Password incorrect");
-    return FAIL;
-  }
-
-  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
-  encryptPassword(new_acc->password, token, alphas, numbers);
-  strcpy(new_acc->password, token);
-
-  // Default status = idle
-  new_acc->status = 2;
-  new_acc->num_time_wrong_password = new_acc->num_time_wrong_code = 0;
-
-  xor_ll_push_tail(&acc_ll, new_acc, sizeof *new_acc);
-  save_data(acc_ll);
-  sprintf(response, "201 success %s %s %s %s", new_acc->username, alphas, numbers, new_acc->homepage);
-  return SUCCESS;
-}
-
-int updatePassword(char *request, char *response) {
-  char username[MAX_USERNAME], new_password[MAX_PASSWORD];
-  sscanf(request, "/accounts/updatePassword?data: %s %s", username, new_password);
-
-  if(!isValidPassword(new_password)) {
-    sprintf(response, "%s", "400 fail Password incorrect");
-    return FAIL;
-  }
-
-  Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
-
-  strcpy(acc->password, new_password);
-  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
-  encryptPassword(acc->password, token, alphas, numbers);
-  strcpy(acc->password, token);
-  save_data(acc_ll);
-  sprintf(response, "200 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
-  return SUCCESS;
-}
-
 int rememberAccount(char *request, char *response) {
   char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
   sscanf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
@@ -235,41 +174,6 @@ int rememberAccount(char *request, char *response) {
   acc->status = -1;
   save_data(acc_ll);
   sprintf(response, "201 success %s %s Hello %s, have a nice day !", acc->username, acc->homepage, acc->username);
-  return SUCCESS;
-}
-
-int activateAccount(char *request, char *response) {
-  char username[BUFFER], user_code[MAX_ACTIVATE_CODE_LENGTH];
-  sscanf(request, "/accounts/activate?data: %s %s", username, user_code);
-
-  Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
-
-  if(strcmp(user_code, ACTIVATION_CODE) != 0) {
-    ++acc->num_time_wrong_code;
-    if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
-      acc->status = 0;
-      sprintf(response, "%s", "403 fail Account blocked");
-      save_data(acc_ll);
-      return FAIL;
-    }
-    sprintf(response, "400 fail %d Activate code incorrect", acc->num_time_wrong_code);
-    save_data(acc_ll);
-    return FAIL;
-  }
-
-  if(acc->status == 1 || acc->status == -1) {
-    sprintf(response, "%s", "204 fail Account activated");
-    return FAIL;
-  }
-  acc->status = 1;
-  acc->num_time_wrong_code = 0;
-  acc->num_time_wrong_password = 0;
-  save_data(acc_ll);
-  sprintf(response, "%s", "200 success Activate account successfully");
   return SUCCESS;
 }
 
@@ -316,6 +220,102 @@ int login(char *request, char *response) {
   save_data(acc_ll);
 
   sprintf(response, "202 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
+  return SUCCESS;
+}
+
+int createAccount(char *request, char *response) {
+  Account *new_acc = (Account *)malloc(sizeof(*new_acc));
+  sscanf(request, "/accounts/register?data: %s %s %s", new_acc->username, new_acc->password, new_acc->homepage);
+
+  if(!isValidPassword(new_acc->password)) {
+    sprintf(response, "%s", "400 fail Password incorrect");
+    return FAIL;
+  }
+
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(new_acc->password, token, alphas, numbers);
+  strcpy(new_acc->password, token);
+
+  // Default status = idle
+  new_acc->status = 2;
+  new_acc->num_time_wrong_password = new_acc->num_time_wrong_code = 0;
+
+  xor_ll_push_tail(&acc_ll, new_acc, sizeof *new_acc);
+  save_data(acc_ll);
+  sprintf(response, "201 success %s %s %s %s", new_acc->username, alphas, numbers, new_acc->homepage);
+  return SUCCESS;
+}
+
+int activateAccount(char *request, char *response) {
+  char username[BUFFER], user_code[MAX_ACTIVATE_CODE_LENGTH];
+  sscanf(request, "/accounts/activate?data: %s %s", username, user_code);
+
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
+  }
+
+  if(strcmp(user_code, ACTIVATION_CODE) != 0) {
+    ++acc->num_time_wrong_code;
+    if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
+      acc->status = 0;
+      sprintf(response, "%s", "403 fail Account blocked");
+      save_data(acc_ll);
+      return FAIL;
+    }
+    sprintf(response, "400 fail %d Activate code incorrect", acc->num_time_wrong_code);
+    save_data(acc_ll);
+    return FAIL;
+  }
+
+  if(acc->status == 1 || acc->status == -1) {
+    sprintf(response, "%s", "204 fail Account activated");
+    return FAIL;
+  }
+  acc->status = 1;
+  acc->num_time_wrong_code = 0;
+  acc->num_time_wrong_password = 0;
+  save_data(acc_ll);
+  sprintf(response, "%s", "200 success Activate account successfully");
+  return SUCCESS;
+}
+
+int getAccount(char *request, char *response) {
+  char username[MAX_USERNAME];
+  sscanf(request, "/accounts/search/%s", username);
+
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "404 fail Account not exist");
+    return FAIL;
+  }
+
+  sprintf(response, "200 success %s %d %s", acc->username, acc->status, acc->homepage);
+  return SUCCESS;
+}
+
+int updatePassword(char *request, char *response) {
+  char username[MAX_USERNAME], new_password[MAX_PASSWORD];
+  sscanf(request, "/accounts/updatePassword?data: %s %s", username, new_password);
+
+  if(!isValidPassword(new_password)) {
+    sprintf(response, "%s", "400 fail Password incorrect");
+    return FAIL;
+  }
+
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
+  }
+
+  strcpy(acc->password, new_password);
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(acc->password, token, alphas, numbers);
+  strcpy(acc->password, token);
+  save_data(acc_ll);
+  sprintf(response, "200 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
   return SUCCESS;
 }
 
