@@ -298,6 +298,8 @@ int logout(char *request, char *response) {
     sprintf(response, "%s",  "202 success Logout successfully");
     return SUCCESS;
   }
+  sprintf(response, "%s",  "400 fail Logout failed");
+  return FAIL;
 }
 
 int getIPv4(char *request, char *response) {
