@@ -14,6 +14,29 @@
 XOR_LL acc_ll = XOR_LL_INITIALISER;
 char gmethod[MAX_HTTP_METHOD], grequest[MAX_REQUEST_LENGTH], gresponse[MAX_RESPONSE_LENGTH];
 
+// Format lu
+unsigned long hash(char *str) {
+  unsigned long hash = 5381;
+  int c;
+  char *buffer = (char*)malloc(BUFFER * sizeof(char));
+  strcpy(buffer, str);
+  while ((c = *buffer++))
+    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+  free(buffer);
+  return hash;
+}
+
+Account *findAccount(char *username) {
+  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
+  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
+    Account *acc = (Account*)itr.node_data.ptr;
+    if(strcmp(acc->username, username) == 0) {
+      return acc;
+    }
+  }
+  return NULL;
+}
+
 void encrypt(char *password, int key) {
   unsigned int i;
   for(i = 0; i < strlen(password); ++i) {
@@ -101,15 +124,19 @@ int verifyPassword(char *request, char *response) {
   sscanf(request, "/accounts/verify/password/%s %s", username, password);
 
   if(isValidPassword(password)) {
-    XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-    XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-      Account *acc = (Account *) itr.node_data.ptr;
-      if (strcmp(acc->username, username) == 0 && comparePassword(acc->password, password, "", "")) {
-        // responsify
-        sprintf(response, "%s", "200 success Password correct");
-        return SUCCESS;
-      }
+    Account *acc = findAccount(username);
+    if(!acc) {
+      sprintf(response, "%s", "404 fail Account not exist");
+      return FAIL;
     }
+
+    if(!comparePassword(acc->password, password, "", "")) {
+      strcpy(response, "400 fail Password incorrect");
+      return FAIL;
+    }
+
+    sprintf(response, "%s", "200 success Password correct");
+    return SUCCESS;
   }
 
   strcpy(response, "400 fail Password incorrect");
@@ -120,34 +147,28 @@ int verifyUsername(char *request, char *response) {
   char username[MAX_USERNAME];
   sscanf(request, "/accounts/verify/username/%s", username);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0) {
-      sprintf(response, "200 success %s %d %d", acc->username, acc->num_time_wrong_code, acc->num_time_wrong_password);
-      return SUCCESS;
-    }
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "404 fail Account not exist");
+    return FAIL;
   }
 
-  strcpy(response, "404 fail Username not exist");
-  return FAIL;
+  sprintf(response, "200 success %s %d %d", acc->username, acc->num_time_wrong_code, acc->num_time_wrong_password);
+  return SUCCESS;
 }
 
 int getAccount(char *request, char *response) {
   char username[MAX_USERNAME];
   sscanf(request, "/accounts/search/%s", username);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0) {
-      sprintf(response, "200 success %s %d %s", acc->username, acc->status, acc->homepage);
-      return SUCCESS;
-    }
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "404 fail Account not exist");
+    return FAIL;
   }
 
-  sprintf(response, "%s", "404 fail Account not exist");
-  return FAIL;
+  sprintf(response, "200 success %s %d %s", acc->username, acc->status, acc->homepage);
+  return SUCCESS;
 }
 
 int createAccount(char *request, char *response) {
@@ -160,7 +181,6 @@ int createAccount(char *request, char *response) {
   }
 
   char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
-
   encryptPassword(new_acc->password, token, alphas, numbers);
   strcpy(new_acc->password, token);
 
@@ -183,145 +203,136 @@ int updatePassword(char *request, char *response) {
     return FAIL;
   }
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0) {
-      strcpy(acc->password, new_password);
-
-      char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
-      encryptPassword(acc->password, token, alphas, numbers);
-      strcpy(acc->password, token);
-
-      save_data(acc_ll);
-      sprintf(response, "200 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
-      return SUCCESS;
-    }
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
   }
 
-  sprintf(response, "%s", "400 fail Update password failed");
-  return FAIL;
+  strcpy(acc->password, new_password);
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(acc->password, token, alphas, numbers);
+  strcpy(acc->password, token);
+  save_data(acc_ll);
+  sprintf(response, "200 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
+  return SUCCESS;
 }
 
 int rememberAccount(char *request, char *response) {
   char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
   sscanf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0){
-      if(comparePassword(acc->password, "", alphas, numbers)) {
-        acc->status = -1;
-        save_data(acc_ll);
-        sprintf(response, "201 success %s %s Hello %s, have a nice day !", acc->username, acc->homepage, acc->username);
-        return SUCCESS;
-      }
-    }
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
   }
 
-  return FAIL;
+  if(!comparePassword(acc->password, "", alphas, numbers)) {
+    return FAIL;
+  }
+
+  acc->status = -1;
+  save_data(acc_ll);
+  sprintf(response, "201 success %s %s Hello %s, have a nice day !", acc->username, acc->homepage, acc->username);
+  return SUCCESS;
 }
 
 int activateAccount(char *request, char *response) {
   char username[BUFFER], user_code[MAX_ACTIVATE_CODE_LENGTH];
   sscanf(request, "/accounts/activate?data: %s %s", username, user_code);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0 && strcmp(user_code, ACTIVATION_CODE) == 0) {
-      if(acc->status == 1 || acc->status == -1) {
-        sprintf(response, "%s", "204 fail Account activated");
-        return FAIL;
-      }
-      acc->status = 1;
-      acc->num_time_wrong_code = 0;
-      acc->num_time_wrong_password = 0;
-      save_data(acc_ll);
-      sprintf(response, "%s", "200 success Activate account successfully");
-      return SUCCESS;
-    }
-    else if(strcmp(acc->username, username) == 0) {
-      ++acc->num_time_wrong_code;
-      if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
-        acc->status = 0;
-        sprintf(response, "%s", "403 fail Account blocked");
-        save_data(acc_ll);
-        return FAIL;
-      }
-      sprintf(response, "400 fail %d Activate code incorrect", acc->num_time_wrong_code);
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
+  }
+
+  if(strcmp(user_code, ACTIVATION_CODE) != 0) {
+    ++acc->num_time_wrong_code;
+    if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
+      acc->status = 0;
+      sprintf(response, "%s", "403 fail Account blocked");
       save_data(acc_ll);
       return FAIL;
     }
+    sprintf(response, "400 fail %d Activate code incorrect", acc->num_time_wrong_code);
+    save_data(acc_ll);
+    return FAIL;
   }
-  return FAIL;
+
+  if(acc->status == 1 || acc->status == -1) {
+    sprintf(response, "%s", "204 fail Account activated");
+    return FAIL;
+  }
+  acc->status = 1;
+  acc->num_time_wrong_code = 0;
+  acc->num_time_wrong_password = 0;
+  save_data(acc_ll);
+  sprintf(response, "%s", "200 success Activate account successfully");
+  return SUCCESS;
 }
 
 int login(char *request, char *response) {
-  char username[MAX_USERNAME];
-  char password[MAX_PASSWORD];
+  char username[MAX_USERNAME], password[MAX_PASSWORD];
   sscanf(request, "/accounts/authen?data: %s %s", username, password);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0 && comparePassword(acc->password, password, "", "")) {
-      // Check status of account(if account blocked/not activated -> return main menu)
-      if(acc->status == 0) {
-        sprintf(response, "%s", "401 fail Account blocked");
-        return FAIL;
-      }
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
+  }
 
-      if(acc->status == 2) {
-        sprintf(response, "%s", "401 fail Account non active");
-        return FAIL;
-      }
-
-      acc->status = -1;
-      acc->num_time_wrong_code = 0;
-      acc->num_time_wrong_password = 0;
-      char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
-      encryptPassword(password, token, alphas, numbers);
-      strcpy(acc->password, token);
+  if(!comparePassword(acc->password, password, "", "")) {
+    ++acc->num_time_wrong_password;
+    if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) {
+      acc->status = 0;
       save_data(acc_ll);
-
-      sprintf(response, "202 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
-      return SUCCESS;
-    }
-    else if(strcmp(acc->username, username) == 0) {
-      ++acc->num_time_wrong_password;
-      if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) {
-        acc->status = 0;
-        save_data(acc_ll);
-        sprintf(response, "403 fail %d Account blocked", acc->num_time_wrong_password);
-        return FAIL;
-      }
-      save_data(acc_ll);
-      sprintf(response, "400 fail %d %d Password incorrect", acc->num_time_wrong_code, acc->num_time_wrong_password);
+      sprintf(response, "403 fail %d Account blocked", acc->num_time_wrong_password);
       return FAIL;
     }
+    save_data(acc_ll);
+    sprintf(response, "400 fail %d %d Password incorrect", acc->num_time_wrong_code, acc->num_time_wrong_password);
+    return FAIL;
   }
-  return FAIL;
+
+  // Check status of account(if account blocked/not activated -> return main menu)
+  if(acc->status == 0) {
+    sprintf(response, "%s", "401 fail Account blocked");
+    return FAIL;
+  }
+
+  if(acc->status == 2) {
+    sprintf(response, "%s", "401 fail Account non active");
+    return FAIL;
+  }
+
+  acc->status = -1;
+  acc->num_time_wrong_code = 0;
+  acc->num_time_wrong_password = 0;
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(password, token, alphas, numbers);
+  strcpy(acc->password, token);
+  save_data(acc_ll);
+
+  sprintf(response, "202 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
+  return SUCCESS;
 }
 
 int logout(char *request, char *response) {
   char username[MAX_USERNAME];
   sscanf(request, "/accounts/logout?data: %s", username);
 
-  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
-    Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0) {
-      acc->status = 1;
-      save_data(acc_ll);
-      sprintf(response, "%s",  "202 success Logout successfully");
-      return SUCCESS;
-    }
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "400 fail Account not exist");
+    return FAIL;
   }
 
-  sprintf(response, "%s", "400 fail Logout failed");
-  return FAIL;
+  acc->status = 1;
+  save_data(acc_ll);
+  sprintf(response, "%s",  "202 success Logout successfully");
+  return SUCCESS;
 }
 
 int getIPv4(char *request, char *response) {

@@ -158,7 +158,6 @@ int server_init_connect(char *service) {
 }
 
 int client_init_connect(char *server, char *port) {
-
   // Tell the system what kind(s) of address info we want - Config address
   struct addrinfo addrConfig; // Criteria for address match
   memset(&addrConfig, 0, sizeof(addrConfig)); // Zero out structure
@@ -205,9 +204,8 @@ int client_init_connect(char *server, char *port) {
         logged_in = 1;
       }
     }
+    fclose(fs);
   }
-
-  fclose(fs);
   return SUCCESS;
 }
 
