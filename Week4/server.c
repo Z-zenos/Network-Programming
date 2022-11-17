@@ -14,25 +14,11 @@
 XOR_LL acc_ll = XOR_LL_INITIALISER;
 char gmethod[MAX_HTTP_METHOD], grequest[MAX_REQUEST_LENGTH], gresponse[MAX_RESPONSE_LENGTH];
 
-// Format lu
-unsigned long hash(char *str) {
-  unsigned long hash = 5381;
-  int c;
-  char *buffer = (char*)malloc(BUFFER * sizeof(char));
-  strcpy(buffer, str);
-  while ((c = *buffer++))
-    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-  free(buffer);
-  return hash;
-}
-
 Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
   XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
     Account *acc = (Account*)itr.node_data.ptr;
-    if(strcmp(acc->username, username) == 0) {
-      return acc;
-    }
+    if(strcmp(acc->username, username) == 0) return acc;
   }
   return NULL;
 }
