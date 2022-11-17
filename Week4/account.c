@@ -347,7 +347,7 @@ void signout() {
   input("Username", username_input, MAX_USERNAME, false);
 
   // Check account if exist
-  if(strcmp(curr_user.username, username_input) != 0 || strcmp(username_input, "bye") != 0) {
+  if(!(strcmp(curr_user.username, username_input) == 0 || strcmp(username_input, "bye") == 0)) {
     log_error("Username is incorrect or different string 'bye'");
     return;
   }
