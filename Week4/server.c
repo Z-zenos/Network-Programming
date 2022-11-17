@@ -162,14 +162,7 @@ int rememberAccount(char *request, char *response) {
   sscanf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
 
   Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
-
-  if(!comparePassword(acc->password, "", alphas, numbers)) {
-    return FAIL;
-  }
+  if(!acc || !comparePassword(acc->password, "", alphas, numbers)) return FAIL;
 
   acc->status = -1;
   save_data(acc_ll);
@@ -182,10 +175,6 @@ int login(char *request, char *response) {
   sscanf(request, "/accounts/authen?data: %s %s", username, password);
 
   Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
 
   if(!comparePassword(acc->password, password, "", "")) {
     ++acc->num_time_wrong_password;
@@ -251,10 +240,6 @@ int activateAccount(char *request, char *response) {
   sscanf(request, "/accounts/activate?data: %s %s", username, user_code);
 
   Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
 
   if(strcmp(user_code, ACTIVATION_CODE) != 0) {
     ++acc->num_time_wrong_code;
@@ -305,10 +290,6 @@ int updatePassword(char *request, char *response) {
   }
 
   Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
 
   strcpy(acc->password, new_password);
   char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
@@ -324,10 +305,6 @@ int logout(char *request, char *response) {
   sscanf(request, "/accounts/logout?data: %s", username);
 
   Account *acc = findAccount(username);
-  if(!acc) {
-    sprintf(response, "%s", "400 fail Account not exist");
-    return FAIL;
-  }
 
   acc->status = 1;
   save_data(acc_ll);
@@ -374,7 +351,6 @@ void server_listen() {
   for(;;) {
     // Clear method, request, response
     http_clear(gmethod, grequest, gresponse);
-
     get_request(gmethod, grequest);
 
     if(strcmp(gmethod, "GET") == 0) {
