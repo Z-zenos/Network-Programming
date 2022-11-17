@@ -42,7 +42,8 @@ bool isValidPassword(char *password) {
   for(i = 0; i < passLen; i++)
     if(isalnum(password[i]) == 0)
       return FAIL;
-  return SUCCESS;
+
+  return strcmp(password, "bye") == 0 ? FAIL : SUCCESS;
 }
 
 void encryptPassword(char *password, char *token, char *alphas, char *numbers) {
@@ -271,7 +272,7 @@ int updatePassword(char *request, char *response) {
   sscanf(request, "/accounts/updatePassword?data: %s %s", username, new_password);
 
   if(!isValidPassword(new_password)) {
-    sprintf(response, "%s", "400 fail Password incorrect");
+    sprintf(response, "%s", "400 fail Password only have alpha, number and different string 'bye'");
     return FAIL;
   }
 
@@ -291,11 +292,12 @@ int logout(char *request, char *response) {
   sscanf(request, "/accounts/logout?data: %s", username);
 
   Account *acc = findAccount(username);
-
-  acc->status = 1;
-  save_data(acc_ll);
-  sprintf(response, "%s",  "202 success Logout successfully");
-  return SUCCESS;
+  if(acc || strcmp(username, "bye") == 0) {
+    acc->status = 1;
+    save_data(acc_ll);
+    sprintf(response, "%s",  "202 success Logout successfully");
+    return SUCCESS;
+  }
 }
 
 int getIPv4(char *request, char *response) {
