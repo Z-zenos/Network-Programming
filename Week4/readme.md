@@ -1,11 +1,11 @@
-# User Account Management System + IP to Hostname
+# Account management system base UDP
 
-- Program combine week1 and week2
+- Use UDP to send request and get response to server
 - Features:
-  - Use getaddrinfo, getnameinfo
-  - Log
-  - XOL Linked List
-  - Update UI
-  - Note: gethostbyname, gethostbyaddr are absolute functions, avoid using this functions
-  - Use pcre2.h library for solving regex to validate domain name
-  - Add 2 features: homepage with domain name and ipv4 address
+  - Use socket
+  - Connect client and server
+  - Nice log request
+  - Amazing route 
+  - Encrypt password in database
+  - Auto login user when start app
+  - Pass function as parameter
