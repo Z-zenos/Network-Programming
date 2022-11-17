@@ -9,3 +9,4 @@
   - Encrypt password in database
   - Auto login user when start app
   - Pass function as parameter
+  - Remove the link between user and data
