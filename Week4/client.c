@@ -10,6 +10,8 @@
 #include "network.h"
 #include "utils.h"
 
+int sock;
+
 int main(int argc, char *argv[]) {
   // check port positive
   if(argc != 3 || !validate_ip(argv[1]) || !is_number(argv[2])) {
@@ -35,6 +37,7 @@ int main(int argc, char *argv[]) {
 
     if(!(strlen(input) == 1 && (input[0] > 48 && input[0] < 57))) {
       log_info("Thank for using my app :)\n");
+      close(sock);
       exit(EXIT_SUCCESS);
     }
 

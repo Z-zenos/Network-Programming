@@ -10,7 +10,6 @@
 
 #include "account.h"
 #include "http.h"
-#include "log.h"
 #include "constants.h"
 #include "error.h"
 
@@ -33,22 +32,6 @@ struct HTTPStatus statuses[NUM_OF_CODE] = {
         { _404_, 404, "Not Found" },
         { _500_, 500, "Internal Server Error" },
 };
-
-int http_code(HttpCode code) {
-  for (int i = 0; i < NUM_OF_CODE; i++)
-    if (statuses[i].httpCode == code) {
-      return statuses[i].code;
-    }
-  return 0;
-}
-
-char *http_message(HttpCode code) {
-  for (int i = 0; i < NUM_OF_CODE; i++)
-    if (statuses[i].httpCode == code) {
-      return statuses[i].message;
-    }
-  return NULL;
-}
 
 int sock;
 struct addrinfo *servAddr;
