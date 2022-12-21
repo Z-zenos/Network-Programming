@@ -2,18 +2,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #include "account.h"
 #include "constants.h"
 #include "error.h"
 #include "http.h"
 #include "linkedlist.h"
+#include "log.h"
 #include "network.h"
 #include "utils.h"
 
 XOR_LL acc_ll = XOR_LL_INITIALISER;
+int servSock;
 char gmethod[MAX_HTTP_METHOD], grequest[MAX_REQUEST_LENGTH], gresponse[MAX_RESPONSE_LENGTH];
-int servSock, clntSock;
 
 Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
@@ -338,39 +342,92 @@ int route(char *route_name, int (*f)(char *, char *)) {
   return str_start_with(grequest, route_name) && f(grequest, gresponse);
 }
 
-void server_listen() {
-  clntSock = accept_connection(servSock);
+void signalHandler(int signo) {
+  pid_t pid;
+  int stat;
+  while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
+    printf("child %d terminated\n", pid);
 
-  for(;;) {
+  printf("Caught signal %d, coming out...\n", signo);
+
+  switch (signo) {
+    case SIGCHLD:
+      break;
+
+    case SIGINT:
+      close(servSock);
+      exit(SUCCESS);
+  }
+
+  return;
+}
+
+void handleClient(int clntSock) {
+  while(1) {
     // Clear method, request, response
     http_clear(gmethod, grequest, gresponse);
+    if (get_request(clntSock, gmethod, grequest) == FAIL) break;
 
-    // HandleTCPClient(clntSock); -> Process client
-    if(get_request(clntSock, gmethod, grequest) == FAIL) break;
-
-    if(strcmp(gmethod, "GET") == 0) {
+    if (strcmp(gmethod, "GET") == 0) {
       route("/accounts/remember/", rememberAccount) ||
       route("/accounts/verify/username/", verifyUsername) ||
       route("/accounts/verify/password/", verifyPassword) ||
       route("/accounts/ipv4/", getIPv4) ||
       route("/accounts/domain/", getDomain) ||
       route("/accounts/search", getAccount) & 0;
-    }
-    else if(strcmp(gmethod, "POST") == 0) {
+    } else if (strcmp(gmethod, "POST") == 0) {
       route("/accounts/activate", activateAccount) ||
       route("/accounts/authen", login) ||
       route("/accounts/register", createAccount) & 0;
-    }
-    else if(strcmp(gmethod, "PATCH") == 0) {
+    } else if (strcmp(gmethod, "PATCH") == 0) {
       route("/accounts/updatePassword", updatePassword) ||
       route("/accounts/logout", logout) & 0;
     }
 
     send_response(clntSock, gresponse);
   }
+}
 
-  close(servSock);
-  close(clntSock);
+void server_listen() {
+  // Number of child processes
+  unsigned int childProcCount = 0;
+  for(;;) {
+    int clntSock = accept_connection(servSock);
+
+    // Fork child process and report any errors
+    pid_t processID = fork();
+    if(processID < 0) {
+      log_error("fork() failed");
+      exit(FAIL);
+    }
+    else if(processID == 0) { // If this is the child process
+      close(servSock);        // Child closes parent socket
+      handleClient(clntSock);
+      close(clntSock);
+      exit(SUCCESS);          // Child process terminates
+    }
+
+    printf("with child process: %d\n", processID);
+    close(clntSock);  // Parent closes child socket descriptor
+    childProcCount++; // Increment number of child processes
+
+    signal(SIGCHLD, signalHandler);
+    signal(SIGINT, signalHandler);
+
+    while(childProcCount) { // Clean up all zombies
+      processID = waitpid((pid_t) - 1, NULL, WNOHANG); // Non-blocking wait
+      if (processID < 0) {
+        log_error("waitpid() failed !");
+        exit(FAIL);
+      }
+      else if (processID == 0) { // No zombie to wait on
+        printf("Killed !\n");
+        break;
+      }
+      else
+        childProcCount--;
+    }
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -389,6 +446,6 @@ int main(int argc, char *argv[]) {
   // Listening request
   server_listen();
 
-  printf("Mission successfully !\n");
+  log_success("Mission successfully !\n");
   return SUCCESS;
 }

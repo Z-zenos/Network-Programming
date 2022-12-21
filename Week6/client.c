@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     exit(FAIL);
   }
 
-  load_local_user(sock);
+//  load_local_user(sock);
 
   char input[1000];
   int opt;

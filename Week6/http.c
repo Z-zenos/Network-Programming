@@ -226,7 +226,6 @@ int get_request(int sock, char *method, char *request) {
   // Size of received message DEAL REQUEST FROM CLIENT
   ssize_t numBytesRcvd = recv(sock, request, MAX_MESSAGE, 0);
   if (numBytesRcvd <= 0) {
-    err_error(ERR_GET_REQUEST_FAILED);
     return FAIL;
   }
 
