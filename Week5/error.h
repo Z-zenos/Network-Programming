@@ -32,6 +32,7 @@ typedef enum {
     ERR_INITIALIZE_SOCKET_FAILED,
     ERR_SERVER_NOT_FOUND,
     ERR_REGISTER_ACCOUNT_FAILED,
+    ERR_CLIENT_CONNECT_FAILED
 } ErrorCode;
 
 void err_error(ErrorCode);

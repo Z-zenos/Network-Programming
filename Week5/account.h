@@ -26,14 +26,14 @@ typedef struct _account_ {
 
 extern Account curr_user;
 
-void signup();
-void activate();
-void signin();
-Account *search_account(char*);
-void search();
-void change_password();
-void signout();
+void signup(int);
+void activate(int);
+void signin(int);
+Account *search_account(int, char*);
+void search(int);
+void change_password(int);
+void signout(int);
 void _set_current_user_(Account);
 void _reset_current_user_();
-void get_domain();
-void get_ipv4();
+void get_domain(int);
+void get_ipv4(int);

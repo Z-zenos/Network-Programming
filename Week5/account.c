@@ -41,13 +41,13 @@ void secretify(char *str) {
   fclose(fs);
 }
 
-int verify_username(char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
+int verify_username(int sock, char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
   http_clear(method, request, response);
   strcpy(method, "GET");
   sprintf(request, "/accounts/verify/username/%s", username);
 
-  send_request(method, request);
-  int code = get_response(response);
+  send_request(sock, method, request);
+  int code = get_response(sock, response);
 
   if(!num_time_wrong_code && !num_time_wrong_password)
     sscanf(response, "200 success %s", username);
@@ -58,26 +58,26 @@ int verify_username(char *username, int *num_time_wrong_code, int *num_time_wron
   return FAIL;
 }
 
-int verify_password(char *username, char *password) {
+int verify_password(int sock, char *username, char *password) {
   http_clear(method, request, response);
   strcpy(method, "GET");
   sprintf(request, "/accounts/verify/password/%s %s", username, password);
 
-  send_request(method, request);
-  int code = get_response(response);
+  send_request(sock, method, request);
+  int code = get_response(sock, response);
 
   if(code == 200) return SUCCESS;
   if(code == 404) return FAIL;
   return FAIL;
 }
 
-Account *search_account(char *username) {
+Account *search_account(int sock, char *username) {
   http_clear(method, request, response);
   strcpy(method, "GET");
   sprintf(request, "/accounts/search/%s", username);
 
-  send_request(method, request);
-  int code = get_response(response);
+  send_request(sock, method, request);
+  int code = get_response(sock, response);
   if (code == 200) {
     Account *acc = (Account *) malloc(sizeof(*acc));
     sscanf(response, "200 success %s %d %s", acc->username, &acc->status, acc->homepage);
@@ -86,14 +86,14 @@ Account *search_account(char *username) {
   else return NULL;
 }
 
-void signup() {
+void signup(int sock) {
   printf("\n===== Register =====\n");
 
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
 
   // Check account if exist
-  if(verify_username(username_input, NULL, NULL)) {
+  if(verify_username(sock, username_input, NULL, NULL)) {
     err_error(ERR_ACCOUNT_EXISTED);
     return;
   }
@@ -113,8 +113,8 @@ void signup() {
     http_clear(method, request, response);
     strcpy(method, "POST");
     sprintf(request, "/accounts/register?data: %s %s %s", new_account->username, new_account->password, new_account->homepage);
-    send_request(method, request);
-    int code = get_response(response);
+    send_request(sock, method, request);
+    int code = get_response(sock, response);
     if(code != 201) {
       err_error(ERR_REGISTER_ACCOUNT_FAILED);
       return;
@@ -124,7 +124,7 @@ void signup() {
   }
 }
 
-void activate() {
+void activate(int sock) {
   printf("\n===== Activate Account =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
@@ -136,7 +136,7 @@ void activate() {
   }
 
   int num_time_wrong_code, num_time_wrong_password;
-  if(!verify_username(username_input, &num_time_wrong_code, &num_time_wrong_password)) {
+  if(!verify_username(sock, username_input, &num_time_wrong_code, &num_time_wrong_password)) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
     return;
   }
@@ -144,7 +144,7 @@ void activate() {
   char password_input[MAX_PASSWORD];
   input("Password", password_input, MAX_PASSWORD, true);
 
-  if(!verify_password(username_input, password_input)) {
+  if(!verify_password(sock, username_input, password_input)) {
     err_error(ERR_PASSWORD_INCORRECT);
     return;
   }
@@ -175,8 +175,8 @@ void activate() {
     http_clear(method, request, response);
     strcpy(method, "POST");
     sprintf(request, "/accounts/activate?data: %s %s", username_input, activation_code);
-    send_request(method, request);
-    int code = get_response(response);
+    send_request(sock, method, request);
+    int code = get_response(sock, response);
 
     // Activate code correct but account has been activated.
     switch (code) {
@@ -207,7 +207,7 @@ void activate() {
   } while(num_time_wrong_code < MAX_WRONG_CODE);
 }
 
-void signin() {
+void signin(int sock) {
   if(logged_in) {
     log_warn("You are logged in.");
     return;
@@ -218,7 +218,7 @@ void signin() {
   input("Username", username_input, MAX_USERNAME, false);
   int num_time_wrong_code, num_time_wrong_password;
 
-  if(!verify_username(username_input, &num_time_wrong_code, &num_time_wrong_password)) {
+  if(!verify_username(sock, username_input, &num_time_wrong_code, &num_time_wrong_password)) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
     return;
   }
@@ -248,8 +248,8 @@ void signin() {
     http_clear(method, request, response);
     strcpy(method, "POST");
     sprintf(request, "/accounts/authen?data: %s %s", username_input, password_input);
-    send_request(method, request);
-    int code = get_response(response);
+    send_request(sock, method, request);
+    int code = get_response(sock, response);
     Account *acc = (Account *) malloc(sizeof *acc);
     char tmp1[BUFFER], tmp2[BUFFER];
     switch (code) {
@@ -292,11 +292,11 @@ void signin() {
   } while (num_time_wrong_password < MAX_WRONG_PASSWORD);
 }
 
-void search() {
+void search(int sock) {
   printf("\n===== Search =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
-  Account *acc = search_account(username_input);
+  Account *acc = search_account(sock, username_input);
 
   if(!acc) {
     err_error(ERR_ACCOUNT_NOT_FOUND);
@@ -310,13 +310,13 @@ void search() {
   log_success("\n    Username: %s\n    Homepage: %s\n    Status: %s", acc->username, acc->homepage, status);
 }
 
-void change_password() {
+void change_password(int sock) {
   printf("\n===== Change Password =====\n");
   char old_password[MAX_PASSWORD];
   input("Old password", old_password, MAX_PASSWORD, true);
 
   // Compare password input and old password
-  if(!verify_password(curr_user.username, old_password)) {
+  if(!verify_password(sock, curr_user.username, old_password)) {
     err_error(ERR_PASSWORD_INCORRECT);
     return;
   }
@@ -331,8 +331,8 @@ void change_password() {
   http_clear(method, request, response);
   strcpy(method, "PATCH");
   sprintf(request, "/accounts/updatePassword?data: %s %s", curr_user.username, new_password);
-  send_request(method, request);
-  int code = get_response(response);
+  send_request(sock, method, request);
+  int code = get_response(sock, response);
   if(code == 200) {
     secretify(response);
     log_success("Update password successfully");
@@ -341,7 +341,7 @@ void change_password() {
   log_error("%s", response);
 }
 
-void signout() {
+void signout(int sock) {
   printf("\n===== Sign out =====\n");
   char username_input[MAX_USERNAME];
   input("Username", username_input, MAX_USERNAME, false);
@@ -355,8 +355,8 @@ void signout() {
   http_clear(method, request, response);
   strcpy(method, "PATCH");
   sprintf(request, "/accounts/logout?data: %s", curr_user.username);
-  send_request(method, request);
-  int code = get_response(response);
+  send_request(sock, method, request);
+  int code = get_response(sock, response);
   if(code == 202) {
     logged_in = 0;
     _reset_current_user_();
@@ -367,14 +367,14 @@ void signout() {
   log_error("%s", response);
 }
 
-void get_domain() {
+void get_domain(int sock) {
   printf("\n===== Homepage Domain =====\n");
   if(!validate_domain_name(curr_user.homepage)) {
     http_clear(method, request, response);
     strcpy(method, "GET");
     sprintf(request, "/accounts/domain/%s", curr_user.homepage);
-    send_request(method, request);
-    int code = get_response(response);
+    send_request(sock, method, request);
+    int code = get_response(sock, response);
 
     char domain[MAX_HOMEPAGE];
     if(code == 200) {
@@ -388,15 +388,15 @@ void get_domain() {
   log_success("Domain name: %s\n", curr_user.homepage);
 }
 
-void get_ipv4() {
+void get_ipv4(int sock) {
   printf("\n===== Homepage IPv4 address =====\n");
   // If homepage is domain_name then convert to ipv4 address ant print
   if(!validate_ip(curr_user.homepage)) {
     http_clear(method, request, response);
     strcpy(method, "GET");
     sprintf(request, "/accounts/ipv4/%s", curr_user.homepage);
-    send_request(method, request);
-    int code = get_response(response);
+    send_request(sock, method, request);
+    int code = get_response(sock, response);
 
     char ipv4List[MAX_HOMEPAGE];
     if(code == 200) {

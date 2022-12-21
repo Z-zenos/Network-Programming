@@ -10,7 +10,6 @@
 #include <stdbool.h>
 
 #include "network.h"
-#include "log.h"
 #include "error.h"
 #include "constants.h"
 
@@ -117,7 +116,7 @@ bool domain_name_to_ip(char *domain_name, char *ipv4List) {
 
   // Config type information returned
   memset (&addrConfig, 0, sizeof (addrConfig));
-  addrConfig.ai_family = PF_UNSPEC;     // protocol family unspecified
+  addrConfig.ai_family = AF_INET;     // protocol ipv4 family
   addrConfig.ai_socktype = SOCK_STREAM; // socket stream for tcp
   addrConfig.ai_flags |= AI_CANONNAME;
 

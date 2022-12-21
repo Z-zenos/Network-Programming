@@ -263,7 +263,7 @@ void load_data(XOR_LL *ll) {
     }
   }
 
-  printf("Server running...\n");
+  printf("Load data successfully...\n");
   fclose(fp);
 }
 

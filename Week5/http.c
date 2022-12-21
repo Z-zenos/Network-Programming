@@ -15,33 +15,46 @@
 
 #define NUM_OF_CODE 10
 
-struct HTTPStatus {
-    HttpCode httpCode;
-    int code;
-    char *message;
-};
-
-struct HTTPStatus statuses[NUM_OF_CODE] = {
-        { _200_, 200, "OK" },
-        { _201_, 201, "Created" },
-        { _202_, 202, "Accepted" },
-        { _204_, 204, "No Content" },
-        { _400_, 400, "Bad Request" },
-        { _401_, 401, "Unauthorized" },
-        { _403_, 403, "Forbidden" },
-        { _404_, 404, "Not Found" },
-        { _500_, 500, "Internal Server Error" },
-};
-
-int sock;
-struct addrinfo *servAddr;
-struct sockaddr_storage clntAddr; // Client address
-ssize_t numBytesRcvd;
+static const int MAX_PENDING = 5; // Maximum outstanding connection requests
 
 void http_clear(char *method, char *request, char *response) {
   memset(method, 0, 10);
   memset(request, 0, MAX_REQUEST_LENGTH);
   memset(response, 0, MAX_RESPONSE_LENGTH);
+}
+
+void print_socket_addr(const struct sockaddr *address, FILE *stream) {
+  // Test for address and stream
+  if (address == NULL || stream == NULL)
+    return;
+  void *numericAddress; // Pointer to binary address
+  // Buffer to contain result (IPv6 sufficient to hold IPv4)
+  char addrBuffer[INET6_ADDRSTRLEN];
+  in_port_t port; // Port to print
+  // Set pointer to address based on address family
+  switch (address->sa_family) {
+    case AF_INET:
+      numericAddress = &((struct sockaddr_in *) address)->sin_addr;
+      port = ntohs(((struct sockaddr_in *) address)->sin_port);
+      break;
+    case AF_INET6:
+      numericAddress = &((struct sockaddr_in6 *) address)->sin6_addr;
+      port = ntohs(((struct sockaddr_in6 *) address)->sin6_port);
+      break;
+    default:
+      fputs("[unknown type]", stream);
+      // Unhandled type
+      return;
+  }
+  // Convert binary to printable address
+  if (inet_ntop(address->sa_family, numericAddress, addrBuffer, sizeof(addrBuffer)) == NULL)
+    fputs("[invalid address]", stream); // Unable to convert
+  else {
+    fprintf(stream, "%s", addrBuffer);
+    if (port != 0)
+      // Zero not valid in any socket addr
+      fprintf(stream, "-%u", port);
+  }
 }
 
 bool compare_sockaddr(const struct sockaddr *addr1, const struct sockaddr *addr2) {
@@ -110,95 +123,109 @@ int server_init_connect(char *service) {
   // Config the server address structure
   struct addrinfo addrConfig;
   memset(&addrConfig, 0, sizeof(addrConfig)); // Zero out structure
-  addrConfig.ai_family = AF_INET; // Any address family
+  addrConfig.ai_family = AF_INET; // IPc4 address family
   addrConfig.ai_flags = AI_PASSIVE; // Accept on any address/port
-  addrConfig.ai_socktype = SOCK_DGRAM; // Only datagram socket
-  addrConfig.ai_protocol = IPPROTO_UDP; // Only UDP socket
+  addrConfig.ai_socktype = SOCK_STREAM; // Only stream socket
+  addrConfig.ai_protocol = IPPROTO_TCP; // Only TCP socket
 
-  //  struct addrinfo *servAddr; // List of server addresses
-  int rtnVal = getaddrinfo(NULL, service, &addrConfig, &servAddr);
-  if (rtnVal != 0) {
+  struct addrinfo *server;
+  if (getaddrinfo(NULL, service, &addrConfig, &server) != 0) {
     err_error(ERR_SERVER_NOT_FOUND);
-    return FAIL;
+    exit(FAIL);
   }
 
-  // Create socket for incoming connections
-  sock = socket(servAddr->ai_family, servAddr->ai_socktype, servAddr->ai_protocol);
-  if (sock < 0) {
-    err_error(ERR_INITIALIZE_SOCKET_FAILED);
-    return FAIL;
+  int server_fd = -1;
+  for(struct addrinfo *addr = server; addr != NULL; addr = addr->ai_next) {
+    // Create a TCP socket
+    server_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+
+    // Socket creation failed -> try next address
+    if (server_fd < 0) continue;
+
+    // Bind to the local address and listen incoming request
+    if ((bind(server_fd, addr->ai_addr, addr->ai_addrlen) == 0) && (listen(server_fd, MAX_PENDING) == 0)) {
+      struct sockaddr_storage localAddr;
+      socklen_t addrSize = sizeof(localAddr);
+      if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
+        printf("getsockname() failed\n");
+        exit(FAIL);
+      }
+      fputs("Binding to ", stdout);
+      print_socket_addr((struct sockaddr *) &localAddr, stdout);
+      fputc('\n', stdout);
+
+      // Bind and listen successfully
+      break;
+    }
+
+    err_error(ERR_SERVER_ERROR);
+    close(server_fd);
+    server_fd = -1;
   }
 
-  // Bind to the local address
-  if (bind(sock, servAddr->ai_addr, servAddr->ai_addrlen) < 0) {
-    err_error(ERR_INITIALIZE_SOCKET_FAILED);
-    return FAIL;
-  }
-
-  // Free address list allocated by getaddrinfo()
-  freeaddrinfo(servAddr);
-  return SUCCESS;
+  freeaddrinfo(server);
+  return server_fd;
 }
 
 int client_init_connect(char *server, char *port) {
   // Tell the system what kind(s) of address info we want - Config address
   struct addrinfo addrConfig; // Criteria for address match
   memset(&addrConfig, 0, sizeof(addrConfig)); // Zero out structure
-  addrConfig.ai_family = AF_UNSPEC; // Any address family
+  addrConfig.ai_family = AF_INET; // IPv4 address family
+  addrConfig.ai_socktype = SOCK_STREAM; // Only stream sockets
+  addrConfig.ai_protocol = IPPROTO_TCP; // Only TCP protocol
 
-  // For the following fields, a zero value means "don't care"
-  addrConfig.ai_socktype = SOCK_DGRAM; // Only datagram sockets
-  addrConfig.ai_protocol = IPPROTO_UDP; // Only UDP protocol
-
-
-  // Get server information via servAddr
-  int rtnVal = getaddrinfo(server, port, &addrConfig, &servAddr);
-  if (rtnVal != 0) {
+  // Get server information via server
+  struct addrinfo *servAddr;
+  if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
     err_error(ERR_SERVER_NOT_FOUND);
-    return FAIL;
+    exit(FAIL);
   }
 
-  // Create a datagram / UDP socket
-  sock = socket(servAddr->ai_family, servAddr->ai_socktype, servAddr->ai_protocol); // Socket descriptor for client
-  if (sock < 0) {
-    err_error(ERR_INITIALIZE_SOCKET_FAILED);
-    return FAIL;
+  int sock = -1;
+  // Create a stream TCP socket
+  for(struct addrinfo *addr = servAddr; addr != NULL; addr = addr->ai_next) {
+    // Create a reliable, stram socket using TCP
+    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol); // Socket descriptor for client
+    if (sock < 0) continue;
+
+    // Establish the connection to the server
+    if (connect(sock, addr->ai_addr, addr->ai_addrlen) == 0)
+      break;
+
+    close(sock);
+    sock = -1;
   }
 
-  char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
-  FILE *fs = fopen("secret.txt", "r");
-  int lineNo = 0;
-  if(fs) {
-    while(fscanf(fs, "%s %s %s", username, alphas, numbers)) {
-      if(lineNo == 1) break;
-      lineNo++;
-    }
-
-    if(strlen(username) != 0 && strlen(alphas) != 0) {
-      char request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH], method[MAX_HTTP_METHOD];
-      strcpy(method, "GET");
-      sprintf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
-      send_request(method, request);
-      int code = get_response(response);
-      char greeting[100];
-      if(code == 201) {
-        sscanf(response, "201 success %s %s %[^\n]s", curr_user.username, curr_user.homepage, greeting);
-        printf("\x1b[1;38;5;202m%s\x1b[0m]\n", greeting);
-        logged_in = 1;
-      }
-    }
-    fclose(fs);
-  }
-  return SUCCESS;
+  freeaddrinfo(servAddr);
+  return sock;
 }
 
-int get_request(char *method, char *request) {
-  // Set Length of client address structure (in-out parameter)
-  socklen_t clntAddrLen = sizeof(clntAddr);
+int accept_connection(int sock) {
+  // Client address
+  struct sockaddr_storage client;
 
+  // Set Length of client address structure (in-out parameter)
+  socklen_t clientAddrLen = sizeof(client);
+
+  // Wait for a client to connect
+  int client_fd = accept(sock, (struct sockaddr *) &client, &clientAddrLen);
+  if (client_fd < 0) {
+    err_error(ERR_CLIENT_CONNECT_FAILED);
+    exit(FAIL);
+  }
+
+  fputs("Handling client ", stdout);
+  print_socket_addr((struct sockaddr *) &client, stdout);
+  fputc('\n', stdout);
+  return client_fd;
+}
+
+// Accept TCP connection
+int get_request(int sock, char *method, char *request) {
   // Size of received message DEAL REQUEST FROM CLIENT
-  numBytesRcvd = recvfrom(sock, request, MAX_MESSAGE, 0, (struct sockaddr *) &clntAddr, &clntAddrLen);
-  if (numBytesRcvd < 0) {
+  ssize_t numBytesRcvd = recv(sock, request, MAX_MESSAGE, 0);
+  if (numBytesRcvd <= 0) {
     err_error(ERR_GET_REQUEST_FAILED);
     return FAIL;
   }
@@ -211,29 +238,20 @@ int get_request(char *method, char *request) {
   char req_time[100];
   time_t now = time(0);
   strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-  printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &clntAddr), method, request, numBytesRcvd);
+  printf("\x1b[1;38;5;256m%s>\x1b[0m \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, method, request, numBytesRcvd);
   return SUCCESS;
 }
 
-int get_response(char *response) {
-  // Receive a response
-  struct sockaddr_storage fromAddr;
-
-  // Set length of from address structure (in-out parameter)
-  socklen_t fromAddrLen = sizeof(fromAddr);
+int get_response(int sock, char *response) {
   //  char response[MAX_MESSAGE + 1]; // I/O Buffer
-  ssize_t numBytes = recvfrom(sock, response, MAX_MESSAGE, 0, (struct sockaddr *) &fromAddr, &fromAddrLen);
+  ssize_t numBytes = recv(sock, response, MAX_MESSAGE, 0);
   if (numBytes < 0) {
     err_error(ERR_GET_RESPONSE_FAILED);
+//    close(sock);
     return FAIL;
   }
 
-  // Verify reception from expected source
-  if (!compare_sockaddr(servAddr->ai_addr, (struct sockaddr *) &fromAddr)) {
-    err_error(ERR_UNKNOWN_RESOURCE);
-    return FAIL;
-  }
-
+//  close(sock);
   response[numBytes] = '\0';
   int code;
   sscanf(response, "%d", &code);
@@ -241,11 +259,10 @@ int get_response(char *response) {
 }
 
 // RESPONSE: STATUS_CODE STATUS DATA(MESSAGE)
-int send_response(char *response) {
-
+int send_response(int sock, char *response) {
   // Send response back to the client
   size_t responseLength = strlen(response);
-  ssize_t numBytesSent = sendto(sock, response, responseLength, 0, (struct sockaddr *) &clntAddr, sizeof(clntAddr));
+  ssize_t numBytesSent = send(sock, response, responseLength, 0);
   if (numBytesSent < 0) {
     err_error(ERR_SEND_RESPONSE_FAILED);
     return FAIL;
@@ -255,7 +272,7 @@ int send_response(char *response) {
 }
 
 // method: get, post, patch
-int send_request(char *method, char *request) {
+int send_request(int sock, char *method, char *request) {
   requestify(method, request);
 
   // Length of request
@@ -266,7 +283,7 @@ int send_request(char *method, char *request) {
   }
 
   // Send the string to the server
-  ssize_t numBytes = sendto(sock, request, requestLength, 0, servAddr->ai_addr, servAddr->ai_addrlen);
+  ssize_t numBytes = send(sock, request, requestLength, 0);
   if (numBytes < 0 || numBytes != requestLength) {
     err_error(ERR_SEND_REQUEST_FAILED);
     return FAIL;

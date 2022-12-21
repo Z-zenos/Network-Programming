@@ -1,6 +1,6 @@
-# Account management system base UDP
+# Account management system base TCP
 
-- Use UDP to send request and get response to server
+- Use TCP to send request and get response to server
 - Features:
   - Use socket
   - Connect client and server

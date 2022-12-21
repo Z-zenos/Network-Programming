@@ -13,6 +13,7 @@
 
 XOR_LL acc_ll = XOR_LL_INITIALISER;
 char gmethod[MAX_HTTP_METHOD], grequest[MAX_REQUEST_LENGTH], gresponse[MAX_RESPONSE_LENGTH];
+int servSock, clntSock;
 
 Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
@@ -338,10 +339,14 @@ int route(char *route_name, int (*f)(char *, char *)) {
 }
 
 void server_listen() {
+  clntSock = accept_connection(servSock);
+
   for(;;) {
     // Clear method, request, response
     http_clear(gmethod, grequest, gresponse);
-    get_request(gmethod, grequest);
+
+    // HandleTCPClient(clntSock); -> Process client
+    if(get_request(clntSock, gmethod, grequest) == FAIL) break;
 
     if(strcmp(gmethod, "GET") == 0) {
       route("/accounts/remember/", rememberAccount) ||
@@ -361,8 +366,11 @@ void server_listen() {
       route("/accounts/logout", logout) & 0;
     }
 
-    send_response(gresponse);
+    send_response(clntSock, gresponse);
   }
+
+  close(servSock);
+  close(clntSock);
 }
 
 int main(int argc, char *argv[]) {
@@ -372,7 +380,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Set up connect
-  server_init_connect(argv[1]);
+  servSock = server_init_connect(argv[1]);
 
   // Connect database
   xor_ll_init(&acc_ll);
@@ -380,5 +388,7 @@ int main(int argc, char *argv[]) {
 
   // Listening request
   server_listen();
+
+  printf("Mission successfully !\n");
   return SUCCESS;
 }

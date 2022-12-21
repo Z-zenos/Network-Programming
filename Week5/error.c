@@ -40,6 +40,7 @@ struct ErrorMessage errors[NUM_OF_ERRORS] = {
 {ERR_INITIALIZE_SOCKET_FAILED, "Initialize socket failed."},
 {ERR_SERVER_NOT_FOUND, "Server not found."},
 {ERR_REGISTER_ACCOUNT_FAILED, "Register new account failed."},
+{ERR_CLIENT_CONNECT_FAILED, "Client connect failed."},
 };
 
 void err_error(ErrorCode err) {

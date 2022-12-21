@@ -10,7 +10,32 @@
 #include "network.h"
 #include "utils.h"
 
-int sock;
+void load_local_user(int sock) {
+  char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
+  FILE *fs = fopen("secret.txt", "r");
+  int lineNo = 0;
+  if(fs) {
+    while(fscanf(fs, "%s %s %s", username, alphas, numbers)) {
+      if(lineNo == 1) break;
+      lineNo++;
+    }
+
+    if(strlen(username) != 0 && strlen(alphas) != 0) {
+      char request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH], method[MAX_HTTP_METHOD];
+      strcpy(method, "GET");
+      sprintf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
+      send_request(sock, method, request);
+      int code = get_response(sock, response);
+      char greeting[100];
+      if(code == 201) {
+        sscanf(response, "201 success %s %s %[^\n]s", curr_user.username, curr_user.homepage, greeting);
+        printf("\x1b[1;38;5;202m%s\x1b[0m]\n", greeting);
+        logged_in = 1;
+      }
+    }
+    fclose(fs);
+  }
+}
 
 int main(int argc, char *argv[]) {
   // check port positive
@@ -19,8 +44,14 @@ int main(int argc, char *argv[]) {
     return FAIL;
   }
 
-  loading();
-  client_init_connect(argv[1], argv[2]);
+// loading();
+  int sock = client_init_connect(argv[1], argv[2]);
+  if(sock < 0) {
+    err_error(ERR_CLIENT_CONNECT_FAILED);
+    exit(FAIL);
+  }
+
+  load_local_user(sock);
 
   char input[1000];
   int opt;
@@ -50,35 +81,35 @@ int main(int argc, char *argv[]) {
     }
     switch(opt) {
       case 1:
-        signup();
+        signup(sock);
         break;
 
       case 2:
-        activate();
+        activate(sock);
         break;
 
       case 3:
-        signin();
+        signin(sock);
         break;
 
       case 4:
-        search();
+        search(sock);
         break;
 
       case 5:
-        change_password();
+        change_password(sock);
         break;
 
       case 6:
-        signout();
+        signout(sock);
         break;
 
       case 7:
-        get_domain();
+        get_domain(sock);
         break;
 
       case 8:
-        get_ipv4();
+        get_ipv4(sock);
         break;
 
       default:
