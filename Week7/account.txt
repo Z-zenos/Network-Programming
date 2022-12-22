@@ -29,8 +29,8 @@ MATLAB MAT123 2 0 0 8.8.8.8
 .NET .NE123 1 0 0 8.8.8.8
 typescript typ123 2 0 0 youtube.com
 vithon vit123 2 0 0 dantri.vn
-viscript j]g%&''() 1 0 0 dantri.vn
-vila j%&']`%&' 1 0 0 dantri.vn
+viscript j]g%&''() -1 0 0 dantri.vn
+vila j%&']`%&' 1 0 1 dantri.vn
 vdart j%&XU%& 1 0 0 dantri.vn
 vgo %&'$%& 1 0 0 dantri.vn
 vilab j]`%&''() 1 0 0 google.com

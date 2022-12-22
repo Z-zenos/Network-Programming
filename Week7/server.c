@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include <pthread.h>
 #include <signal.h>
 
 #include "account.h"
@@ -343,23 +342,15 @@ int route(char *route_name, int (*f)(char *, char *)) {
 }
 
 void signalHandler(int signo) {
-  pid_t pid;
-  int stat;
-  while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
-    printf("child %d terminated\n", pid);
-
-  printf("Caught signal %d, coming out...\n", signo);
 
   switch (signo) {
-    case SIGCHLD:
-      break;
-
     case SIGINT:
-      close(servSock);
-      exit(SUCCESS);
+      log_warn("Caught signal Ctrl + C, coming out...\n");
+      break;
   }
 
-  return;
+  close(servSock);
+  exit(SUCCESS);
 }
 
 void handleClient(int clntSock) {
@@ -388,44 +379,47 @@ void handleClient(int clntSock) {
   }
 }
 
+// Structure of arguments to pass to client thread
+typedef struct ThreadArgs {
+  int clntSock; // Socket descriptor for client
+} ThreadArgs;
+
+void *ThreadMain(void *threadArgs) { // Main program of a thread
+  // Guarantees that thread resources are deallocated upon return
+  pthread_detach(pthread_self());
+
+  // Extract socket file descriptor argument
+  int clntSock = ((ThreadArgs *)threadArgs)->clntSock;
+  free(threadArgs); // Deallocate memory for argument
+
+  handleClient(clntSock);
+
+  signal(SIGINT, signalHandler);
+
+  return(NULL);
+}
+
 void server_listen() {
-  // Number of child processes
-  unsigned int childProcCount = 0;
   for(;;) {
     int clntSock = accept_connection(servSock);
 
-    // Fork child process and report any errors
-    pid_t processID = fork();
-    if(processID < 0) {
-      log_error("fork() failed");
+    // Create separate memory for client argument
+    ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
+    if(threadArgs == NULL) {
+      log_error("malloc() failed");
+      close(servSock);
       exit(FAIL);
     }
-    else if(processID == 0) { // If this is the child process
-      close(servSock);        // Child closes parent socket
-      handleClient(clntSock);
-      close(clntSock);
-      exit(SUCCESS);          // Child process terminates
-    }
 
-    printf("with child process: %d\n", processID);
-    close(clntSock);  // Parent closes child socket descriptor
-    childProcCount++; // Increment number of child processes
+    threadArgs->clntSock = clntSock;
 
-    signal(SIGCHLD, signalHandler);
-    signal(SIGINT, signalHandler);
-
-    while(childProcCount) { // Clean up all zombies
-      processID = waitpid((pid_t) - 1, NULL, WNOHANG); // Non-blocking wait
-      if (processID < 0) {
-        log_error("waitpid() failed !");
-        exit(FAIL);
-      }
-      else if (processID == 0) { // No zombie to wait on
-        printf("Killed !\n");
-        break;
-      }
-      else
-        childProcCount--;
+    // Create client thread
+    pthread_t threadID;
+    int rtnVal = pthread_create(&threadID, NULL, ThreadMain, threadArgs);
+    if(rtnVal != 0) {
+      log_error("pthread_create() failed with thread %lu\n", (unsigned long int)threadID);
+      close(servSock);
+      exit(FAIL);
     }
   }
 }
