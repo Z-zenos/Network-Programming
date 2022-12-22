@@ -1,7 +1,7 @@
-# Account management system base UDP
+# Account management system
 
-- Use UDP to send request and get response to server
 - Features:
+  - Use TCP to send request and get response to server
   - Use socket
   - Connect client and server
   - Nice log request
@@ -10,3 +10,4 @@
   - Auto login user when start app
   - Pass function as parameter
   - Remove the link between user and data
+  - Use fork() and multi-process
