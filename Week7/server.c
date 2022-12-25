@@ -16,7 +16,6 @@
 
 XOR_LL acc_ll = XOR_LL_INITIALISER;
 int servSock;
-char gmethod[MAX_HTTP_METHOD], grequest[MAX_REQUEST_LENGTH], gresponse[MAX_RESPONSE_LENGTH];
 
 Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
@@ -337,8 +336,8 @@ int getDomain(char *request, char *response) {
   return SUCCESS;
 }
 
-int route(char *route_name, int (*f)(char *, char *)) {
-  return str_start_with(grequest, route_name) && f(grequest, gresponse);
+int route(char *route_name, char *req, char *res, int (*f)(char *, char *)) {
+  return str_start_with(req, route_name) && f(req, res);
 }
 
 void signalHandler(int signo) {
@@ -354,28 +353,30 @@ void signalHandler(int signo) {
 }
 
 void handleClient(int clntSock) {
+  char method[MAX_METHOD_LENGTH], request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH];
+
   while(1) {
     // Clear method, request, response
-    http_clear(gmethod, grequest, gresponse);
-    if (get_request(clntSock, gmethod, grequest) == FAIL) break;
+    http_clear(method, request, response);
+    if (get_request(clntSock, method, request) == FAIL) break;
 
-    if (strcmp(gmethod, "GET") == 0) {
-      route("/accounts/remember/", rememberAccount) ||
-      route("/accounts/verify/username/", verifyUsername) ||
-      route("/accounts/verify/password/", verifyPassword) ||
-      route("/accounts/ipv4/", getIPv4) ||
-      route("/accounts/domain/", getDomain) ||
-      route("/accounts/search", getAccount) & 0;
-    } else if (strcmp(gmethod, "POST") == 0) {
-      route("/accounts/activate", activateAccount) ||
-      route("/accounts/authen", login) ||
-      route("/accounts/register", createAccount) & 0;
-    } else if (strcmp(gmethod, "PATCH") == 0) {
-      route("/accounts/updatePassword", updatePassword) ||
-      route("/accounts/logout", logout) & 0;
+    if (strcmp(method, "GET") == 0) {
+      route("/accounts/remember/", request, response, rememberAccount) ||
+      route("/accounts/verify/username/", request, response, verifyUsername) ||
+      route("/accounts/verify/password/", request, response, verifyPassword) ||
+      route("/accounts/ipv4/", request, response, getIPv4) ||
+      route("/accounts/domain/", request, response, getDomain) ||
+      route("/accounts/search", request, response, getAccount) & 0;
+    } else if (strcmp(method, "POST") == 0) {
+      route("/accounts/activate", request, response, activateAccount) ||
+      route("/accounts/authen", request, response, login) ||
+      route("/accounts/register", request, response, createAccount) & 0;
+    } else if (strcmp(method, "PATCH") == 0) {
+      route("/accounts/updatePassword", request, response, updatePassword) ||
+      route("/accounts/logout", request, response, logout) & 0;
     }
 
-    send_response(clntSock, gresponse);
+    send_response(clntSock, response);
   }
 }
 
@@ -384,6 +385,7 @@ typedef struct ThreadArgs {
   int clntSock; // Socket descriptor for client
 } ThreadArgs;
 
+// Each thread executes this function
 void *ThreadMain(void *threadArgs) { // Main program of a thread
   // Guarantees that thread resources are deallocated upon return
   pthread_detach(pthread_self());

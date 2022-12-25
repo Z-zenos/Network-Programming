@@ -16,6 +16,7 @@
 #define NUM_OF_CODE 10
 
 static const int MAX_PENDING = 5; // Maximum outstanding connection requests
+#define BACKLOG 10
 
 void http_clear(char *method, char *request, char *response) {
   memset(method, 0, 10);

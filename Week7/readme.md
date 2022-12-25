@@ -11,3 +11,4 @@
   - Pass function as parameter
   - Remove the link between user and data
   - Use multithread
+  - Use Signal Handler

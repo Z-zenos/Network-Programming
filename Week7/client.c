@@ -21,7 +21,7 @@ void load_local_user(int sock) {
     }
 
     if(strlen(username) != 0 && strlen(alphas) != 0) {
-      char request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH], method[MAX_HTTP_METHOD];
+      char request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH], method[MAX_METHOD_LENGTH];
       strcpy(method, "GET");
       sprintf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
       send_request(sock, method, request);

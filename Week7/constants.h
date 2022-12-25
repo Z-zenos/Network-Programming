@@ -8,7 +8,7 @@
 #define MAX_WRONG_PASSWORD 4 // 3 time + 1 first input
 #define MAX_WRONG_CODE 5     // 4 time + 1 first input
 #define MAX_MESSAGE 255
-#define MAX_HTTP_METHOD 10
+#define MAX_METHOD_LENGTH 10
 #define BUFFER 1000
 #define ACTIVATION_CODE "20194705"
 #define USER_FILE "account.txt"

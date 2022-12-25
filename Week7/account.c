@@ -12,7 +12,7 @@
 extern int logged_in;
 extern Account curr_user;
 
-char method[MAX_HTTP_METHOD], request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH];
+char method[MAX_METHOD_LENGTH], request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH];
 
 // Set current user
 void _set_current_user_(Account acc) {
