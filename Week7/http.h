@@ -18,8 +18,10 @@ typedef enum {
     _500_,
 } HttpCode;
 
-//extern int server_fd, client_fd;
-//extern struct addrinfo *server, *client;
+typedef struct Client {
+  int sock;
+  struct sockaddr_storage addr;
+} Client;
 
 int http_code(HttpCode);
 char *http_message(HttpCode);
@@ -30,8 +32,8 @@ char *get_socketaddr(const struct sockaddr *);
 void requestify(char *, char *);
 int server_init_connect(char *);
 int client_init_connect(char *, char *);
-int accept_connection(int);
-int get_request(int, char *, char *);
+Client accept_connection(int);
+int get_request(Client, char *, char *);
 int get_response(int, char *);
 int send_request(int, char *, char *);
 int send_response(int, char *);
