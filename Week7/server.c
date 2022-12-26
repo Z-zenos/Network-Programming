@@ -280,7 +280,6 @@ int updatePassword(char *request, char *response) {
   }
 
   Account *acc = findAccount(username);
-
   strcpy(acc->password, new_password);
   char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
   encryptPassword(acc->password, token, alphas, numbers);
@@ -336,12 +335,32 @@ int getDomain(char *request, char *response) {
   return SUCCESS;
 }
 
-int route(char *route_name, char *req, char *res, int (*f)(char *, char *)) {
-  return str_start_with(req, route_name) && f(req, res);
+int route_null(char *request, char *response) { return FAIL; }
+
+int route(char *req, char *route_name) {
+  return str_start_with(req, route_name);
+}
+
+int (*routeHandler(char *method, char *req))(char *, char *) {
+  if (strcmp(method, "GET") == 0) {
+    if(route(req, "/accounts/remember"))        return rememberAccount;
+    if(route(req, "/accounts/verify/username")) return verifyUsername;
+    if(route(req, "/accounts/verify/password")) return verifyPassword;
+    if(route(req, "/accounts/ipv4"))            return getIPv4;
+    if(route(req, "/accounts/domain"))          return getDomain;
+    if(route(req, "/accounts/search"))          return getAccount;
+  } else if (strcmp(method, "POST") == 0) {
+    if(route(req, "/accounts/activate"))        return activateAccount;
+    if(route(req, "/accounts/authen"))          return login;
+    if(route(req, "/accounts/register"))        return createAccount;
+  } else if (strcmp(method, "PATCH") == 0) {
+    if(route(req, "/accounts/updatePassword"))  return updatePassword;
+    if(route(req, "/accounts/logout"))          return logout;
+  }
+  return route_null;
 }
 
 void signalHandler(int signo) {
-
   switch (signo) {
     case SIGINT:
       log_warn("Caught signal Ctrl + C, coming out...\n");
@@ -352,58 +371,39 @@ void signalHandler(int signo) {
   exit(SUCCESS);
 }
 
-void handleClient(int clntSock) {
-  char method[MAX_METHOD_LENGTH], request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH];
+void handleClient(Client client) {
+  char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
 
   while(1) {
-    // Clear method, request, response
-    http_clear(method, request, response);
-    if (get_request(clntSock, method, request) == FAIL) break;
-
-    if (strcmp(method, "GET") == 0) {
-      route("/accounts/remember/", request, response, rememberAccount) ||
-      route("/accounts/verify/username/", request, response, verifyUsername) ||
-      route("/accounts/verify/password/", request, response, verifyPassword) ||
-      route("/accounts/ipv4/", request, response, getIPv4) ||
-      route("/accounts/domain/", request, response, getDomain) ||
-      route("/accounts/search", request, response, getAccount) & 0;
-    } else if (strcmp(method, "POST") == 0) {
-      route("/accounts/activate", request, response, activateAccount) ||
-      route("/accounts/authen", request, response, login) ||
-      route("/accounts/register", request, response, createAccount) & 0;
-    } else if (strcmp(method, "PATCH") == 0) {
-      route("/accounts/updatePassword", request, response, updatePassword) ||
-      route("/accounts/logout", request, response, logout) & 0;
-    }
-
-    send_response(clntSock, response);
+    http_clear(method, req, res);
+    if (get_request(client, method, req) == FAIL) break;
+    routeHandler(method, req)(req, res);
+    send_response(client.sock, res);
   }
 }
 
 // Structure of arguments to pass to client thread
 typedef struct ThreadArgs {
-  int clntSock; // Socket descriptor for client
+  Client client; // Socket descriptor for client
 } ThreadArgs;
 
 // Each thread executes this function
-void *ThreadMain(void *threadArgs) { // Main program of a thread
+void *ThreadMain(void *threadArgs) {
   // Guarantees that thread resources are deallocated upon return
   pthread_detach(pthread_self());
 
   // Extract socket file descriptor argument
-  int clntSock = ((ThreadArgs *)threadArgs)->clntSock;
+  Client client = ((ThreadArgs *)threadArgs)->client;
   free(threadArgs); // Deallocate memory for argument
 
-  handleClient(clntSock);
-
+  handleClient(client);
   signal(SIGINT, signalHandler);
-
   return(NULL);
 }
 
 void server_listen() {
   for(;;) {
-    int clntSock = accept_connection(servSock);
+    Client client = accept_connection(servSock);
 
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
@@ -413,7 +413,7 @@ void server_listen() {
       exit(FAIL);
     }
 
-    threadArgs->clntSock = clntSock;
+    threadArgs->client = client;
 
     // Create client thread
     pthread_t threadID;
