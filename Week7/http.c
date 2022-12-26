@@ -202,30 +202,31 @@ int client_init_connect(char *server, char *port) {
   return sock;
 }
 
-int accept_connection(int sock) {
-  // Client address
-  struct sockaddr_storage client;
+
+
+Client accept_connection(int sock) {
+  Client client;
 
   // Set Length of client address structure (in-out parameter)
-  socklen_t clientAddrLen = sizeof(client);
+  socklen_t clientAddrLen = sizeof(client.addr);
 
   // Wait for a client to connect
-  int client_fd = accept(sock, (struct sockaddr *) &client, &clientAddrLen);
-  if (client_fd < 0) {
+  client.sock = accept(sock, (struct sockaddr *) &client.addr, &clientAddrLen);
+  if (client.sock < 0) {
     err_error(ERR_CLIENT_CONNECT_FAILED);
     exit(FAIL);
   }
 
   fputs("Handling client ", stdout);
-  print_socket_addr((struct sockaddr *) &client, stdout);
+  print_socket_addr((struct sockaddr *) &client.addr, stdout);
   fputc('\n', stdout);
-  return client_fd;
+  return client;
 }
 
 // Accept TCP connection
-int get_request(int sock, char *method, char *request) {
+int get_request(Client client, char *method, char *request) {
   // Size of received message DEAL REQUEST FROM CLIENT
-  ssize_t numBytesRcvd = recv(sock, request, MAX_MESSAGE, 0);
+  ssize_t numBytesRcvd = recv(client.sock, request, MAX_MESSAGE, 0);
   if (numBytesRcvd <= 0) {
     return FAIL;
   }
@@ -238,7 +239,7 @@ int get_request(int sock, char *method, char *request) {
   char req_time[100];
   time_t now = time(0);
   strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-  printf("\x1b[1;38;5;256m%s>\x1b[0m \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, method, request, numBytesRcvd);
+  printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &client.addr), method, request, numBytesRcvd);
   return SUCCESS;
 }
 
