@@ -110,6 +110,7 @@ char *get_socketaddr(const struct sockaddr *address) {
 }
 
 void requestify(char *method, char *request) {
+  if(strlen(method) == 0 || strlen(request) == 0) return;
   /* TEMPLATE: METHOD REQUEST */
   char request_tpl[MAX_REQUEST_LENGTH];
   sprintf(request_tpl, "%s %s", method, request);
@@ -202,8 +203,6 @@ int client_init_connect(char *server, char *port) {
   return sock;
 }
 
-
-
 Client accept_connection(int sock) {
   Client client;
 
@@ -217,9 +216,10 @@ Client accept_connection(int sock) {
     exit(FAIL);
   }
 
-  fputs("Handling client ", stdout);
-  print_socket_addr((struct sockaddr *) &client.addr, stdout);
-  fputc('\n', stdout);
+  char req_time[100];
+  time_t now = time(0);
+  strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+  printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &client.addr));
   return client;
 }
 
@@ -227,7 +227,11 @@ Client accept_connection(int sock) {
 int get_request(Client client, char *method, char *request) {
   // Size of received message DEAL REQUEST FROM CLIENT
   ssize_t numBytesRcvd = recv(client.sock, request, MAX_MESSAGE, 0);
+  char req_time[100];
   if (numBytesRcvd <= 0) {
+    time_t now = time(0);
+    strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+    printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;226mOFFLINE\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &client.addr));
     return FAIL;
   }
 
@@ -236,7 +240,7 @@ int get_request(Client client, char *method, char *request) {
   // Split method and pure request
   parse_request(method, request);
 
-  char req_time[100];
+
   time_t now = time(0);
   strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
   printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &client.addr), method, request, numBytesRcvd);

@@ -384,7 +384,7 @@ void *ThreadMain(void *threadArgs) {
   free(threadArgs); // Deallocate memory for argument
 
   handleClient(client);
-  signal(SIGINT, signalHandler);
+  close(client.sock);
   return(NULL);
 }
 
@@ -400,6 +400,7 @@ void server_listen() {
       exit(FAIL);
     }
 
+    signal(SIGINT, signalHandler);
     threadArgs->client = client;
 
     // Create client thread
