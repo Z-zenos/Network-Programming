@@ -21,11 +21,22 @@ void exit_safely(int sock) {
   exit(EXIT_SUCCESS);
 }
 
-
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
       log_warn("Caught signal Ctrl + C, coming out...\n");
+      break;
+    case SIGQUIT:
+      log_warn("Caught signal Ctrl + \\, coming out...\n");
+      break;
+    case SIGHUP:
+      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      break;
+    case SIGTERM:
+      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      break;
+    case SIGUSR1:
+      log_warn("Killing the program, coming out...\n");
       break;
   }
 
@@ -46,6 +57,10 @@ int main(int argc, char *argv[]) {
   }
 
   signal(SIGINT, signalHandler);
+  signal(SIGQUIT, signalHandler);
+  signal(SIGHUP, signalHandler);
+  signal(SIGTERM, signalHandler);
+  signal(SIGUSR1, signalHandler);
 
   char input[1000];
   int opt;

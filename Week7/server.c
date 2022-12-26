@@ -352,6 +352,18 @@ void signalHandler(int signo) {
     case SIGINT:
       log_warn("Caught signal Ctrl + C, coming out...\n");
       break;
+    case SIGQUIT:
+      log_warn("Caught signal Ctrl + \\, coming out...\n");
+      break;
+    case SIGHUP:
+      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      break;
+    case SIGTERM:
+      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      break;
+    case SIGUSR1:
+      log_warn("Killing the program, coming out...\n");
+      break;
   }
 
   close(servSock);
@@ -401,6 +413,11 @@ void server_listen() {
     }
 
     signal(SIGINT, signalHandler);
+    signal(SIGQUIT, signalHandler);
+    signal(SIGHUP, signalHandler);
+    signal(SIGTERM, signalHandler);
+    signal(SIGUSR1, signalHandler);
+
     threadArgs->client = client;
 
     // Create client thread
