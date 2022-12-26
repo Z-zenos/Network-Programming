@@ -10,6 +10,7 @@ typedef struct Client {
 
 bool compare_sockaddr(const struct sockaddr *, const struct sockaddr *);
 char *get_socketaddr(const struct sockaddr *);
+void print_socket_addr(const struct sockaddr *, FILE *);
 void requestify(char *, char *);
 int server_init_connect(char *);
 int client_init_connect(char *, char *);
