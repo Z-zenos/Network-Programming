@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "account.h"
 #include "constants.h"
@@ -10,48 +11,17 @@
 #include "network.h"
 #include "utils.h"
 
-void load_local_user(int sock) {
-  char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
-  FILE *fs = fopen("secret.txt", "r");
-  int lineNo = 0;
-  if(fs) {
-    while(fscanf(fs, "%s %s %s", username, alphas, numbers)) {
-      if(lineNo == 1) break;
-      lineNo++;
-    }
-
-    if(strlen(username) != 0 && strlen(alphas) != 0) {
-      char request[MAX_REQUEST_LENGTH], response[MAX_RESPONSE_LENGTH], method[MAX_METHOD_LENGTH];
-      strcpy(method, "GET");
-      sprintf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
-      send_request(sock, method, request);
-      int code = get_response(sock, response);
-      char greeting[100];
-      if(code == 201) {
-        sscanf(response, "201 success %s %s %[^\n]s", curr_user.username, curr_user.homepage, greeting);
-        printf("\x1b[1;38;5;202m%s\x1b[0m]\n", greeting);
-        logged_in = 1;
-      }
-    }
-    fclose(fs);
-  }
-}
-
 int main(int argc, char *argv[]) {
-  // check port positive
   if(argc != 3 || !validate_ip(argv[1]) || !is_number(argv[2])) {
     err_error(ERR_INVALID_CLIENT_ARGUMENT);
     return FAIL;
   }
 
-// loading();
   int sock = client_init_connect(argv[1], argv[2]);
   if(sock < 0) {
     err_error(ERR_CLIENT_CONNECT_FAILED);
     exit(FAIL);
   }
-
-//  load_local_user(sock);
 
   char input[1000];
   int opt;

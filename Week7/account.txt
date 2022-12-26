@@ -16,7 +16,6 @@ swift swift1000 2 0 0 stackoverflow.com
 mongo mongo123 0 0 4 schooler.sun-asterisk.com
 kpl kpl123 0 5 0 google.com
 bash bash12345 1 0 0 9gag.com
-linux linux123 1 0 0 man7.org
 window window123 2 0 0 google.com
 mac mac123 1 0 0 kurume-it.ac.jp
 assembly ass123 1 0 0 dbgk.bn-ent.net
@@ -25,7 +24,6 @@ dart dart123 1 0 0 216.58.200.238
 haskell has123 2 0 0 127.000.000.1
 kotlin kot123 1 0 0 vn.got-it.ai
 lua lua123 2 0 0 192.168.1.1
-MATLAB MAT123 2 0 0 8.8.8.8
 .NET .NE123 1 0 0 8.8.8.8
 typescript typ123 2 0 0 youtube.com
 vithon vit123 2 0 0 dantri.vn
@@ -33,5 +31,5 @@ viscript j]g%&''() -1 0 0 dantri.vn
 vila j%&']`%&' 1 0 2 dantri.vn
 vdart j%&XU%& 1 0 0 dantri.vn
 vgo %&'$%& 1 0 1 dantri.vn
-vilab j]`%&''() -1 0 0 google.com
-vinux j]b%&''() 1 0 0 google.com
+vilab j]`%&''() -1 0 0 8.8.8.8
+vinux j]b%&''() 1 0 0 man7.org

@@ -5,12 +5,12 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-#include "utils.h"
+#include "account.h"
 #include "constants.h"
-#include "log.h"
 #include "error.h"
 #include "linkedlist.h"
-#include "account.h"
+#include "log.h"
+#include "utils.h"
 
 char username[MAX_USERNAME];
 int logged_in;

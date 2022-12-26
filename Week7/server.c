@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "account.h"
 #include "constants.h"
@@ -145,19 +146,6 @@ int verifyPassword(char *request, char *response) {
 
   strcpy(response, "400 fail Password incorrect");
   return FAIL;
-}
-
-int rememberAccount(char *request, char *response) {
-  char username[MAX_USERNAME] = "", alphas[MAX_PASSWORD] = "", numbers[MAX_PASSWORD] = "";
-  sscanf(request, "/accounts/remember/%s %s %s", username, alphas, numbers);
-
-  Account *acc = findAccount(username);
-  if(!acc || !comparePassword(acc->password, "", alphas, numbers)) return FAIL;
-
-  acc->status = -1;
-  save_data(acc_ll);
-  sprintf(response, "201 success %s %s Hello %s, have a nice day !", acc->username, acc->homepage, acc->username);
-  return SUCCESS;
 }
 
 int login(char *request, char *response) {
@@ -343,7 +331,6 @@ int route(char *req, char *route_name) {
 
 int (*routeHandler(char *method, char *req))(char *, char *) {
   if (strcmp(method, "GET") == 0) {
-    if(route(req, "/accounts/remember"))        return rememberAccount;
     if(route(req, "/accounts/verify/username")) return verifyUsername;
     if(route(req, "/accounts/verify/password")) return verifyPassword;
     if(route(req, "/accounts/ipv4"))            return getIPv4;
