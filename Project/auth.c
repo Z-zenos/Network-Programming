@@ -121,6 +121,6 @@ int signin(MYSQL *conn) {
   return SUCCESS;
 }
 
-int signout();
+//int signout();
 int change_password();
 int forgot_password();

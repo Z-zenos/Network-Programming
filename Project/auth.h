@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef __AUTH_H__
-#define AUTH_H_
+#define __AUTH_H_
 
 #include <mysql/mysql.h>
 
