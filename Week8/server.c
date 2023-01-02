@@ -2,11 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include <fcntl.h>
+#include <sys/time.h>
 
 #include "account.h"
 #include "constants.h"
@@ -18,7 +17,10 @@
 #include "utils.h"
 
 XOR_LL acc_ll = XOR_LL_INITIALISER;
-int servSock;
+int servSock[5];
+int noPorts;
+// Initialize maxDescriptor for use by select()
+int maxDescriptor = -1;
 
 Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
@@ -349,6 +351,12 @@ int (*routeHandler(char *method, char *req))(char *, char *) {
   return route_null;
 }
 
+
+void server_close() {
+  for (int port = 0; port < noPorts; port++)
+    close(servSock[port]);
+}
+
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
@@ -368,13 +376,13 @@ void signalHandler(int signo) {
       break;
   }
 
-  close(servSock);
+  server_close();
   exit(SUCCESS);
 }
 
-void handleClient(Client client) {
+void handleClient(int servSock) {
   char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
-
+  Client client = accept_connection(servSock);
   while(1) {
     http_clear(method, req, res);
     if (get_request(client, method, req) == FAIL) break;
@@ -383,66 +391,69 @@ void handleClient(Client client) {
   }
 }
 
-// Structure of arguments to pass to client thread
-typedef struct ThreadArgs {
-  Client client; // Socket descriptor for client
-} ThreadArgs;
-
-// Each thread executes this function
-void *ThreadMain(void *threadArgs) {
-  // Guarantees that thread resources are deallocated upon return
-  pthread_detach(pthread_self());
-
-  // Extract socket file descriptor argument
-  Client client = ((ThreadArgs *)threadArgs)->client;
-  free(threadArgs); // Deallocate memory for argument
-
-  handleClient(client);
-  close(client.sock);
-  return(NULL);
-}
 
 void server_listen() {
-  for(;;) {
-    Client client = accept_connection(servSock);
+  long timeout = TIMEOUT;
+  bool running = true; // true if server should continue running
+  fd_set sockSet; // Set of socket descriptors for select()
 
-    // Create separate memory for client argument
-    ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
-    if(threadArgs == NULL) {
-      log_error("malloc() failed");
-      close(servSock);
-      exit(FAIL);
-    }
+  while(running) {
+    // Zero socket descriptor vector and set for server sockets
+    // This must be reset every time select() is called
+    FD_ZERO(&sockSet);
 
-    signal(SIGINT, signalHandler);
-    signal(SIGQUIT, signalHandler);
-    signal(SIGHUP, signalHandler);
-    signal(SIGTERM, signalHandler);
-    signal(SIGUSR1, signalHandler);
+    // Add keyboard to descriptor vector
+    FD_SET(STDERR_FILENO, &sockSet);
+    for(int port = 0; port < noPorts; port++)
+      FD_SET(servSock[port], &sockSet);
 
-    threadArgs->client = client;
+    // Timeout specification, must be reset every time select() is called
+    struct timeval selTimeout; // Timeout for select()
+    selTimeout.tv_sec = timeout; // set timeout(secs.)
+    selTimeout.tv_usec = 0; // - microseconds
 
-    // Create client thread
-    pthread_t threadID;
-    int rtnVal = pthread_create(&threadID, NULL, ThreadMain, threadArgs);
-    if(rtnVal != 0) {
-      log_error("pthread_create() failed with thread %lu\n", (unsigned long int)threadID);
-      close(servSock);
-      exit(FAIL);
+    // Suspend program until descriptor is ready or timeout
+    if(select(maxDescriptor + 1, &sockSet, NULL, NULL, &selTimeout))
+      log_warn("No connection requests for %ld secs...Server still alive", timeout);
+    else {
+      if(FD_ISSET(0, &sockSet)) {
+        puts("Shutting down server");
+        getchar();
+        running = false;
+      }
+
+      // Process connection requests
+      for(int port = 0; port < noPorts; port++)
+        if(FD_ISSET(servSock[port], &sockSet)) {
+          handleClient(servSock[port]);
+        }
     }
   }
 }
 
 int main(int argc, char *argv[]) {
-  if(argc != 2 || !is_number(argv[1])) {
+  if(argc < 2 || !is_number(argv[1])) {
     err_error(ERR_INVALID_SERVER_ARGUMENT);
     return FAIL;
   }
 
-  long timeout = TIMEOUT;
+  noPorts = argc - 1; // Number of ports
 
-  // Set up connect
-  servSock = server_init_connect(argv[1]);
+  // Create list of ports and sockets to handle ports
+  for(int port = 0; port < noPorts; port++) {
+    // Create port socket
+    servSock[port] = server_init_connect(argv[port + 1]);
+
+    // Determine if new descriptor is the largest
+    if(servSock[port] > maxDescriptor)
+      maxDescriptor = servSock[port];
+  }
+
+  signal(SIGINT, signalHandler);
+  signal(SIGQUIT, signalHandler);
+  signal(SIGHUP, signalHandler);
+  signal(SIGTERM, signalHandler);
+  signal(SIGUSR1, signalHandler);
 
   // Connect database
   xor_ll_init(&acc_ll);
@@ -451,6 +462,8 @@ int main(int argc, char *argv[]) {
   // Listening request
   server_listen();
 
+  // Close sockets
+  server_close();
   log_success("Mission successfully !\n");
   return SUCCESS;
 }
