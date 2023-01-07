@@ -17,10 +17,7 @@
 #include "utils.h"
 
 XOR_LL acc_ll = XOR_LL_INITIALISER;
-int servSock[5];
-int noPorts;
-// Initialize maxDescriptor for use by select()
-int maxDescriptor = -1;
+int servSock;
 
 Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
@@ -351,12 +348,6 @@ int (*routeHandler(char *method, char *req))(char *, char *) {
   return route_null;
 }
 
-
-void server_close() {
-  for (int port = 0; port < noPorts; port++)
-    close(servSock[port]);
-}
-
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
@@ -376,57 +367,73 @@ void signalHandler(int signo) {
       break;
   }
 
-  server_close();
+  close(servSock);
   exit(SUCCESS);
 }
 
-void handleClient(int servSock) {
-  char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
-  Client client = accept_connection(servSock);
-  while(1) {
-    http_clear(method, req, res);
-    if (get_request(client, method, req) == FAIL) break;
-    routeHandler(method, req)(req, res);
-    send_response(client.sock, res);
-  }
-}
-
-
 void server_listen() {
-  long timeout = TIMEOUT;
-  bool running = true; // true if server should continue running
-  fd_set sockSet; // Set of socket descriptors for select()
+  fd_set master;
+  fd_set read_fds;
+  int i, j, nbytes;
+  int fdmax; // highest file descriptor number
+  char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
 
-  while(running) {
-    // Zero socket descriptor vector and set for server sockets
-    // This must be reset every time select() is called
-    FD_ZERO(&sockSet);
+  FD_ZERO(&master);
+  FD_ZERO(&read_fds);
 
-    // Add keyboard to descriptor vector
-    FD_SET(STDERR_FILENO, &sockSet);
-    for(int port = 0; port < noPorts; port++)
-      FD_SET(servSock[port], &sockSet);
+  // Push server socket to the master set
+  FD_SET(servSock, &master);
 
-    // Timeout specification, must be reset every time select() is called
-    struct timeval selTimeout; // Timeout for select()
-    selTimeout.tv_sec = timeout; // set timeout(secs.)
-    selTimeout.tv_usec = 0; // - microseconds
+  // keep track of the biggest file descriptor
+  fdmax = servSock;
+
+  while(1) {
+    read_fds = master;
 
     // Suspend program until descriptor is ready or timeout
-    if(select(maxDescriptor + 1, &sockSet, NULL, NULL, &selTimeout))
-      log_warn("No connection requests for %ld secs...Server still alive", timeout);
-    else {
-      if(FD_ISSET(0, &sockSet)) {
-        puts("Shutting down server");
-        getchar();
-        running = false;
-      }
+    if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
+      log_error("select() error");
+      close(servSock);
+      exit(FAIL);
+    }
 
-      // Process connection requests
-      for(int port = 0; port < noPorts; port++)
-        if(FD_ISSET(servSock[port], &sockSet)) {
-          handleClient(servSock[port]);
+    // Run through the existing connections looking for data to read
+    for(i = 0; i <= fdmax; i++) {
+      if(FD_ISSET(i, &read_fds)) {
+        if(i == servSock) {
+          // handle new connections
+          Client client = accept_connection(servSock);
+          FD_SET(client.sock, &master); // add new socket descriptor to master set
+          if(client.sock > fdmax)
+            fdmax = client.sock;
+          printf("select server: new connection from %s on socket %d\n", get_socketaddr((struct sockaddr*)&client.addr), client.sock);
         }
+        else {
+          http_clear(method, req, res);
+          // Handle data from client
+          if((nbytes = get_request(i, method, req)) <= 0) {
+            if(nbytes == 0)
+              printf("select server: socket %d hung up\n", i);
+            else
+              err_error(ERR_GET_REQUEST_FAILED);
+            close(i);
+            FD_CLR(i, &master);
+          }
+          else {
+            routeHandler(method, req)(req, res);
+            // We got some data from client
+            for(j = 0; j <= fdmax; j++) {
+              // send to everyone
+              if(FD_ISSET(j, &master)) {
+                // except the listener and ourselves
+                if(j == i) {
+                  send_response(j, res);
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -437,17 +444,7 @@ int main(int argc, char *argv[]) {
     return FAIL;
   }
 
-  noPorts = argc - 1; // Number of ports
-
-  // Create list of ports and sockets to handle ports
-  for(int port = 0; port < noPorts; port++) {
-    // Create port socket
-    servSock[port] = server_init_connect(argv[port + 1]);
-
-    // Determine if new descriptor is the largest
-    if(servSock[port] > maxDescriptor)
-      maxDescriptor = servSock[port];
-  }
+  servSock = server_init_connect(argv[1]);
 
   signal(SIGINT, signalHandler);
   signal(SIGQUIT, signalHandler);
@@ -463,7 +460,7 @@ int main(int argc, char *argv[]) {
   server_listen();
 
   // Close sockets
-  server_close();
+  close(servSock);
   log_success("Mission successfully !\n");
   return SUCCESS;
 }

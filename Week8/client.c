@@ -14,7 +14,7 @@
 
 int sock;
 
-void exit_safely(int sock) {
+void exit_safely() {
   send_request(sock, "", "");
   close(sock);
   log_info("Thank for using my app :)\n");
@@ -40,7 +40,7 @@ void signalHandler(int signo) {
       break;
   }
 
-  exit_safely(sock);
+  exit_safely();
 }
 
 
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
     clear_buffer();
 
     if(!(strlen(input) == 1 && (input[0] > 48 && input[0] < 57))) {
-      exit_safely(sock);
+      exit_safely();
     }
 
     opt = input[0] - 48;

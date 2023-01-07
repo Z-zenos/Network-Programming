@@ -17,7 +17,7 @@
 
 #define KEY 12
 
-#define TIMEOUT 5000
+#define TIMEOUT 5
 
 #define SUCCESS 1
 #define FAIL 0

@@ -8,7 +8,7 @@ client: client.o account.o utils.o error.o network.o http.o linkedlist.o
 	${CC} client.o account.o utils.o error.o network.o http.o linkedlist.o -lpcre2-8 -o client
 
 server: server.o account.o utils.o error.o linkedlist.o network.o http.o
-	${CC} server.o account.o utils.o error.o linkedlist.o network.o http.o -lpcre2-8 -pthread -o server
+	${CC} server.o account.o utils.o error.o linkedlist.o network.o http.o -lpcre2-8 -o server
 
 client.o: client.c
 	${CC} ${CFLAGS} client.c
