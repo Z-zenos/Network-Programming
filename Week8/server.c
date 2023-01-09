@@ -371,6 +371,19 @@ void signalHandler(int signo) {
   exit(SUCCESS);
 }
 
+// Function for sync password in multiple devices
+void sync_pw(fd_set master, int fdmax, char *res) {
+  printf("Syncing password...\n");
+  int j;
+  for (j = 0; j <= fdmax; j++) {
+    if (FD_ISSET(j, &master)) {
+      if (j != servSock) {
+        send_response(j, res);
+      }
+    }
+  }
+}
+
 void server_listen() {
   fd_set master;
   fd_set read_fds;
@@ -386,6 +399,7 @@ void server_listen() {
 
   // keep track of the biggest file descriptor
   fdmax = servSock;
+  bool isUpdatePw = false;
 
   while(1) {
     read_fds = master;
@@ -399,6 +413,8 @@ void server_listen() {
 
     // Run through the existing connections looking for data to read
     for(i = 0; i <= fdmax; i++) {
+      isUpdatePw = false;
+
       if(FD_ISSET(i, &read_fds)) {
         if(i == servSock) {
           // handle new connections
@@ -420,17 +436,25 @@ void server_listen() {
             FD_CLR(i, &master);
           }
           else {
+            if(strcmp(method, "PATCH") == 0 && route(req, "/accounts/updatePassword")) {
+              isUpdatePw = true;
+            }
+
             routeHandler(method, req)(req, res);
-            // We got some data from client
-            for(j = 0; j <= fdmax; j++) {
-              // send to everyone
-              if(FD_ISSET(j, &master)) {
-                // except the listener and ourselves
-                if(j == i) {
-                  send_response(j, res);
+
+            if(!isUpdatePw) {
+              // We got some data from client
+              for (j = 0; j <= fdmax; j++) {
+                // send to everyone
+                if (FD_ISSET(j, &master)) {
+                  // except the listener and ourselves
+                  if (j == i) {
+                    send_response(j, res);
+                  }
                 }
               }
             }
+            else sync_pw(master, fdmax, res);
           }
         }
       }
@@ -445,6 +469,11 @@ int main(int argc, char *argv[]) {
   }
 
   servSock = server_init_connect(argv[1]);
+  if(servSock == -1) {
+    close(servSock);
+    err_error(ERR_INVALID_SERVER_ARGUMENT);
+    return FAIL;
+  }
 
   signal(SIGINT, signalHandler);
   signal(SIGQUIT, signalHandler);
