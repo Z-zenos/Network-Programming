@@ -420,18 +420,14 @@ void server_listen() {
           // handle new connections
           Client client = accept_connection(servSock);
           FD_SET(client.sock, &master); // add new socket descriptor to master set
-          if(client.sock > fdmax)
-            fdmax = client.sock;
-          printf("select server: new connection from %s on socket %d\n", get_socketaddr((struct sockaddr*)&client.addr), client.sock);
+          if(client.sock > fdmax) fdmax = client.sock;
         }
         else {
           http_clear(method, req, res);
           // Handle data from client
           if((nbytes = get_request(i, method, req)) <= 0) {
-            if(nbytes == 0)
-              printf("select server: socket %d hung up\n", i);
-            else
-              err_error(ERR_GET_REQUEST_FAILED);
+            if(nbytes == 0) printf("Socket %d \x1b[1;38;5;226mOFFLINE\x1b[0m\n", i);
+            else err_error(ERR_GET_REQUEST_FAILED);
             close(i);
             FD_CLR(i, &master);
           }

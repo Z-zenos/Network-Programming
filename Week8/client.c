@@ -52,7 +52,6 @@ int main(int argc, char *argv[]) {
   }
 
   sock = client_init_connect(argv[1], argv[2]);
-  printf("sock: %d\n", sock);
   if(sock < 0) {
     err_error(ERR_CLIENT_CONNECT_FAILED);
     exit(FAIL);
@@ -67,9 +66,6 @@ int main(int argc, char *argv[]) {
   FD_ZERO(&read_fds);
   FD_SET(sock, &master);
   FD_SET(STDIN_FILENO, &master);
-//  struct timeval tv;
-//  tv.tv_sec = 2;
-//  tv.tv_usec = 500000;
 
   signal(SIGINT, signalHandler);
   signal(SIGQUIT, signalHandler);
@@ -89,24 +85,27 @@ int main(int argc, char *argv[]) {
     printf("%-30s%s\n", "[3]. Sign in",  "[7]. Homepage with domain name");
     printf("%-30s%s\n", "[4]. Search",   "[8]. Homepage with IP address");
     printf("Your choice (1-8, other to quit): ");
-
+    fflush(stdout); // If no have this line then above printf will not display in terminal
     if(select(sock + 1, &read_fds, NULL, NULL, NULL) == -1) {
       exit_safely();
     }
-
-    scanf("%[^\n]s", input);
-    clear_buffer();
-
 
     if(FD_ISSET(sock, &read_fds)) {
       strcpy(res, "");
       code = get_response(sock, res);
       if (code == 200) {
-        printf("%s\n", res);
-        log_success("Update password successfully");
+        printf("\n#########################\n");
+        printf("  %s\n", res);
+        printf("  Password have updated somewhere...");
+        printf("\n#########################\n");
+        printf("\nYour choice (1-8, other to quit): ");
       }
     }
-    else if(FD_ISSET(STDIN_FILENO, &read_fds)) {
+
+    scanf("%[^\n]s", input);
+    clear_buffer();
+
+    if(FD_ISSET(STDIN_FILENO, &read_fds)) {
       if (!(strlen(input) == 1 && (input[0] > 48 && input[0] < 57))) {
         exit_safely();
       }

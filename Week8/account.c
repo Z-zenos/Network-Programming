@@ -28,6 +28,19 @@ void _reset_current_user_() {
   memset(curr_user.homepage, 0, MAX_HOMEPAGE);
 }
 
+void secretify(char *str) {
+  char uname[MAX_USERNAME], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  int code;
+  sscanf(str, "%d success %s %s %s %s", &code, uname, alphas, numbers, curr_user.homepage);
+
+  FILE *fs = fopen("secret_tmp.txt", "w");
+  rewind(fs);
+  fprintf(fs, "%s %s %s", uname, alphas, numbers);
+  remove("secret.txt");
+  rename("secret_tmp.txt", "secret.txt");
+  fclose(fs);
+}
+
 int verify_username(int sock, char *username, int *num_time_wrong_code, int *num_time_wrong_password) {
   http_clear(method, request, response);
   strcpy(method, "GET");
@@ -106,6 +119,7 @@ void signup(int sock) {
       err_error(ERR_REGISTER_ACCOUNT_FAILED);
       return;
     }
+    secretify(response);
     log_success("Register successfully");
   }
 }
@@ -244,6 +258,7 @@ void signin(int sock) {
         sscanf(response, "202 success %s %s %s %s", acc->username, tmp1, tmp2, acc->homepage);
         logged_in = 1;
         _set_current_user_(*acc);
+        secretify(response);
         log_success("Login successfully");
         return;
 
@@ -319,6 +334,7 @@ void change_password(int sock) {
   send_request(sock, method, request);
   int code = get_response(sock, response);
   if(code == 200) {
+    secretify(response);
     log_success("Update password successfully");
     return;
   }
