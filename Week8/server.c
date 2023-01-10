@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#include <time.h>
+
 
 #include "account.h"
 #include "constants.h"
@@ -15,8 +17,11 @@
 #include "log.h"
 #include "network.h"
 #include "utils.h"
+#include "serverHelper.h"
 
 XOR_LL acc_ll = XOR_LL_INITIALISER;
+XOR_LL client_list = XOR_LL_INITIALISER;
+
 int servSock;
 
 Account *findAccount(char *username) {
@@ -111,7 +116,7 @@ int comparePassword(char *password, char *password_input, char *alphas, char *nu
   }
 }
 
-int verifyUsername(char *request, char *response) {
+int verifyUsername(char *request, char *response, int sock) {
   char username[MAX_USERNAME];
   sscanf(request, "/accounts/verify/username/%s", username);
 
@@ -125,7 +130,7 @@ int verifyUsername(char *request, char *response) {
   return SUCCESS;
 }
 
-int verifyPassword(char *request, char *response) {
+int verifyPassword(char *request, char *response, int sock) {
   char username[MAX_USERNAME], password[MAX_PASSWORD];
   sscanf(request, "/accounts/verify/password/%s %s", username, password);
 
@@ -149,7 +154,7 @@ int verifyPassword(char *request, char *response) {
   return FAIL;
 }
 
-int login(char *request, char *response) {
+int login(char *request, char *response, int sock) {
   char username[MAX_USERNAME], password[MAX_PASSWORD];
   sscanf(request, "/accounts/authen?data: %s %s", username, password);
 
@@ -186,12 +191,13 @@ int login(char *request, char *response) {
   encryptPassword(password, token, alphas, numbers);
   strcpy(acc->password, token);
   save_data(acc_ll);
-
+  ClientInfo *clnt = findClient(&client_list, sock);
+  strcpy(clnt->username, acc->username);
   sprintf(response, "202 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
   return SUCCESS;
 }
 
-int createAccount(char *request, char *response) {
+int createAccount(char *request, char *response, int sock) {
   Account *new_acc = (Account *)malloc(sizeof(*new_acc));
   sscanf(request, "/accounts/register?data: %s %s %s", new_acc->username, new_acc->password, new_acc->homepage);
 
@@ -214,7 +220,7 @@ int createAccount(char *request, char *response) {
   return SUCCESS;
 }
 
-int activateAccount(char *request, char *response) {
+int activateAccount(char *request, char *response, int sock) {
   char username[BUFFER], user_code[MAX_ACTIVATE_CODE_LENGTH];
   sscanf(request, "/accounts/activate?data: %s %s", username, user_code);
 
@@ -245,7 +251,7 @@ int activateAccount(char *request, char *response) {
   return SUCCESS;
 }
 
-int getAccount(char *request, char *response) {
+int getAccount(char *request, char *response, int sock) {
   char username[MAX_USERNAME];
   sscanf(request, "/accounts/search/%s", username);
 
@@ -259,7 +265,7 @@ int getAccount(char *request, char *response) {
   return SUCCESS;
 }
 
-int updatePassword(char *request, char *response) {
+int updatePassword(char *request, char *response, int sock) {
   char username[MAX_USERNAME], new_password[MAX_PASSWORD];
   sscanf(request, "/accounts/updatePassword?data: %s %s", username, new_password);
 
@@ -278,7 +284,7 @@ int updatePassword(char *request, char *response) {
   return SUCCESS;
 }
 
-int logout(char *request, char *response) {
+int logout(char *request, char *response, int sock) {
   char username[MAX_USERNAME];
   sscanf(request, "/accounts/logout?data: %s", username);
 
@@ -286,6 +292,8 @@ int logout(char *request, char *response) {
   if(acc || strcmp(username, "bye") == 0) {
     acc->status = 1;
     save_data(acc_ll);
+    ClientInfo *clnt = findClient(&client_list, sock);
+    strcpy(clnt->username, "");
     sprintf(response, "%s",  "202 success Logout successfully");
     return SUCCESS;
   }
@@ -293,7 +301,7 @@ int logout(char *request, char *response) {
   return FAIL;
 }
 
-int getIPv4(char *request, char *response) {
+int getIPv4(char *request, char *response, int sock) {
   char domain[BUFFER];
   sscanf(request, "/accounts/ipv4/%s", domain);
 
@@ -309,7 +317,7 @@ int getIPv4(char *request, char *response) {
   return SUCCESS;
 }
 
-int getDomain(char *request, char *response) {
+int getDomain(char *request, char *response, int sock) {
   char ipv4[BUFFER];
   sscanf(request, "/accounts/domain/%s", ipv4);
 
@@ -324,13 +332,13 @@ int getDomain(char *request, char *response) {
   return SUCCESS;
 }
 
-int route_null(char *request, char *response) { return FAIL; }
+int route_null(char *request, char *response, int sock) { return FAIL; }
 
 int route(char *req, char *route_name) {
   return str_start_with(req, route_name);
 }
 
-int (*routeHandler(char *method, char *req))(char *, char *) {
+int (*routeHandler(char *method, char *req))(char *, char *, int) {
   if (strcmp(method, "GET") == 0) {
     if(route(req, "/accounts/verify/username")) return verifyUsername;
     if(route(req, "/accounts/verify/password")) return verifyPassword;
@@ -372,14 +380,16 @@ void signalHandler(int signo) {
 }
 
 // Function for sync password in multiple devices
-void sync_pw(fd_set master, int fdmax, char *res) {
+void sync_pw(fd_set master, int curr_sock, char *res) {
   printf("Syncing password...\n");
-  int j;
-  for (j = 0; j <= fdmax; j++) {
-    if (FD_ISSET(j, &master)) {
-      if (j != servSock) {
-        send_response(j, res);
-      }
+
+  ClientInfo *clnt = findClient(&client_list, curr_sock);
+
+  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
+  XOR_LL_LOOP_HTT_RST(&client_list, &itr) {
+    ClientInfo *sync_clnt = (ClientInfo *)itr.node_data.ptr;
+    if(strcmp(clnt->username, sync_clnt->username) == 0 && FD_ISSET(sync_clnt->sock, &master)) {
+      send_response(sync_clnt->sock, res);
     }
   }
 }
@@ -390,6 +400,8 @@ void server_listen() {
   int i, j, nbytes;
   int fdmax; // highest file descriptor number
   char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
+  char req_time[100];
+  time_t now = time(0);
 
   FD_ZERO(&master);
   FD_ZERO(&read_fds);
@@ -421,13 +433,28 @@ void server_listen() {
           Client client = accept_connection(servSock);
           FD_SET(client.sock, &master); // add new socket descriptor to master set
           if(client.sock > fdmax) fdmax = client.sock;
+          char address[100];
+          strcpy(address, get_socketaddr((struct sockaddr *) &client.addr));
+          addClient(&client_list, client.sock, address);
+          now = time(0);
+          strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+          printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time, address);
+
         }
         else {
           http_clear(method, req, res);
+          strcpy(req_time, "");
+          ClientInfo *requester = findClient(&client_list, i);
+          now = time(0);
+          strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+
           // Handle data from client
           if((nbytes = get_request(i, method, req)) <= 0) {
-            if(nbytes == 0) printf("Socket %d \x1b[1;38;5;226mOFFLINE\x1b[0m\n", i);
+            if(nbytes == 0) {
+              printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;226mOFFLINE\x1b[0m\n", req_time, requester->address);
+            }
             else err_error(ERR_GET_REQUEST_FAILED);
+            removeClient(&client_list, i);
             close(i);
             FD_CLR(i, &master);
           }
@@ -436,7 +463,8 @@ void server_listen() {
               isUpdatePw = true;
             }
 
-            routeHandler(method, req)(req, res);
+            printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n", req_time, requester->address, method, req, nbytes);
+            routeHandler(method, req)(req, res, i);
 
             if(!isUpdatePw) {
               // We got some data from client
@@ -450,7 +478,7 @@ void server_listen() {
                 }
               }
             }
-            else sync_pw(master, fdmax, res);
+            else sync_pw(master, i, res);
           }
         }
       }
@@ -479,6 +507,7 @@ int main(int argc, char *argv[]) {
 
   // Connect database
   xor_ll_init(&acc_ll);
+  xor_ll_init(&client_list);
   load_data(&acc_ll);
 
   // Listening request
