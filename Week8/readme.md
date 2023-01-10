@@ -9,5 +9,6 @@
   - Encrypt password in database
   - Pass function as parameter
   - Remove the link between user and data
-  - Use multithread
+  - Use select multiplexing in client and server
+  - Sync password to all account same username
   - Use Signal Handler
