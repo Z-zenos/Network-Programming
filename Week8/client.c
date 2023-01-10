@@ -98,7 +98,6 @@ int main(int argc, char *argv[]) {
         printf("  %s\n", res);
         printf("  Password have updated somewhere...");
         printf("\n#########################\n");
-        printf("\nYour choice (1-8, other to quit): ");
       }
     }
 
