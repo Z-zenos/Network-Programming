@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
         printf("  Password have updated somewhere...");
         printf("\n#########################\n");
       }
+      continue;
     }
 
     scanf("%[^\n]s", input);

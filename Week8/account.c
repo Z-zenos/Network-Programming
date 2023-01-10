@@ -199,7 +199,7 @@ void activate(int sock) {
     }
 
     do {
-      input("Would you like to continue? (y/n): ", opt, 1, false);
+      input("Would you like to continue? (y/n)", opt, 1, false);
     } while(!(opt[0] == 'y' || opt[0] == 'n'));
     if(opt[0] == 'y') continue;
     else if(opt[0] == 'n') break;
@@ -265,7 +265,7 @@ void signin(int sock) {
       // Password incorrect
       case 400:
         err_error(ERR_PASSWORD_INCORRECT);
-        sscanf(response, "401 fail %d %d", &num_time_wrong_code, &num_time_wrong_password);
+        sscanf(response, "400 fail %d %d", &num_time_wrong_code, &num_time_wrong_password);
         break;
 
       // Username and password correct but account is blocked or not active
@@ -284,7 +284,7 @@ void signin(int sock) {
     }
 
     do {
-      input("Would you like to continue? (y/n): ", opt, 1, false);
+      input("Would you like to continue? (y/n)", opt, 1, false);
     } while(!(opt[0] == 'y' || opt[0] == 'n'));
     if(opt[0] == 'y') continue;
     else if(opt[0] == 'n') break;
