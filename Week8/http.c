@@ -209,17 +209,12 @@ Client accept_connection(int sock) {
   // Set Length of client address structure (in-out parameter)
   socklen_t clientAddrLen = sizeof(client.addr);
 
-  // Wait for a client to connect
   client.sock = accept(sock, (struct sockaddr *) &client.addr, &clientAddrLen);
   if (client.sock < 0) {
     err_error(ERR_CLIENT_CONNECT_FAILED);
     exit(FAIL);
   }
 
-  char req_time[100];
-  time_t now = time(0);
-  strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-  printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time, get_socketaddr((struct sockaddr *) &client.addr));
   return client;
 }
 
@@ -227,20 +222,11 @@ Client accept_connection(int sock) {
 int get_request(int clntSock, char *method, char *request) {
   // Size of received message DEAL REQUEST FROM CLIENT
   ssize_t numBytesRcvd = recv(clntSock, request, MAX_MESSAGE, 0);
-  char req_time[100];
   if (numBytesRcvd <= 0) {
     return numBytesRcvd;
   }
-
   request[numBytesRcvd] = '\0';
-
-  // Split method and pure request
   parse_request(method, request);
-
-
-  time_t now = time(0);
-  strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-  printf("\x1b[1;38;5;256m%s>\x1b[0m \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%ld\x1b[0m\n", req_time, method, request, numBytesRcvd);
   return numBytesRcvd;
 }
 
