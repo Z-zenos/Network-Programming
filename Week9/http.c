@@ -10,10 +10,19 @@
 #include "config.h"
 #include "http.h"
 
-void http_clear(char *cmd, char *req, char *res) {
-  memset(cmd, 0, CMD_L);
-  memset(req, 0, CONTENT_L);
-  memset(res, 0, CONTENT_L);
+void z_error(const char *func_n, char *str) {
+	printf("\x1b[1;38;5;196m[Error]\x1b[0m    ");
+  printf("<%s> %s\n", func_n, str);
+  exit(FAILURE);
+}
+
+void z_warn(char *str) {
+	printf("\x1b[1;38;5;226m[Warn]\x1b[0m   %s\n", str);
+}
+
+void z_clear(char *req, char *res) {
+  memset(req, 0, REQ_L);
+  memset(res, 0, RES_L);
 }
 
 void z_clr_buff() {
@@ -21,7 +30,8 @@ void z_clr_buff() {
   while ((c = getchar()) != '\n' && c != EOF);
 }
 
-bool z_is_ip(const char *ip) {
+bool z_is_ip(const char *ip) {    /* Handle login */
+
   struct sockaddr_in sa;
   char ip_tmp[CONTENT_L];
   strcpy(ip_tmp, ip);
@@ -104,7 +114,7 @@ int z_setup_server(char *service) {
 
   struct addrinfo *server;
   if (getaddrinfo(NULL, service, &addrConfig, &server) != 0) {
-    z_error("<%s> getaddrinfo() fail", __func__);
+    z_error(__func__, "getaddrinfo() fail");
   }
 
   int server_fd = -1;
@@ -116,7 +126,7 @@ int z_setup_server(char *service) {
       struct sockaddr_storage localAddr;
       socklen_t addrSize = sizeof(localAddr);
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
-        z_error("<%s> getsockname() fail", __func__);
+        z_error(__func__, "getsockname() fail");
       }
       fputs("Server listening at: ", stdout);
       z_print_socket_addr((struct sockaddr *) &localAddr, stdout);
@@ -126,7 +136,7 @@ int z_setup_server(char *service) {
 
     close(server_fd);
     server_fd = -1;
-    z_error("<%s> Bind / Listen fail", __func__);
+    z_error(__func__, "Bind / Listen fail");
   }
 
   freeaddrinfo(server);
@@ -142,7 +152,7 @@ int z_connect2server(char *server, char *port) {
 
   struct addrinfo *servAddr;
   if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
-    z_error("<%s> getaddrinfo fail", __func__);
+    z_error(__func__, "getaddrinfo fail");
   }
 
   int client_fd = -1;
@@ -167,25 +177,23 @@ Client z_accept(int server_fd) {
 
   client.sock = accept(server_fd, (struct sockaddr *) &client.addr, &clientAddrLen);
   if (client.sock < 0) {
-    z_error("<%s> accept denied", __func__);
+    z_error(__func__, "accept denied");
   }
   return client;
 }
 
-int z_get_req(int client_fd, char *cmd, char *req) {
+int z_get_req(int client_fd, char *req) {
   ssize_t numBytesRcvd = recv(client_fd, req, REQ_L, 0);
   return numBytesRcvd;
 }
 
 int z_get_res(int server_fd, char *res) {
-  int code;
-  sscanf(res, "%d %[^\n]s", &code, res);
-  ssize_t numBytes = recv(server_fd, res, RES_L, 0);
-  return code;
+  recv(server_fd, res, RES_L, 0);
+  return SUCCESS;
 }
 
 int z_send_res(int client_fd, char *res, int code, char *msg) {
-  sprintf(res, "{ code: %d, message: '%s' }", code, msg);
+  sprintf(res, "%d %s", code, msg);
   size_t res_l = strlen(res);
   ssize_t numBytesSent = send(client_fd, res, res_l, 0);
   return numBytesSent;

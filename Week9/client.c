@@ -52,12 +52,12 @@ void z_requestify(char *req, char *input) {
   char cmd[CMD_L], content[CONTENT_L];
   sscanf(input, "%s %[^\n]s", cmd, content);
   int content_l = (int)strlen(content);
-  sprintf(req, "%s\r\nContent-Length: %d\r\n\r\n%s", cmd, content_l, content);
+  sprintf(req, "%s HTTP/1.1\r\nContent-Length: %d\r\n\r\n%s", cmd, content_l, content);
 }
 
 int main(int argc, char *argv[]) {
   if(argc != 3 || !z_is_ip(argv[1]) || !z_is_port(argv[2])) {
-    z_error("\"Invalid parameter\nUsage: ./server <ipv4> <port>\n");
+    z_error(__func__, "Invalid parameter\nUsage: ./server <ipv4> <port>");
   }
 
   printf("\n\tMESSAGE PROGRAM\n");
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 
   clnt_sock = z_connect2server(argv[1], argv[2]);
   if(clnt_sock < 0) {
-    z_error("Can't connect to server");
+    z_error(__func__, "Can't connect to server");
   }
 
   signal(SIGINT, signalHandler);
@@ -76,16 +76,25 @@ int main(int argc, char *argv[]) {
 
   int code;
   char input[CONTENT_L];
-  char cmd[CMD_L], req[REQ_L], res[RES_L];
+  char req[REQ_L], res[RES_L], msg[RES_L], username[USN_L];
+
+  int logged = false;
 
   do {
-    z_clear(cmd, req, res);
-    printf("[C]: ");
+    z_clear(req, res);
+    strcpy(msg, "");
+    printf("[C%s%s]: ", logged ? "@" : "",  logged ? username : "");
     scanf("%[^\n]s", input);
     z_clr_buff();
     z_requestify(req, input);
     z_send_req(clnt_sock, req);
-    code = z_get_res(clnt_sock, res);
-    printf("[S]: \x1b[1;38;5;47m%d\x1b[0m %s", code, res);
+    z_get_res(clnt_sock, res);
+    sscanf(res, "%d %[^\n]s", &code, msg);
+    if(code == 100) {
+      logged = true;
+      strncpy(username, input + 5, strlen(input) - 5);
+      username[strlen(username)] = '\0';
+    }
+    printf("[S]: \x1b[1;38;5;47m%d\x1b[0m \x1b[1;38;5;226m%s\x1b[0m\n", code, msg);
   } while(1);
 }
