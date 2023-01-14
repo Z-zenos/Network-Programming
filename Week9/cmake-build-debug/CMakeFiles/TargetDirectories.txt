@@ -1,3 +1,0 @@
-/home/fuurinkazan/Documents/C/Network Programming/Week9/cmake-build-debug/CMakeFiles/Week9.dir
-/home/fuurinkazan/Documents/C/Network Programming/Week9/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/fuurinkazan/Documents/C/Network Programming/Week9/cmake-build-debug/CMakeFiles/rebuild_cache.dir
