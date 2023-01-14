@@ -58,6 +58,7 @@ void z_requestify(char *req, char *input) {
 int main(int argc, char *argv[]) {
   if(argc != 3 || !z_is_ip(argv[1]) || !z_is_port(argv[2])) {
     z_error(__func__, "Invalid parameter\nUsage: ./server <ipv4> <port>");
+    exit(FAILURE);
   }
 
   printf("\n\tMESSAGE PROGRAM\n");
@@ -66,6 +67,7 @@ int main(int argc, char *argv[]) {
   clnt_sock = z_connect2server(argv[1], argv[2]);
   if(clnt_sock < 0) {
     z_error(__func__, "Can't connect to server");
+    exit_safely();
   }
 
   signal(SIGINT, signalHandler);
@@ -86,6 +88,11 @@ int main(int argc, char *argv[]) {
     printf("[C%s%s]: ", logged ? "@" : "",  logged ? username : "");
     scanf("%[^\n]s", input);
     z_clr_buff();
+
+    if(strcmp(input, "EXIT") == 0) {
+      exit_safely();
+    }
+
     z_requestify(req, input);
     z_send_req(clnt_sock, req);
     z_get_res(clnt_sock, res);

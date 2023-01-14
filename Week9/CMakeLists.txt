@@ -10,4 +10,5 @@ add_executable(Week9
         config.h
         http.c
         http.h
-        server.c)
+        server.c
+        serverHelper.c)

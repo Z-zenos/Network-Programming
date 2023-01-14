@@ -13,7 +13,6 @@
 void z_error(const char *func_n, char *str) {
 	printf("\x1b[1;38;5;196m[Error]\x1b[0m    ");
   printf("<%s> %s\n", func_n, str);
-  exit(FAILURE);
 }
 
 void z_warn(char *str) {
@@ -43,6 +42,13 @@ bool z_is_ip(const char *ip) {    /* Handle login */
 bool z_is_port(char *str) {
   while (*str) {
     if (isdigit(*str++) == 0) return false;
+  }
+  return true;
+}
+
+bool z_is_usr(char *str) {
+  while (*str) {
+    if (isalnum(*str++) == 0) return false;
   }
   return true;
 }
@@ -115,6 +121,7 @@ int z_setup_server(char *service) {
   struct addrinfo *server;
   if (getaddrinfo(NULL, service, &addrConfig, &server) != 0) {
     z_error(__func__, "getaddrinfo() fail");
+    exit(FAILURE);
   }
 
   int server_fd = -1;
@@ -127,6 +134,7 @@ int z_setup_server(char *service) {
       socklen_t addrSize = sizeof(localAddr);
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
         z_error(__func__, "getsockname() fail");
+        exit(FAILURE);
       }
       fputs("Server listening at: ", stdout);
       z_print_socket_addr((struct sockaddr *) &localAddr, stdout);
@@ -137,6 +145,7 @@ int z_setup_server(char *service) {
     close(server_fd);
     server_fd = -1;
     z_error(__func__, "Bind / Listen fail");
+    exit(FAILURE);
   }
 
   freeaddrinfo(server);
@@ -153,6 +162,7 @@ int z_connect2server(char *server, char *port) {
   struct addrinfo *servAddr;
   if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
     z_error(__func__, "getaddrinfo fail");
+    exit(FAILURE);
   }
 
   int client_fd = -1;
@@ -178,6 +188,7 @@ Client z_accept(int server_fd) {
   client.sock = accept(server_fd, (struct sockaddr *) &client.addr, &clientAddrLen);
   if (client.sock < 0) {
     z_error(__func__, "accept denied");
+    exit(FAILURE);
   }
   return client;
 }
