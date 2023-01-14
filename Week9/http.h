@@ -37,6 +37,7 @@ void z_clear(char *, char*);
 bool z_is_ip(const char*);
 bool z_is_port(char *);
 bool z_is_usr(char *);
+char *z_trim(char *);
 void z_clr_buff();
 void z_error(const char*, char*);
 void z_warn(char *);

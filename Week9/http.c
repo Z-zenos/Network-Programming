@@ -30,7 +30,6 @@ void z_clr_buff() {
 }
 
 bool z_is_ip(const char *ip) {    /* Handle login */
-
   struct sockaddr_in sa;
   char ip_tmp[CONTENT_L];
   strcpy(ip_tmp, ip);
@@ -51,6 +50,36 @@ bool z_is_usr(char *str) {
     if (isalnum(*str++) == 0) return false;
   }
   return true;
+}
+
+char *z_trim(char *str) {
+  if( str == NULL ) { return NULL; }
+  if( str[0] == '\0' ) { return str; }
+
+  size_t len = 0;
+  char *frontp = str;
+  char *endp = NULL;
+
+  len = strlen(str);
+  endp = str + len;
+
+  while(isspace((unsigned char) *frontp)) { ++frontp; }
+  if( endp != frontp ) {
+    while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
+  }
+
+  if( frontp != str && endp == frontp )
+    *str = '\0';
+  else if( str + len - 1 != endp )
+    *(endp + 1) = '\0';
+
+  endp = str;
+  if( frontp != str ) {
+    while( *frontp ) { *endp++ = *frontp++; }
+    *endp = '\0';
+  }
+
+  return str;
 }
 
 void z_print_socket_addr(const struct sockaddr *address, FILE *stream) {

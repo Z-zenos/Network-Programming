@@ -51,6 +51,7 @@ bool z_str_is_empty(char *str) {
 void z_requestify(char *req, char *input) {
   char cmd[CMD_L], content[CONTENT_L];
   sscanf(input, "%s %[^\n]s", cmd, content);
+  strcpy(content, z_trim(content));
   int content_l = (int)strlen(content);
   sprintf(req, "%s HTTP/1.1\r\nContent-Length: %d\r\n\r\n%s", cmd, content_l, content);
 }
@@ -89,6 +90,7 @@ int main(int argc, char *argv[]) {
     scanf("%[^\n]s", input);
     z_clr_buff();
 
+    strcpy(input, z_trim(input));
     if(strcmp(input, "EXIT") == 0) {
       exit_safely();
     }
@@ -100,6 +102,7 @@ int main(int argc, char *argv[]) {
     if(code == 100) {
       logged = true;
       strncpy(username, input + 5, strlen(input) - 5);
+      strcpy(username, z_trim(username));
       username[strlen(username)] = '\0';
     }
     printf("[S]: \x1b[1;38;5;47m%d\x1b[0m \x1b[1;38;5;226m%s\x1b[0m\n", code, msg);
