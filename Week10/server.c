@@ -4,9 +4,8 @@
 #include <ctype.h>
 #include <signal.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
 #include <time.h>
+#include <sys/poll.h>
 
 
 #include "account.h"
@@ -380,7 +379,7 @@ void signalHandler(int signo) {
 }
 
 // Function for sync password in multiple devices
-void sync_pw(fd_set master, int curr_sock, char *res) {
+void sync_pw(int curr_sock, char *res) {
   printf("Syncing password...\n");
 
   ClientInfo *clnt = findClient(&client_list, curr_sock);
@@ -388,97 +387,78 @@ void sync_pw(fd_set master, int curr_sock, char *res) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
   XOR_LL_LOOP_HTT_RST(&client_list, &itr) {
     ClientInfo *sync_clnt = (ClientInfo *)itr.node_data.ptr;
-    if(strcmp(clnt->username, sync_clnt->username) == 0 && FD_ISSET(sync_clnt->sock, &master)) {
+    if(strcmp(clnt->username, sync_clnt->username) == 0) {
       send_response(sync_clnt->sock, res);
     }
   }
 }
 
 void server_listen() {
-  fd_set master;
-  fd_set read_fds;
-  int i, j, nbytes;
-  int fdmax; // highest file descriptor number
+  struct pollfd fds[10];
   char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
   char req_time[100];
   time_t now = time(0);
-
-  FD_ZERO(&master);
-  FD_ZERO(&read_fds);
-
-  // Push server socket to the master set
-  FD_SET(servSock, &master);
-
-  // keep track of the biggest file descriptor
-  fdmax = servSock;
+  int numfds = 2, curr_fd, i, j, nbytes;
   bool isUpdatePw = false;
 
-  while(1) {
-    read_fds = master;
+  fds[0].fd = servSock;
+  fds[0].events = POLLIN;
 
-    // Suspend program until descriptor is ready or timeout
-    if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
-      log_error("select() error");
+  while(1) {
+    if((poll(fds, numfds, -1)) == -1) {
+      log_error("poll() error");
       close(servSock);
       exit(FAIL);
     }
 
-    // Run through the existing connections looking for data to read
-    for(i = 0; i <= fdmax; i++) {
+    for(i = 0; i < numfds; i++) {
       isUpdatePw = false;
-
-      if(FD_ISSET(i, &read_fds)) {
-        if(i == servSock) {
+      curr_fd = fds[i].fd;
+      if (curr_fd != -1) {
+        if (curr_fd == servSock) {
           // handle new connections
           Client client = accept_connection(servSock);
-          FD_SET(client.sock, &master); // add new socket descriptor to master set
-          if(client.sock > fdmax) fdmax = client.sock;
+          fds[numfds].fd = client.sock;
+          fds[numfds].events = POLLIN;
+          numfds++;
           char address[100];
           strcpy(address, get_socketaddr((struct sockaddr *) &client.addr));
           addClient(&client_list, client.sock, address);
           now = time(0);
           strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-          printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time, address);
-
-        }
-        else {
+          printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time,
+                 address);
+        } else {
           http_clear(method, req, res);
           strcpy(req_time, "");
-          ClientInfo *requester = findClient(&client_list, i);
+          ClientInfo *requester = findClient(&client_list, curr_fd);
           now = time(0);
           strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
 
           // Handle data from client
-          if((nbytes = get_request(i, method, req)) <= 0) {
-            if(nbytes == 0) {
-              printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;226mOFFLINE\x1b[0m\n", req_time, requester->address);
-            }
-            else err_error(ERR_GET_REQUEST_FAILED);
-            removeClient(&client_list, i);
-            close(i);
-            FD_CLR(i, &master);
-          }
-          else {
-            if(strcmp(method, "PATCH") == 0 && route(req, "/accounts/updatePassword")) {
+          if ((nbytes = get_request(curr_fd, method, req)) <= 0) {
+            if (nbytes == 0) {
+              printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;226mOFFLINE\x1b[0m\n",
+                     req_time, requester->address);
+            } else err_error(ERR_GET_REQUEST_FAILED);
+            removeClient(&client_list, curr_fd);
+            close(curr_fd);
+            fds[i].fd = -1;
+          } else {
+            if (strcmp(method, "PATCH") == 0 && route(req, "/accounts/updatePassword")) {
               isUpdatePw = true;
             }
 
-            printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n", req_time, requester->address, method, req, nbytes);
-            routeHandler(method, req)(req, res, i);
+            printf(
+              "\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n",
+              req_time, requester->address, method, req, nbytes);
+            routeHandler(method, req)(req, res, curr_fd);
 
-            if(!isUpdatePw) {
-              // We got some data from client
-              for (j = 0; j <= fdmax; j++) {
-                // send to everyone
-                if (FD_ISSET(j, &master)) {
-                  // except the listener and ourselves
-                  if (j == i) {
-                    send_response(j, res);
-                  }
-                }
-              }
-            }
-            else sync_pw(master, i, res);
+            if (!isUpdatePw) {
+              for (j = 1; j < numfds; j++)
+                if (fds[j].fd == curr_fd)
+                  send_response(fds[j].fd, res);
+            } else sync_pw(curr_fd, res);
           }
         }
       }
