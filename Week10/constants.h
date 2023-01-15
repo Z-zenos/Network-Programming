@@ -14,6 +14,7 @@
 #define USER_FILE "account.txt"
 #define MAX 50000
 #define WIDTH 100
+#define SLOTS 10
 
 #define KEY 12
 
