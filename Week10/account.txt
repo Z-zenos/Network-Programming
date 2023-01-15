@@ -27,9 +27,10 @@ lua lua123 2 0 0 192.168.1.1
 .NET .NE123 1 0 0 8.8.8.8
 typescript typ123 2 0 0 youtube.com
 vithon vit123 2 0 0 dantri.vn
-viscript j]g%&''() -1 0 0 dantri.vn
+viscript j]g%&'()'()*+ 1 0 0 dantri.vn
 vila j%&']`%&' 1 0 2 google.com
 vdart j%&XU%& 1 0 0 dantri.vn
 vgo %&'$%& 1 0 1 dantri.vn
 vilab j]`%&''() -1 0 0 8.8.8.8
 vinux j]b%&''() 1 0 0 man7.org
+vkotlin j_c%&''() 2 0 0 notion.so
