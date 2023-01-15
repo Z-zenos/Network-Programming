@@ -1,211 +1,484 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <ctype.h>
 #include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/time.h>
 #include <time.h>
 
+
+#include "account.h"
+#include "constants.h"
+#include "error.h"
 #include "http.h"
-#include "config.h"
 #include "linkedlist.h"
+#include "log.h"
+#include "network.h"
+#include "utils.h"
 #include "serverHelper.h"
 
-int serv_sock;
+XOR_LL acc_ll = XOR_LL_INITIALISER;
 XOR_LL client_list = XOR_LL_INITIALISER;
-XOR_LL username_list = XOR_LL_INITIALISER;
 
-void z_exit() {
-  close(serv_sock);
-  xor_ll_destroy(&client_list);
-  xor_ll_destroy(&username_list);
-  exit(SUCCESS);
-}
+int servSock;
 
-bool z_find_username(char *username) {
+Account *findAccount(char *username) {
   XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
-  XOR_LL_LOOP_HTT_RST(&username_list, &itr) {
-    char *curr_username = (char *)itr.node_data.ptr;
-    if(strcmp(username, curr_username) == 0) return SUCCESS;
+  XOR_LL_LOOP_HTT_RST(&acc_ll, &itr) {
+    Account *acc = (Account*)itr.node_data.ptr;
+    if(strcmp(acc->username, username) == 0) return acc;
   }
-  return FAILURE;
+  return NULL;
 }
 
-void z_load_username() {
-  FILE *username_f = fopen(USN_F, "r");
-  if(!username_f) {
-    z_error(__func__, "Can't open username.txt");
-    z_exit();
+void encrypt(char *password, int key) {
+  unsigned int i;
+  for(i = 0; i < strlen(password); ++i) {
+    password[i] = password[i] - key;
+  }
+}
+
+void decrypt(char *password, int key) {
+  unsigned int i;
+  for(i = 0; i < strlen(password); ++i) {
+    password[i] = password[i] + key;
+  }
+}
+
+bool isValidPassword(char *password) {
+  int i, passLen = strlen(password);
+  for(i = 0; i < passLen; i++)
+    if(isalnum(password[i]) == 0)
+      return FAIL;
+
+  return strcmp(password, "bye") == 0 ? FAIL : SUCCESS;
+}
+
+void encryptPassword(char *password, char *token, char *alphas, char *numbers) {
+  int ia = 0, in = 0, it, i, passLen = strlen(password);
+  strcpy(token, password);
+  it = passLen;
+  for(i = 0; i < passLen; i++) {
+    if(isdigit(password[i])) {
+      numbers[in++] = password[i];
+      it += sprintf(&token[it], " %d", i);
+    }
+    else
+      alphas[ia++] = password[i];
+  }
+  token[it] = '\0';
+  alphas[ia] = '\0';
+  numbers[in] = '\0';
+
+  encrypt(token, KEY);
+  encrypt(alphas, KEY);
+  encrypt(numbers, KEY);
+}
+
+int comparePassword(char *password, char *password_input, char *alphas, char *numbers) {
+  char password_tmp[MAX_PASSWORD];
+  strcpy(password_tmp, password);
+  decrypt(password_tmp, KEY);
+  decrypt(alphas, KEY);
+  if(!strlen(alphas) && !strlen(numbers)) {
+    sscanf(password_tmp, "%s", password_tmp);
+    return strcmp(password_tmp, password_input) == 0 ? SUCCESS : FAIL;
+  }
+  else if(!strlen(numbers)) {
+    return strcmp(password_tmp, alphas) == 0 ? SUCCESS : FAIL;
+  }
+  else {
+    char position[BUFFER] = "", pwd[MAX_PASSWORD];
+    sscanf(password_tmp, "%s %[^\n]s", pwd, position);
+    decrypt(numbers, KEY);
+
+    char *token;
+    int i, ia = 0, in = 0, passLen = strlen(pwd);
+    char passwordEncrypted[MAX_PASSWORD];
+
+    token = strtok(position, " ");
+    int pos = (int)strtol(token, NULL, 10);
+
+    for(i = 0; i < passLen; i++) {
+      if(i == pos) {
+        passwordEncrypted[i] = numbers[in++];
+        token = strtok(position, " ");
+        pos = token && (int)strtol(token, NULL, 10);
+        continue;
+      }
+      passwordEncrypted[i] = alphas[ia++];
+    }
+
+    passwordEncrypted[i] = '\0';
+    return strcmp(pwd, passwordEncrypted) ? SUCCESS : FAIL;
+  }
+}
+
+int verifyUsername(char *request, char *response, int sock) {
+  char username[MAX_USERNAME];
+  sscanf(request, "/accounts/verify/username/%s", username);
+
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "404 fail Account not exist");
+    return FAIL;
   }
 
-  char line[USN_L];
-  rewind(username_f);
-  while (fgets(line, sizeof(line), username_f)) {
-    xor_ll_push_tail(&username_list, line, strlen(line));
+  sprintf(response, "200 success %s %d %d", acc->username, acc->num_time_wrong_code, acc->num_time_wrong_password);
+  return SUCCESS;
+}
+
+int verifyPassword(char *request, char *response, int sock) {
+  char username[MAX_USERNAME], password[MAX_PASSWORD];
+  sscanf(request, "/accounts/verify/password/%s %s", username, password);
+
+  if(isValidPassword(password)) {
+    Account *acc = findAccount(username);
+    if(!acc) {
+      sprintf(response, "%s", "404 fail Account not exist");
+      return FAIL;
+    }
+
+    if(!comparePassword(acc->password, password, "", "")) {
+      strcpy(response, "400 fail Password incorrect");
+      return FAIL;
+    }
+
+    sprintf(response, "%s", "200 success Password correct");
+    return SUCCESS;
   }
-  fclose(username_f);
+
+  strcpy(response, "400 fail Password incorrect");
+  return FAIL;
+}
+
+int login(char *request, char *response, int sock) {
+  char username[MAX_USERNAME], password[MAX_PASSWORD];
+  sscanf(request, "/accounts/authen?data: %s %s", username, password);
+
+  Account *acc = findAccount(username);
+
+  if(!comparePassword(acc->password, password, "", "")) {
+    ++acc->num_time_wrong_password;
+    if(acc->num_time_wrong_password == MAX_WRONG_PASSWORD) {
+      acc->status = 0;
+      save_data(acc_ll);
+      sprintf(response, "403 fail %d Account blocked", acc->num_time_wrong_password);
+      return FAIL;
+    }
+    save_data(acc_ll);
+    sprintf(response, "400 fail %d %d Password incorrect", acc->num_time_wrong_code, acc->num_time_wrong_password);
+    return FAIL;
+  }
+
+  // Check status of account(if account blocked/not activated -> return main menu)
+  if(acc->status == 0) {
+    sprintf(response, "%s", "401 fail Account blocked");
+    return FAIL;
+  }
+
+  if(acc->status == 2) {
+    sprintf(response, "%s", "401 fail Account non active");
+    return FAIL;
+  }
+
+  acc->status = -1;
+  acc->num_time_wrong_code = 0;
+  acc->num_time_wrong_password = 0;
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(password, token, alphas, numbers);
+  strcpy(acc->password, token);
+  save_data(acc_ll);
+  ClientInfo *clnt = findClient(&client_list, sock);
+  strcpy(clnt->username, acc->username);
+  sprintf(response, "202 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
+  return SUCCESS;
+}
+
+int createAccount(char *request, char *response, int sock) {
+  Account *new_acc = (Account *)malloc(sizeof(*new_acc));
+  sscanf(request, "/accounts/register?data: %s %s %s", new_acc->username, new_acc->password, new_acc->homepage);
+
+  if(!isValidPassword(new_acc->password)) {
+    sprintf(response, "%s", "400 fail Password incorrect");
+    return FAIL;
+  }
+
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(new_acc->password, token, alphas, numbers);
+  strcpy(new_acc->password, token);
+
+  // Default status = idle
+  new_acc->status = 2;
+  new_acc->num_time_wrong_password = new_acc->num_time_wrong_code = 0;
+
+  xor_ll_push_tail(&acc_ll, new_acc, sizeof *new_acc);
+  save_data(acc_ll);
+  sprintf(response, "201 success %s %s %s %s", new_acc->username, alphas, numbers, new_acc->homepage);
+  return SUCCESS;
+}
+
+int activateAccount(char *request, char *response, int sock) {
+  char username[BUFFER], user_code[MAX_ACTIVATE_CODE_LENGTH];
+  sscanf(request, "/accounts/activate?data: %s %s", username, user_code);
+
+  Account *acc = findAccount(username);
+
+  if(strcmp(user_code, ACTIVATION_CODE) != 0) {
+    ++acc->num_time_wrong_code;
+    if(acc->num_time_wrong_code == MAX_WRONG_CODE) {
+      acc->status = 0;
+      sprintf(response, "%s", "403 fail Account blocked");
+      save_data(acc_ll);
+      return FAIL;
+    }
+    sprintf(response, "400 fail %d Activate code incorrect", acc->num_time_wrong_code);
+    save_data(acc_ll);
+    return FAIL;
+  }
+
+  if(acc->status == 1 || acc->status == -1) {
+    sprintf(response, "%s", "204 fail Account activated");
+    return FAIL;
+  }
+  acc->status = 1;
+  acc->num_time_wrong_code = 0;
+  acc->num_time_wrong_password = 0;
+  save_data(acc_ll);
+  sprintf(response, "%s", "200 success Activate account successfully");
+  return SUCCESS;
+}
+
+int getAccount(char *request, char *response, int sock) {
+  char username[MAX_USERNAME];
+  sscanf(request, "/accounts/search/%s", username);
+
+  Account *acc = findAccount(username);
+  if(!acc) {
+    sprintf(response, "%s", "404 fail Account not exist");
+    return FAIL;
+  }
+
+  sprintf(response, "200 success %s %d %s", acc->username, acc->status, acc->homepage);
+  return SUCCESS;
+}
+
+int updatePassword(char *request, char *response, int sock) {
+  char username[MAX_USERNAME], new_password[MAX_PASSWORD];
+  sscanf(request, "/accounts/updatePassword?data: %s %s", username, new_password);
+
+  if(!isValidPassword(new_password)) {
+    sprintf(response, "%s", "400 fail Password only have alpha, number and different string 'bye'");
+    return FAIL;
+  }
+
+  Account *acc = findAccount(username);
+  strcpy(acc->password, new_password);
+  char token[MAX_PASSWORD], alphas[MAX_PASSWORD], numbers[MAX_PASSWORD];
+  encryptPassword(acc->password, token, alphas, numbers);
+  strcpy(acc->password, token);
+  save_data(acc_ll);
+  sprintf(response, "200 success %s %s %s %s", acc->username, alphas, numbers, acc->homepage);
+  return SUCCESS;
+}
+
+int logout(char *request, char *response, int sock) {
+  char username[MAX_USERNAME];
+  sscanf(request, "/accounts/logout?data: %s", username);
+
+  Account *acc = findAccount(username);
+  if(acc || strcmp(username, "bye") == 0) {
+    acc->status = 1;
+    save_data(acc_ll);
+    ClientInfo *clnt = findClient(&client_list, sock);
+    strcpy(clnt->username, "");
+    sprintf(response, "%s",  "202 success Logout successfully");
+    return SUCCESS;
+  }
+  sprintf(response, "%s",  "400 fail Logout failed");
+  return FAIL;
+}
+
+int getIPv4(char *request, char *response, int sock) {
+  char domain[BUFFER];
+  sscanf(request, "/accounts/ipv4/%s", domain);
+
+  char ipv4List[BUFFER];
+  memset(ipv4List, 0, BUFFER);
+  domain_name_to_ip(domain, ipv4List);
+  if(strlen(ipv4List) == 0) {
+    sprintf(response, "%s", "404 fail Can't find ipv4 address");
+    return FAIL;
+  }
+
+  sprintf(response, "200 success %s", ipv4List);
+  return SUCCESS;
+}
+
+int getDomain(char *request, char *response, int sock) {
+  char ipv4[BUFFER];
+  sscanf(request, "/accounts/domain/%s", ipv4);
+
+  char domainList[BUFFER];
+  memset(domainList, 0, BUFFER);
+  ip_to_domain_name(ipv4, domainList);
+  if(strlen(domainList) == 0) {
+    sprintf(response, "%s", "404 fail Can't find domain name");
+    return FAIL;
+  }
+  sprintf(response, "200 success %s", domainList);
+  return SUCCESS;
+}
+
+int route_null(char *request, char *response, int sock) { return FAIL; }
+
+int route(char *req, char *route_name) {
+  return str_start_with(req, route_name);
+}
+
+int (*routeHandler(char *method, char *req))(char *, char *, int) {
+  if (strcmp(method, "GET") == 0) {
+    if(route(req, "/accounts/verify/username")) return verifyUsername;
+    if(route(req, "/accounts/verify/password")) return verifyPassword;
+    if(route(req, "/accounts/ipv4"))            return getIPv4;
+    if(route(req, "/accounts/domain"))          return getDomain;
+    if(route(req, "/accounts/search"))          return getAccount;
+  } else if (strcmp(method, "POST") == 0) {
+    if(route(req, "/accounts/activate"))        return activateAccount;
+    if(route(req, "/accounts/authen"))          return login;
+    if(route(req, "/accounts/register"))        return createAccount;
+  } else if (strcmp(method, "PATCH") == 0) {
+    if(route(req, "/accounts/updatePassword"))  return updatePassword;
+    if(route(req, "/accounts/logout"))          return logout;
+  }
+  return route_null;
 }
 
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      z_warn("Caught signal Ctrl + C, coming out...\n");
+      log_warn("Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      z_warn("Caught signal Ctrl + \\, coming out...\n");
+      log_warn("Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      z_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
-    case SIGTERM:    /* Handle login */
-
-      z_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+    case SIGTERM:
+      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      z_warn("Killing the program, coming out...\n");
-      break;
-    default:
+      log_warn("Killing the program, coming out...\n");
       break;
   }
 
-  z_exit();
+  close(servSock);
+  exit(SUCCESS);
 }
 
-Message z_parse(char *req) {
-  Message msg;
-  sscanf(req, "%s HTTP/1.1\r\nContent-Length: %d\r\n\r\n%[^\n]s", msg.header.command, &msg.header.content_length, msg.body.content);
-  if(msg.header.content_length == 0)
-    memset(msg.body.content, 0, CONTENT_L);
-  return msg;
-}
+// Function for sync password in multiple devices
+void sync_pw(fd_set master, int curr_sock, char *res) {
+  printf("Syncing password...\n");
 
-bool z_str_is_empty(char *str) {
-  int length = (int)strlen(str);
-  for(int i = 0; i < length; i++) {
-    if(str[i] != 32)
-      return FAILURE;
-  }
-  return SUCCESS;
-}
+  ClientInfo *clnt = findClient(&client_list, curr_sock);
 
-void z_handle_message(int clnt_sock, Message msg, char *res) {
-  char cmd[CMD_L], content[CONTENT_L];
-  int content_length = msg.header.content_length;
-  strcpy(cmd, msg.header.command);
-  strcpy(content, msg.body.content);
-
-  if (strcmp(cmd, "AUTH") == 0) {
-    if(!z_is_usr(content) || strlen(content) < 4) {
-      z_send_res(clnt_sock, res, 400, "Login name must be alpha [A-Za-z] or digit [0-9] and more than 4 characters");
-      return;
+  XOR_LL_ITERATOR itr = XOR_LL_ITERATOR_INITIALISER;
+  XOR_LL_LOOP_HTT_RST(&client_list, &itr) {
+    ClientInfo *sync_clnt = (ClientInfo *)itr.node_data.ptr;
+    if(strcmp(clnt->username, sync_clnt->username) == 0 && FD_ISSET(sync_clnt->sock, &master)) {
+      send_response(sync_clnt->sock, res);
     }
-
-    FILE *username_f = fopen(USN_F, "a+");
-    if (!username_f) {
-      z_error(__func__ , "Can't open username.txt");
-      z_exit();
-    }
-
-    if (content_length == 0 || z_str_is_empty(content)) {
-      z_send_res(clnt_sock, res, 400, "Login name empty");
-      return;
-    }
-    if (content_length > CONTENT_L) {
-      z_send_res(clnt_sock, res, 400, "Login name too long ( > 50 )");
-      return;
-    }
-
-    if (!z_find_username(content)) {
-      fprintf(username_f, "%s\r\n", content);
-      xor_ll_push_tail(&username_list, content, sizeof *content);
-    }
-    z_send_res(clnt_sock, res, 100, "Login successfully");
-    ClientInfo *client = findClient(&client_list, clnt_sock);
-    strcpy(client->username, content);
-    fclose(username_f);
-
-  } else if (strcmp(cmd, "MSG") == 0) {
-    ClientInfo *client = findClient(&client_list, clnt_sock);
-    if(strlen(client->username) == 0) {
-      z_send_res(clnt_sock, res, -1, "Non authorized");
-      return;
-    }
-    /* [file_name.log].length = USN_L.length + [.log].length */
-    char log_f_name[USN_L + 4];
-    sprintf(log_f_name, "%s.log", client->username);
-    FILE *log_f = fopen(log_f_name, "a+");
-    if (!log_f) {
-      z_warn("Can't open [username].log");
-      return;
-    }
-
-    fprintf(log_f, "%s\r\n", content);
-    z_send_res(clnt_sock, res, 200, "Received");
-    fclose(log_f);
-  } else if (strcmp(cmd, "EXIT") == 0) {
-    removeClient(&client_list, clnt_sock);
-    close(clnt_sock);
-  } else {
-    z_send_res(clnt_sock, res, -1, "Invalid Message Command");
   }
 }
 
-void z_listen() {
-  fd_set master, read_fds;
-  int i, nbytes, fdmax;
-  char *req, *res, req_time[100];
+void server_listen() {
+  fd_set master;
+  fd_set read_fds;
+  int i, j, nbytes;
+  int fdmax; // highest file descriptor number
+  char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
+  char req_time[100];
   time_t now = time(0);
-  req = (char*) malloc(REQ_L);
-  res = (char*) malloc(RES_L);
-
 
   FD_ZERO(&master);
   FD_ZERO(&read_fds);
-  FD_SET(serv_sock, &master);
 
-  fdmax = serv_sock;
+  // Push server socket to the master set
+  FD_SET(servSock, &master);
+
+  // keep track of the biggest file descriptor
+  fdmax = servSock;
+  bool isUpdatePw = false;
 
   while(1) {
     read_fds = master;
 
+    // Suspend program until descriptor is ready or timeout
     if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
-      printf("Server still listening...");
+      log_error("select() error");
+      close(servSock);
+      exit(FAIL);
     }
 
+    // Run through the existing connections looking for data to read
     for(i = 0; i <= fdmax; i++) {
+      isUpdatePw = false;
+
       if(FD_ISSET(i, &read_fds)) {
-        now = time(0);
-        strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-        if(i == serv_sock) {
-          Client client = z_accept(serv_sock);
-          FD_SET(client.sock, &master);
+        if(i == servSock) {
+          // handle new connections
+          Client client = accept_connection(servSock);
+          FD_SET(client.sock, &master); // add new socket descriptor to master set
           if(client.sock > fdmax) fdmax = client.sock;
-          char address[ADDR_L];
-          strcpy(address, z_socket_addr((struct sockaddr *) &client.addr));
+          char address[100];
+          strcpy(address, get_socketaddr((struct sockaddr *) &client.addr));
           addClient(&client_list, client.sock, address);
+          now = time(0);
+          strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
           printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time, address);
+
         }
         else {
-          z_clear(req, res);
+          http_clear(method, req, res);
           strcpy(req_time, "");
           ClientInfo *requester = findClient(&client_list, i);
+          now = time(0);
+          strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
 
-          if((nbytes = z_get_req(i, req)) <= 0) {
+          // Handle data from client
+          if((nbytes = get_request(i, method, req)) <= 0) {
             if(nbytes == 0) {
               printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;226mOFFLINE\x1b[0m\n", req_time, requester->address);
             }
-            else
-              z_warn("Get request failed");
+            else err_error(ERR_GET_REQUEST_FAILED);
             removeClient(&client_list, i);
             close(i);
             FD_CLR(i, &master);
           }
           else {
-            now = time(0);
-            strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-            Message msg = z_parse(req);
-            printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n", req_time, requester->address, msg.header.command, msg.body.content, msg.header.content_length);
-            z_handle_message(i, msg, res);
+            if(strcmp(method, "PATCH") == 0 && route(req, "/accounts/updatePassword")) {
+              isUpdatePw = true;
+            }
+
+            printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n", req_time, requester->address, method, req, nbytes);
+            routeHandler(method, req)(req, res, i);
+
+            if(!isUpdatePw) {
+              // We got some data from client
+              for (j = 0; j <= fdmax; j++) {
+                // send to everyone
+                if (FD_ISSET(j, &master)) {
+                  // except the listener and ourselves
+                  if (j == i) {
+                    send_response(j, res);
+                  }
+                }
+              }
+            }
+            else sync_pw(master, i, res);
           }
         }
       }
@@ -213,28 +486,35 @@ void z_listen() {
   }
 }
 
-void z_handle_signal() {
+int main(int argc, char *argv[]) {
+  if(argc < 2 || !is_number(argv[1])) {
+    err_error(ERR_INVALID_SERVER_ARGUMENT);
+    return FAIL;
+  }
+
+  servSock = server_init_connect(argv[1]);
+  if(servSock == -1) {
+    close(servSock);
+    err_error(ERR_INVALID_SERVER_ARGUMENT);
+    return FAIL;
+  }
+
   signal(SIGINT, signalHandler);
   signal(SIGQUIT, signalHandler);
   signal(SIGHUP, signalHandler);
   signal(SIGTERM, signalHandler);
   signal(SIGUSR1, signalHandler);
-}
 
-int main(int argc,char *argv[]) {
-  if(argc < 2 || !z_is_port(argv[1])) {
-    z_error(__func__, "Invalid parameter\nUsage: ./server <port>\n");
-    exit(FAILURE);
-  }
-
-  serv_sock = z_setup_server(argv[1]);
+  // Connect database
+  xor_ll_init(&acc_ll);
   xor_ll_init(&client_list);
-  xor_ll_init(&username_list);
+  load_data(&acc_ll);
 
-  z_handle_signal();
-  z_load_username();
-  z_listen();
-  z_exit();
+  // Listening request
+  server_listen();
 
-  return 0;
+  // Close sockets
+  close(servSock);
+  log_success("Mission successfully !\n");
+  return SUCCESS;
 }

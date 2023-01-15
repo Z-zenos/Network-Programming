@@ -3,73 +3,69 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
+#include <sys/time.h>
 
-#include "config.h"
+#include "account.h"
+#include "constants.h"
+#include "error.h"
 #include "http.h"
+#include "log.h"
+#include "network.h"
+#include "utils.h"
 
-int clnt_sock;
+int sock;
 
 void exit_safely() {
-  z_send_req(clnt_sock, "EXIT HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
-  close(clnt_sock);
-  printf("Bye :)\n");
-  exit(SUCCESS);
+  send_request(sock, "", "");
+  close(sock);
+  log_info("Thank for using my app :)\n");
+  exit(EXIT_SUCCESS);
 }
 
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      z_warn("Caught signal Ctrl + C, coming out...\n");
+      log_warn("Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      z_warn("Caught signal Ctrl + \\, coming out...\n");
+      log_warn("Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      z_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
     case SIGTERM:
-      z_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      z_warn("Killing the program, coming out...\n");
+      log_warn("Killing the program, coming out...\n");
       break;
-    default: break;
   }
 
   exit_safely();
 }
 
-bool z_str_is_empty(char *str) {
-  int length = (int)strlen(str);
-  for(int i = 0; i < length; i++) {
-    if(str[i] != 32)
-      return FAILURE;
-  }
-  return SUCCESS;
-}
-
-void z_requestify(char *req, char *input) {
-  char cmd[CMD_L], content[CONTENT_L];
-  sscanf(input, "%s %[^\n]s", cmd, content);
-  strcpy(content, z_trim(content));
-  int content_l = (int)strlen(content);
-  sprintf(req, "%s HTTP/1.1\r\nContent-Length: %d\r\n\r\n%s", cmd, content_l, content);
-}
-
 int main(int argc, char *argv[]) {
-  if(argc != 3 || !z_is_ip(argv[1]) || !z_is_port(argv[2])) {
-    z_error(__func__, "Invalid parameter\nUsage: ./server <ipv4> <port>");
-    exit(FAILURE);
+  if(argc != 3 || !validate_ip(argv[1]) || !is_number(argv[2])) {
+    err_error(ERR_INVALID_CLIENT_ARGUMENT);
+    return FAIL;
   }
 
-  printf("\n\tMESSAGE PROGRAM\n");
-  printf("\t=======================\n");
-
-  clnt_sock = z_connect2server(argv[1], argv[2]);
-  if(clnt_sock < 0) {
-    z_error(__func__, "Can't connect to server");
-    exit_safely();
+  sock = client_init_connect(argv[1], argv[2]);
+  if(sock < 0) {
+    err_error(ERR_CLIENT_CONNECT_FAILED);
+    exit(FAIL);
   }
+
+  fd_set master;
+  fd_set read_fds;
+  int code;
+  char res[MAX_RESPONSE_LENGTH];
+
+  FD_ZERO(&master);
+  FD_ZERO(&read_fds);
+  FD_SET(sock, &master);
+  FD_SET(STDIN_FILENO, &master);
 
   signal(SIGINT, signalHandler);
   signal(SIGQUIT, signalHandler);
@@ -77,34 +73,86 @@ int main(int argc, char *argv[]) {
   signal(SIGTERM, signalHandler);
   signal(SIGUSR1, signalHandler);
 
-  int code;
-  char input[CONTENT_L];
-  char req[REQ_L], res[RES_L], msg[RES_L], username[USN_L];
-
-  int logged = false;
+  char input[1000];
+  int opt;
 
   do {
-    z_clear(req, res);
-    strcpy(msg, "");
-    printf("[C%s%s]: ", logged ? "@" : "",  logged ? username : "");
-    scanf("%[^\n]s", input);
-    z_clr_buff();
-
-    strcpy(input, z_trim(input));
-    if(strcmp(input, "EXIT") == 0) {
+    read_fds = master;
+    printf("\n\tUSER MANAGEMENT PROGRAM\n");
+    printf("\t=======================\n");
+    printf("%-30s%s\n", "[1]. Register", "[5]. Change password");
+    printf("%-30s%s\n", "[2]. Activate", "[6]. Sign out");
+    printf("%-30s%s\n", "[3]. Sign in",  "[7]. Homepage with domain name");
+    printf("%-30s%s\n", "[4]. Search",   "[8]. Homepage with IP address");
+    printf("Your choice (1-8, other to quit): ");
+    fflush(stdout); // If no have this line then above printf will not display in terminal
+    if(select(sock + 1, &read_fds, NULL, NULL, NULL) == -1) {
       exit_safely();
     }
 
-    z_requestify(req, input);
-    z_send_req(clnt_sock, req);
-    z_get_res(clnt_sock, res);
-    sscanf(res, "%d %[^\n]s", &code, msg);
-    if(code == 100) {
-      logged = true;
-      strncpy(username, input + 5, strlen(input) - 5);
-      strcpy(username, z_trim(username));
-      username[strlen(username)] = '\0';
+    if(FD_ISSET(sock, &read_fds)) {
+      strcpy(res, "");
+      code = get_response(sock, res);
+      if (code == 200) {
+        printf("\n#########################\n");
+        printf("  %s\n", res);
+        printf("  Password have updated somewhere...");
+        printf("\n#########################\n");
+      }
+      continue;
     }
-    printf("[S]: \x1b[1;38;5;47m%d\x1b[0m \x1b[1;38;5;226m%s\x1b[0m\n", code, msg);
+
+    scanf("%[^\n]s", input);
+    clear_buffer();
+
+    if(FD_ISSET(STDIN_FILENO, &read_fds)) {
+      if (!(strlen(input) == 1 && (input[0] > 48 && input[0] < 57))) {
+        exit_safely();
+      }
+
+      opt = input[0] - 48;
+      if (opt >= 4 && opt <= 8) {
+        if (!logged_in) {
+          err_error(ERR_NON_LOG_IN);
+          continue;
+        }
+      }
+      switch (opt) {
+        case 1:
+          signup(sock);
+          break;
+
+        case 2:
+          activate(sock);
+          break;
+
+        case 3:
+          signin(sock);
+          break;
+
+        case 4:
+          search(sock);
+          break;
+
+        case 5:
+          change_password(sock);
+          break;
+
+        case 6:
+          signout(sock);
+          break;
+
+        case 7:
+          get_domain(sock);
+          break;
+
+        case 8:
+          get_ipv4(sock);
+          break;
+
+        default:
+          break;
+      }
+    }
   } while(1);
 }

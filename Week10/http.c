@@ -2,92 +2,37 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <ctype.h>
+#include <time.h>
 
-#include "config.h"
+#include "account.h"
+#include "constants.h"
+#include "error.h"
 #include "http.h"
 
-void z_error(const char *func_n, char *str) {
-	printf("\x1b[1;38;5;196m[Error]\x1b[0m    ");
-  printf("<%s> %s\n", func_n, str);
+#define NUM_OF_CODE 10
+
+static const int MAX_PENDING = 5; // Maximum outstanding connection requests
+#define BACKLOG 10
+
+void http_clear(char *method, char *request, char *response) {
+  memset(method, 0, 10);
+  memset(request, 0, MAX_REQUEST_LENGTH);
+  memset(response, 0, MAX_RESPONSE_LENGTH);
 }
 
-void z_warn(char *str) {
-	printf("\x1b[1;38;5;226m[Warn]\x1b[0m   %s\n", str);
-}
-
-void z_clear(char *req, char *res) {
-  memset(req, 0, REQ_L);
-  memset(res, 0, RES_L);
-}
-
-void z_clr_buff() {
-  int c;
-  while ((c = getchar()) != '\n' && c != EOF);
-}
-
-bool z_is_ip(const char *ip) {    /* Handle login */
-  struct sockaddr_in sa;
-  char ip_tmp[CONTENT_L];
-  strcpy(ip_tmp, ip);
-  // Convert ip address in xxx.xxx.xxx.xxx format to binary format
-  int valid = inet_pton(AF_INET, ip_tmp, &(sa.sin_addr));
-  return valid != 0;
-}
-
-bool z_is_port(char *str) {
-  while (*str) {
-    if (isdigit(*str++) == 0) return false;
-  }
-  return true;
-}
-
-bool z_is_usr(char *str) {
-  while (*str) {
-    if (isalnum(*str++) == 0) return false;
-  }
-  return true;
-}
-
-char *z_trim(char *str) {
-  if( str == NULL ) { return NULL; }
-  if( str[0] == '\0' ) { return str; }
-
-  size_t len = 0;
-  char *frontp = str;
-  char *endp = NULL;
-
-  len = strlen(str);
-  endp = str + len;
-
-  while(isspace((unsigned char) *frontp)) { ++frontp; }
-  if( endp != frontp ) {
-    while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
-  }
-
-  if( frontp != str && endp == frontp )
-    *str = '\0';
-  else if( str + len - 1 != endp )
-    *(endp + 1) = '\0';
-
-  endp = str;
-  if( frontp != str ) {
-    while( *frontp ) { *endp++ = *frontp++; }
-    *endp = '\0';
-  }
-
-  return str;
-}
-
-void z_print_socket_addr(const struct sockaddr *address, FILE *stream) {
+void print_socket_addr(const struct sockaddr *address, FILE *stream) {
+  // Test for address and stream
   if (address == NULL || stream == NULL)
     return;
-  void *numericAddress;
+  void *numericAddress; // Pointer to binary address
+  // Buffer to contain result (IPv6 sufficient to hold IPv4)
   char addrBuffer[INET6_ADDRSTRLEN];
-  in_port_t port;
+  in_port_t port; // Port to print
+  // Set pointer to address based on address family
   switch (address->sa_family) {
     case AF_INET:
       numericAddress = &((struct sockaddr_in *) address)->sin_addr;
@@ -99,24 +44,48 @@ void z_print_socket_addr(const struct sockaddr *address, FILE *stream) {
       break;
     default:
       fputs("[unknown type]", stream);
+      // Unhandled type
       return;
   }
+  // Convert binary to printable address
   if (inet_ntop(address->sa_family, numericAddress, addrBuffer, sizeof(addrBuffer)) == NULL)
-    fputs("[invalid address]", stream);
+    fputs("[invalid address]", stream); // Unable to convert
   else {
     fprintf(stream, "%s", addrBuffer);
     if (port != 0)
+      // Zero not valid in any socket addr
       fprintf(stream, "-%u", port);
   }
 }
 
-char *z_socket_addr(const struct sockaddr *address) {
+bool compare_sockaddr(const struct sockaddr *addr1, const struct sockaddr *addr2) {
+  if (addr1 == NULL || addr2 == NULL)
+    return addr1 == addr2;
+  else if (addr1->sa_family != addr2->sa_family)
+    return false;
+  else if (addr1->sa_family == AF_INET) {
+    struct sockaddr_in *ipv4Addr1 = (struct sockaddr_in *) addr1;
+    struct sockaddr_in *ipv4Addr2 = (struct sockaddr_in *) addr2;
+    return ipv4Addr1->sin_addr.s_addr == ipv4Addr2->sin_addr.s_addr && ipv4Addr1->sin_port == ipv4Addr2->sin_port;
+  }
+  else if (addr1->sa_family == AF_INET6) {
+    struct sockaddr_in6 *ipv6Addr1 = (struct sockaddr_in6 *) addr1;
+    struct sockaddr_in6 *ipv6Addr2 = (struct sockaddr_in6 *) addr2;
+    return memcmp(&ipv6Addr1->sin6_addr, &ipv6Addr2->sin6_addr, sizeof(struct in6_addr)) == 0 && ipv6Addr1->sin6_port == ipv6Addr2->sin6_port;
+  }
+  else return false;
+}
+
+char *get_socketaddr(const struct sockaddr *address) {
+  // Test for address and stream
   if (address == NULL)
     return NULL;
 
-  void *numericAddress;
+  void *numericAddress; // Pointer to binary address
+  // Buffer to contain result (IPv6 sufficient to hold IPv4)
   char addrBuffer[INET6_ADDRSTRLEN];
-  in_port_t port;
+  in_port_t port; // Port to print
+  // Set pointer to address based on address family
   switch (address->sa_family) {
     case AF_INET:
       numericAddress = &((struct sockaddr_in *) address)->sin_addr;
@@ -130,117 +99,183 @@ char *z_socket_addr(const struct sockaddr *address) {
       return "unknown";
   }
 
+  // Convert binary to printable address
   if (inet_ntop(address->sa_family, numericAddress, addrBuffer, sizeof(addrBuffer)) == NULL)
     return "unknown";
   else {
-    char *addr = (char*)calloc(100, sizeof(char));
+    char *addr = (char*)calloc(BUFFER, sizeof(char));
     sprintf(addr, "%s:%u", addrBuffer, port);
     return addr;
   }
 }
 
-int z_setup_server(char *service) {
+void requestify(char *method, char *request) {
+  if(strlen(method) == 0 || strlen(request) == 0) return;
+  /* TEMPLATE: METHOD REQUEST */
+  char request_tpl[MAX_REQUEST_LENGTH];
+  sprintf(request_tpl, "%s %s", method, request);
+  strcpy(request, request_tpl);
+}
+
+void parse_request(char *method, char *request) {
+  sscanf(request, "%s %[^\n]s", method, request);
+}
+
+int server_init_connect(char *service) {
+  // Config the server address structure
   struct addrinfo addrConfig;
-  memset(&addrConfig, 0, sizeof(addrConfig)); 
-  addrConfig.ai_family = AF_INET; 
-  addrConfig.ai_flags = AI_PASSIVE; 
-  addrConfig.ai_socktype = SOCK_STREAM; 
-  addrConfig.ai_protocol = IPPROTO_TCP; 
+  memset(&addrConfig, 0, sizeof(addrConfig)); // Zero out structure
+  addrConfig.ai_family = AF_INET; // IPc4 address family
+  addrConfig.ai_flags = AI_PASSIVE; // Accept on any address/port
+  addrConfig.ai_socktype = SOCK_STREAM; // Only stream socket
+  addrConfig.ai_protocol = IPPROTO_TCP; // Only TCP socket
 
   struct addrinfo *server;
   if (getaddrinfo(NULL, service, &addrConfig, &server) != 0) {
-    z_error(__func__, "getaddrinfo() fail");
-    exit(FAILURE);
+    err_error(ERR_SERVER_NOT_FOUND);
+    exit(FAIL);
   }
 
   int server_fd = -1;
   for(struct addrinfo *addr = server; addr != NULL; addr = addr->ai_next) {
+    // Create a TCP socket
     server_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+
+    // Socket creation failed -> try next address
     if (server_fd < 0) continue;
 
-    if ((bind(server_fd, addr->ai_addr, addr->ai_addrlen) == 0) && (listen(server_fd, BACKLOG) == 0)) {
+    // Bind to the local address and listen incoming request
+    if ((bind(server_fd, addr->ai_addr, addr->ai_addrlen) == 0) && (listen(server_fd, MAX_PENDING) == 0)) {
       struct sockaddr_storage localAddr;
       socklen_t addrSize = sizeof(localAddr);
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
-        z_error(__func__, "getsockname() fail");
-        exit(FAILURE);
+        printf("getsockname() failed\n");
+        exit(FAIL);
       }
-      fputs("Server listening at: ", stdout);
-      z_print_socket_addr((struct sockaddr *) &localAddr, stdout);
+      fputs("Binding to ", stdout);
+      print_socket_addr((struct sockaddr *) &localAddr, stdout);
       fputc('\n', stdout);
+
+      // Bind and listen successfully
       break;
     }
 
+    err_error(ERR_SERVER_ERROR);
     close(server_fd);
     server_fd = -1;
-    z_error(__func__, "Bind / Listen fail");
-    exit(FAILURE);
   }
 
   freeaddrinfo(server);
   return server_fd;
 }
 
-int z_connect2server(char *server, char *port) {
-  struct addrinfo addrConfig; 
-  memset(&addrConfig, 0, sizeof(addrConfig)); 
-  addrConfig.ai_family = AF_INET; 
-  addrConfig.ai_socktype = SOCK_STREAM; 
-  addrConfig.ai_protocol = IPPROTO_TCP; 
+int client_init_connect(char *server, char *port) {
+  // Tell the system what kind(s) of address info we want - Config address
+  struct addrinfo addrConfig; // Criteria for address match
+  memset(&addrConfig, 0, sizeof(addrConfig)); // Zero out structure
+  addrConfig.ai_family = AF_INET; // IPv4 address family
+  addrConfig.ai_socktype = SOCK_STREAM; // Only stream sockets
+  addrConfig.ai_protocol = IPPROTO_TCP; // Only TCP protocol
 
+  // Get server information via server
   struct addrinfo *servAddr;
   if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
-    z_error(__func__, "getaddrinfo fail");
-    exit(FAILURE);
+    err_error(ERR_SERVER_NOT_FOUND);
+    exit(FAIL);
   }
 
-  int client_fd = -1;
+  int sock = -1;
+  // Create a stream TCP socket
   for(struct addrinfo *addr = servAddr; addr != NULL; addr = addr->ai_next) {
-    client_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol); 
-    if (client_fd < 0) continue;
+    // Create a reliable, stram socket using TCP
+    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol); // Socket descriptor for client
+    if (sock < 0) continue;
 
-    if (connect(client_fd, addr->ai_addr, addr->ai_addrlen) == 0)
+    // Establish the connection to the server
+    if (connect(sock, addr->ai_addr, addr->ai_addrlen) == 0)
       break;
 
-    close(client_fd);
-    client_fd = -1;
+    close(sock);
+    sock = -1;
   }
 
   freeaddrinfo(servAddr);
-  return client_fd;
+  return sock;
 }
 
-Client z_accept(int server_fd) {
+Client accept_connection(int sock) {
   Client client;
+
+  // Set Length of client address structure (in-out parameter)
   socklen_t clientAddrLen = sizeof(client.addr);
 
-  client.sock = accept(server_fd, (struct sockaddr *) &client.addr, &clientAddrLen);
+  client.sock = accept(sock, (struct sockaddr *) &client.addr, &clientAddrLen);
   if (client.sock < 0) {
-    z_error(__func__, "accept denied");
-    exit(FAILURE);
+    err_error(ERR_CLIENT_CONNECT_FAILED);
+    exit(FAIL);
   }
+
   return client;
 }
 
-int z_get_req(int client_fd, char *req) {
-  ssize_t numBytesRcvd = recv(client_fd, req, REQ_L, 0);
+// Accept TCP connection
+int get_request(int clntSock, char *method, char *request) {
+  // Size of received message DEAL REQUEST FROM CLIENT
+  ssize_t numBytesRcvd = recv(clntSock, request, MAX_MESSAGE, 0);
+  if (numBytesRcvd <= 0) {
+    return numBytesRcvd;
+  }
+  request[numBytesRcvd] = '\0';
+  parse_request(method, request);
   return numBytesRcvd;
 }
 
-int z_get_res(int server_fd, char *res) {
-  recv(server_fd, res, RES_L, 0);
+int get_response(int sock, char *response) {
+  //  char response[MAX_MESSAGE + 1]; // I/O Buffer
+  ssize_t numBytes = recv(sock, response, MAX_MESSAGE, 0);
+  if (numBytes < 0) {
+    err_error(ERR_GET_RESPONSE_FAILED);
+//    close(sock);
+    return FAIL;
+  }
+
+//  close(sock);
+  response[numBytes] = '\0';
+  int code;
+  sscanf(response, "%d", &code);
+  return code;
+}
+
+// RESPONSE: STATUS_CODE STATUS DATA(MESSAGE)
+int send_response(int sock, char *response) {
+  // Send response back to the client
+  size_t responseLength = strlen(response);
+  ssize_t numBytesSent = send(sock, response, responseLength, 0);
+  if (numBytesSent < 0) {
+    err_error(ERR_SEND_RESPONSE_FAILED);
+    return FAIL;
+  }
+
   return SUCCESS;
 }
 
-int z_send_res(int client_fd, char *res, int code, char *msg) {
-  sprintf(res, "%d %s", code, msg);
-  size_t res_l = strlen(res);
-  ssize_t numBytesSent = send(client_fd, res, res_l, 0);
-  return numBytesSent;
-}
+// method: get, post, patch
+int send_request(int sock, char *method, char *request) {
+  requestify(method, request);
 
-int z_send_req(int server_fd, char *req) {
-  size_t req_l = strlen(req);
-  ssize_t numBytes = send(server_fd, req, req_l, 0);
-  return numBytes;
+  // Length of request
+  size_t requestLength = strlen(request);
+  if (requestLength > MAX_MESSAGE) {
+    err_error(ERR_REQUEST_TOO_LONG);
+    return FAIL;
+  }
+
+  // Send the string to the server
+  ssize_t numBytes = send(sock, request, requestLength, 0);
+  if (numBytes < 0 || numBytes != requestLength) {
+    err_error(ERR_SEND_REQUEST_FAILED);
+    return FAIL;
+  }
+
+  return SUCCESS;
 }

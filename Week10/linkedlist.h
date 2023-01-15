@@ -102,29 +102,29 @@ struct _xor_ll_node_;
  * @brief           The structure for the XOR linked list handle
  */
 typedef struct _xor_ll_ {
-  struct _xor_ll_node_ *head;
-  struct _xor_ll_node_ *tail;
+    struct _xor_ll_node_ *head;
+    struct _xor_ll_node_ *tail;
 } XOR_LL;
 
 /**
  * @brief           The structure for returning the data and size to the caller
  */
 typedef struct _xor_ll_node__data_ {
-  void *ptr;
-  size_t size;
+    void *ptr;
+    size_t size;
 } XOR_LL_NODE_DATA;
 
 /**
  * @brief           The structure for maintaining list traversal state data
  */
 typedef struct _xor_ll_iterator_ {
-  XOR_LL_NODE_DATA node_data;
+    XOR_LL_NODE_DATA node_data;
 
-  struct _xor_ll_node_ *iterator_prev;
-  struct _xor_ll_node_ *iterator_curr;
+    struct _xor_ll_node_ *iterator_prev;
+    struct _xor_ll_node_ *iterator_curr;
 
-  uint8_t htt_dir;
-  uint8_t just_deleted;
+    uint8_t htt_dir;
+    uint8_t just_deleted;
 } XOR_LL_ITERATOR;
 
 /******************************************************************************/
@@ -171,11 +171,11 @@ int xor_ll_push_head(XOR_LL *ll_ptr, const void *data, size_t size);
  *                  XOR_LL_STATUS_FAILURE_ALLOC - allocation failure
  */
 int xor_ll_insert_iter(
-  XOR_LL *ll_ptr,
-  XOR_LL_ITERATOR *itr_ptr,
-  const void *data,
-  size_t size,
-  uint8_t position);
+    XOR_LL *ll_ptr,
+    XOR_LL_ITERATOR *itr_ptr,
+    const void *data,
+    size_t size,
+    uint8_t position);
 
 /**
  * @brief           Iterates over the given XOR Linked list in the head to tail
