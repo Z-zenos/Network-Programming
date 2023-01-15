@@ -394,33 +394,29 @@ void sync_pw(int curr_sock, char *res) {
 }
 
 void server_listen() {
-  struct pollfd fds[10];
+  struct pollfd clients[SLOTS];
   char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
   char req_time[100];
   time_t now = time(0);
-  int numfds = 2, curr_fd, i, j, nbytes;
+  int maxi, nready, curr_fd, i, j, nbytes;
   bool isUpdatePw = false;
 
-  fds[0].fd = servSock;
-  fds[0].events = POLLIN;
-
+  // 0 -> server / listener socket;  > 1 -> client socket
+  clients[0].fd = servSock;
+  clients[0].events = POLLRDNORM;
+  for(i = 1; i < SLOTS; i++)
+    clients[i].fd = -1; // -1 indicates available entry
+  maxi = 0; // max index into clients[] array
   while(1) {
-    if((poll(fds, numfds, -1)) == -1) {
-      log_error("poll() error");
-      close(servSock);
-      exit(FAIL);
-    }
-
-    for(i = 0; i < numfds; i++) {
-      isUpdatePw = false;
-      curr_fd = fds[i].fd;
-      if (curr_fd != -1) {
-        if (curr_fd == servSock) {
-          // handle new connections
-          Client client = accept_connection(servSock);
-          fds[numfds].fd = client.sock;
-          fds[numfds].events = POLLIN;
-          numfds++;
+    nready = poll(clients, maxi + 1, -1);
+    // new client connection
+    if (clients[0].revents & POLLRDNORM) {
+      // handle new connections
+      Client client = accept_connection(servSock);
+      for (i = 1; i < SLOTS; i++)
+        if (clients[i].fd < 0) {
+          clients[i].fd = client.sock;
+          clients[i].events = POLLRDNORM;
           char address[100];
           strcpy(address, get_socketaddr((struct sockaddr *) &client.addr));
           addClient(&client_list, client.sock, address);
@@ -428,39 +424,62 @@ void server_listen() {
           strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
           printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47mONLINE\x1b[0m\n", req_time,
                  address);
-        } else {
-          http_clear(method, req, res);
-          strcpy(req_time, "");
-          ClientInfo *requester = findClient(&client_list, curr_fd);
-          now = time(0);
-          strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
-
-          // Handle data from client
-          if ((nbytes = get_request(curr_fd, method, req)) <= 0) {
-            if (nbytes == 0) {
-              printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;226mOFFLINE\x1b[0m\n",
-                     req_time, requester->address);
-            } else err_error(ERR_GET_REQUEST_FAILED);
-            removeClient(&client_list, curr_fd);
-            close(curr_fd);
-            fds[i].fd = -1;
-          } else {
-            if (strcmp(method, "PATCH") == 0 && route(req, "/accounts/updatePassword")) {
-              isUpdatePw = true;
-            }
-
-            printf(
-              "\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n",
-              req_time, requester->address, method, req, nbytes);
-            routeHandler(method, req)(req, res, curr_fd);
-
-            if (!isUpdatePw) {
-              for (j = 1; j < numfds; j++)
-                if (fds[j].fd == curr_fd)
-                  send_response(fds[j].fd, res);
-            } else sync_pw(curr_fd, res);
-          }
+          break;
         }
+      if (i == SLOTS) {
+        log_warn("Too many clients");
+        return;
+      }
+      if (i > maxi) maxi = i;       /* max index in clients[] array */
+      if (--nready <= 0) continue;  /* no more readable descriptors */
+    }
+
+    for (i = 1; i <= maxi; i++) { // Check all client for data
+      if (clients[i].fd < 0) continue;
+      if (clients[i].revents & (POLLRDNORM | POLLERR)) {
+        isUpdatePw = false;
+        curr_fd = clients[i].fd;
+        http_clear(method, req, res);
+        strcpy(req_time, "");
+        ClientInfo *requester = findClient(&client_list, curr_fd);
+        now = time(0);
+        strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+
+        if ((nbytes = get_request(curr_fd, method, req)) <= 0) {
+          printf(
+            "\x1b[1;38;5;256m%s>\x1b[0m "
+            "[@\x1b[1;38;5;202m%s\x1b[0m] "
+            "\x1b[1;38;5;226mOFFLINE\x1b[0m\n",
+            req_time, requester->address
+          );
+          removeClient(&client_list, curr_fd);
+          close(curr_fd);
+          clients[i].fd = -1;
+        } else {
+          if (strcmp(method, "PATCH") == 0 && route(req, "/accounts/updatePassword")) {
+            isUpdatePw = true;
+          }
+
+          printf(
+            "\x1b[1;38;5;256m%s>\x1b[0m "
+            "[@\x1b[1;38;5;202m%s\x1b[0m] "
+            "\x1b[1;38;5;47m%s\x1b[0m "
+            "\x1b[4m%s\x1b[0m "
+            "\x1b[1;38;5;226m%d\x1b[0m\n",
+            req_time, requester->address, method, req, nbytes
+          );
+
+          routeHandler(method, req)(req, res, curr_fd);
+
+          if (!isUpdatePw) {
+            for (j = 1; j < SLOTS; j++)
+              if (clients[j].fd == curr_fd)
+                send_response(clients[j].fd, res);
+          } else sync_pw(curr_fd, res);
+        }
+
+        // no more readable descriptors
+        if(--nready <= 0) break;
       }
     }
   }
