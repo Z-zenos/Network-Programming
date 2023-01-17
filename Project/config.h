@@ -22,6 +22,8 @@
 #define NOTIFY_L 100
 #define QUERY_L 1000
 
+#define BOARD_S 16
+
 #define DB_HOST "localhost"
 #define DB_USER "root"
 #define DB_PASSWRD "@nhTu@n12o1"

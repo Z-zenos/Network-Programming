@@ -35,13 +35,18 @@ bool is_valid_password(char *password) {
   return SUCCESS;
 }
 
-unsigned char *encrypt(char *password) {
+char *encrypt(char *password) {
   SHA256_CTX context;
-  unsigned char *md = (unsigned char*)malloc(SHA256_DIGEST_LENGTH);
+  unsigned char md[SHA256_DIGEST_LENGTH];
   SHA256_Init(&context);
   SHA256_Update(&context, (unsigned char*)password, strlen(password));
   SHA256_Final(md, &context);
-  return md;
+  char *converter = (char*)malloc(63);
+  int k = 0;
+  for(i = 0; i < sizeof(pwd_encrypted); i++) {
+    k += sprintf(converter + k, "%x", pwd_encrypted[i]);
+  }
+  return converter;
 }
 
 bool compare_password(char *password_input, unsigned char *password_db) {
@@ -98,19 +103,14 @@ int signup(MYSQL *conn, Message msg, char *res) {
   mysql_free_result(qres);
 
   // TODO: Encrypt password
-  unsigned char *pwd_encrypted = encrypt(password);
-  char converter[63];
-  int k = 0;
-  for(i = 0; i < sizeof(pwd_encrypted); i++) {
-    k += sprintf(converter + k, "%x", pwd_encrypted[i]);
-  }
+  char *pwd_encrypted = encrypt(password);
 
   // TODO: Insert data
   str_clear(query);
   sprintf(
     query,
     "INSERT INTO users(username, password) VALUES('%s', '%s')",
-    username, converter
+    username, pwd_encrypted
   );
 
   if (mysql_query(conn, query)) {
@@ -125,50 +125,46 @@ int signup(MYSQL *conn, Message msg, char *res) {
   return SUCCESS;
 }
 
-int signin(MYSQL *conn) {
+int signin(MYSQL *conn, MESSAGE msg, char *res) {
   // TESTING
   char username[USERNAME_L], password[PASSWORD_L];
-  if(!input_label("Username", username, "text", USERNAME_L)) return FAILURE;
-  if(!input_label("Password", password, "password", USERNAME_L)) return FAILURE;
 
   // TODO: Get username, password from client
+  sscanf(msg.header.params, "username=%[^&]s&password=%[^\r]s", username, password);
 
   // TODO: Validate
+  if(!is_valid_username(username) || !is_valid_password(password)) {
+    strcpy(res, "Username / Password invalid");
+    return FAILURE;
+  }
 
+  char *pwd_encrypted = encrypt(password);
+
+  // TODO: Authen account
   char query[QUERY_L];
-
-  // + Check username if exist
   sprintf(
     query,
     "SELECT username, password FROM users WHERE username = '%s' AND password = '%s'",
-    username, password
+    username, pwd_encrypted
   );
 
-  // + Query failed
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     log_error("%s", mysql_error(conn));
-
-    // TODO: Send response to client
-
     return FAILURE;
   }
 
-  MYSQL_RES *res = mysql_store_result(conn);
-  if(!res->row_count) {
+  MYSQL_RES *qres = mysql_store_result(conn);
+  if(!qres->row_count) {
     notify("error", N_ACCOUNT_WRONG);
-    mysql_free_result(res);
-
-    // TODO: Send response to client
-
+    mysql_free_result(qres);
+    strcpy(res, "Account does not exist");
     return FAILURE;
   }
 
-  mysql_free_result(res);
+  mysql_free_result(qres);
   notify("success", N_SIGNIN_SUCCESS);
-
-  // TODO: Send response to client
-
+  strcpy(res, "Login successfully");
   return SUCCESS;
 }
 

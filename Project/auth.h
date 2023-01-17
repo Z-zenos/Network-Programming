@@ -7,7 +7,7 @@
 
 #include "http.h"
 
-int signin(MYSQL *);
+int signin(MYSQL *, Message, char *);
 int signup(MYSQL *, Message, char *);
 int signout();
 int change_password();

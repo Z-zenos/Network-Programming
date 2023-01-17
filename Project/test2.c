@@ -6,150 +6,128 @@
 #include <stdio.h>
 #include <math.h>
 
-typedef struct centroid {
-  double            mean;
-  int               count;
-} centroid_t;
+typedef struct student {
+  char name[20];
+  int age;
+} student_t;
 
-typedef struct RBTree *centroidset_t;
+typedef struct rbtree studentset_t;
 
-static int centroid_cmp(const void *p1, const void *p2)
-{
-  centroid_t *centroid1, *centroid2;
+static int student_cmp(const void *p1, const void *p2) {
+  student_t *student1, *student2;
 
-  centroid1 = (centroid_t*)p1;
-  centroid2 = (centroid_t*)p2;
+  student1 = (student_t *)p1;
+  student2 = (student_t *)p2;
 
-  if (centroid1->mean > centroid2->mean)
-    return 1;
-
-  else if (centroid1->mean < centroid2->mean)
-    return -1;
-
-  return 0;
+  return strcmp(student1->name, student2->name);
 }
 
-static void *centroid_dup(void *p)
-{
+static void *student_dup(void *p) {
   void *dup_p;
 
-  dup_p = calloc(1, sizeof(struct centroid));
-  memmove(dup_p, p, sizeof(struct centroid));
+  dup_p = calloc(1, sizeof(struct student));
+  memmove(dup_p, p, sizeof(struct student));
 
   return dup_p;
 }
 
-static void centroid_rel(void *p)
-{
-  free(p);
-}
+static void student_rel(void *p) { free(p); }
 
-centroidset_t centroidset_new()
-{
-  RBTree rbtree;
-  rbtree = rbtree_new(centroid_cmp, centroid_dup, centroid_rel);
+studentset_t *studentset_new() {
+  rbtree_t *rbtree;
+  rbtree = rbnew(student_cmp, student_dup, student_rel);
 
   return rbtree;
 }
 
-void centroidset_delete(centroidset_t centroidset)
-{
-  rbtree_delete(centroidset);
+void studentset_delete(studentset_t *studentset) {
+  rbdelete(studentset);
 }
 
-int centroidset_weighted_insert(centroidset_t centroidset, double mean, int weight)
-{
+int studentset_weighted_insert(studentset_t *studentset, int age, char *name) {
   int ret;
 
-  centroid_t *centroid;
-  centroid = calloc(1, sizeof(centroid_t));
+  student_t *student;
+  student = calloc(1, sizeof(student_t));
 
-  centroid->mean = mean;
-  centroid->count = weight;
+  student->age = age;
+  strcpy(student->name, name);
 
-  ret = rbtree_insert(centroidset, (void *)centroid);
+  ret = rbinsert(studentset, (void *)student);
   if (ret == 0) {
-    printf("failed to insert the centroid with mean %f and weight %d\n", mean, weight);
-    free(centroid);
+    printf("failed to insert the student with age %d and weight %s\n", age, name);
+    free(student);
     return -1;
   }
 
   return 0;
 }
 
-int centroidset_insert(centroidset_t centroidset, double mean)
-{
-  return centroidset_weighted_insert(centroidset, mean, 1);
+int studentset_insert(studentset_t *studentset, char *name) {
+  return studentset_weighted_insert(studentset, 22, name);
 }
 
-int centroidset_erase(centroidset_t centroidset, double mean)
-{
+int studentset_erase(studentset_t *studentset, char *name) {
   int ret;
-  centroid_t *centroid;
+  student_t *student;
 
-  centroid = calloc(1, sizeof(centroid_t));
-  centroid->mean = mean;
+  student = calloc(1, sizeof(student_t));
+  strcpy(student->name, name);
 
-  ret = rbtree_erase(centroidset, (void*)centroid);
+  ret = rberase(studentset, (void *)student);
   if (ret == 0) {
-    printf("failed to erase the centroid with mean %f\n", mean);
-    free(centroid);
+    printf("failed to erase the student with age %s\n", name);
+    free(student);
     return -1;
   }
 
   return 0;
 }
 
-double centroidset_find(centroidset_t centroidset, double mean)
-{
-  centroid_t *centroid, centroid_find;
+double studentset_find(studentset_t *studentset, char *name) {
+  student_t *student, student_find;
 
-  centroid_find.mean = mean;
-  centroid = rbtree_find(centroidset, &centroid_find);
-  if (!centroid) {
+  strcpy(student_find.name, name);
+  student = rbfind(studentset, &student_find);
+  if (!student) {
     return NAN;
   }
-  return centroid->mean;
+  return student->age;
 }
 
-void centroidset_printset(centroidset_t centroidset)
-{
-  centroid_t *centroid;
+void studentset_printset(studentset_t *studentset) {
+  student_t *student;
 
-  RBTrav rbtrav;
-  rbtrav = rbtrav_new();
+  rbtrav_t *rbtrav;
+  rbtrav = rbtnew();
 
-  centroid = rbtrav_first(rbtrav, centroidset);
-  printf("mean %f\n", centroid->mean);
+  student = rbtfirst(rbtrav, studentset);
+  printf("age %d - name: %s\n", student->age, student->name);
 
-  while ((centroid = rbtrav_next(rbtrav)) != NULL) {
-    printf("mean %f\n", centroid->mean);
+  while ((student = rbtnext(rbtrav)) != NULL) {
+    printf("age %d - name: %s\n", student->age, student->name);
   }
 }
 
-int main()
-{
-  centroidset_t centroidset;
-  centroidset = centroidset_new();
-  centroidset_insert(centroidset, 1.0);
-  centroidset_insert(centroidset, 2.0);
-  centroidset_insert(centroidset, 1.5);
-  centroidset_insert(centroidset, 9.9);
-  centroidset_insert(centroidset, 1.8);
-  centroidset_insert(centroidset, 3.3);
-  double ret;
-  ret = centroidset_find(centroidset, 1.0f);
-  printf("find 1.0: %f\n", ret);
-  ret = centroidset_find(centroidset, 9.900000);
-  printf("find 9.9: %f\n", ret);
-  ret = centroidset_find(centroidset, 1.800000);
-  printf("find 1.8: %f\n", ret);
-  ret = centroidset_find(centroidset, 0);
-  printf("find 0 (not there) %f\n", ret);
-  ret = centroidset_erase(centroidset, 1.800000);
-  printf("erase 1.800000: %f\n", ret);
-  ret = centroidset_find(centroidset, 1.800000);
-  printf("find 1.8: %f\n", ret);
-  centroidset_printset(centroidset);
-  centroidset_delete(centroidset);
+int main() {
+  studentset_t *studentset;
+  studentset = studentset_new();
+  studentset_insert(studentset, "Anh Tuan");
+  studentset_insert(studentset, "Lan Anh");
+  studentset_insert(studentset, "Tuan Thanh");
+  studentset_insert(studentset, "Quang Linh");
+  studentset_insert(studentset, "Viet Hung");
+  studentset_insert(studentset, "Trong Nghia");
+//  double ret;
+//  ret = studentset_find(studentset, "Anh Tuan");
+//  printf("find 1.0: %f\n", ret);
+//  ret = studentset_find(studentset, 8);
+//  printf("find 8: %f\n", ret);
+//  ret = studentset_erase(studentset, 2);
+//  printf("erase 2: %f\n", ret);
+//  ret = studentset_find(studentset, 2);
+//  printf("find 2: %f\n", ret);
+  studentset_printset(studentset);
+  studentset_delete(studentset);
+  return 0;
 }

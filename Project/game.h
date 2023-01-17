@@ -1,25 +1,35 @@
 #pragma once
 
-#ifndef __GAME_H__
-#define GAME_H_
+#ifndef _GAME_H_
+#define _GAME_H_
+
+#include <time.h>
+
+#include "config.h"
 
 
 typedef struct Game {
-  int id;
-  int board[SIZE][SIZE];
+  int game_id;
+  int board[BOARD_S][BOARD_S];
   Player *player1;
   Player *player2;
+
   int views;
-  char turn; // 'X' or 'Y'
+
+  /* current: X or O */
+  char turn;
   int num_move;
+  time_t time;
+
+  /*
+   `if player1 win player2 then [result = player1's id]
+  ``if both player draw then [result = 0]
+  */
+  int result;
+  int chat_id;
 } *Game;
 
-typedef struct NodeGame {
-  char status;
-  Game game;
-
-  struct NodeGame *left;
-  struct NodeGame *right;
-} *NodeGame;
+int create_game();
+Game find_game(int game_id);
 
 #endif
