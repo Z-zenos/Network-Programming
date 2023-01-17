@@ -1,122 +1,48 @@
+
 #include <stdio.h>
-#define COLUMN 8
-#define ROW 8
+#include <string.h>
+#include <openssl/sha.h>
 
-int checkVerticalLine(int player,int x,int y,int board[COLUMN][ROW]) {
-  int j,count=1;
+int main() {
+  char input[] = "hello";
+  int length = strlen(input);
+  SHA256_CTX context;
+  unsigned char md[SHA256_DIGEST_LENGTH];
+  SHA256_Init(&context);
+  SHA256_Update(&context, (unsigned char *)input, length);
+  SHA256_Final(md, &context);
 
-  j=y+1;
+  int i;
+  for(i = 0; i < sizeof(md); i++) {
+    printf("%0x", md[i]);
+  }
+  printf("\n");
 
-  while (board[x][j] == player && j < ROW) {
-    printf("%d\n",count);
-    count++;
-    if (count == 5) return 1;
-    j++;
+  char password[] = "hello";
+//  printf("Password: ");
+//  scanf("%[^\n]s", password);
+
+  unsigned char md1[SHA256_DIGEST_LENGTH];
+  int pl = strlen(password);
+  SHA256_Init(&context);
+  SHA256_Update(&context, (unsigned char *)password, pl);
+  SHA256_Final(md1, &context);
+
+  char str[63];
+  int k = 0;
+  for(i = 0; i < sizeof(md1); i++) {
+    printf("%0x", md1[i]);
+    k += sprintf(str + k, "%x", md1[i]);
   }
 
-  j=y-1;
-  while (board[x][j] == player && j >= 0) {
-    count++;
-    if (count == 5) return 1;
-    j--;
+  printf("\n%s\n", str);
+
+  for(i = 0; i < sizeof md; i++) {
+    if(md[i] != md1[i]) {
+      printf("\nFAIL");
+      return 0;
+    }
   }
+  printf("\nSuceess");
   return 0;
 }
-
-int checkHorizontalLine(int player,int x,int y,int board[COLUMN][ROW]) {
-  int i,count=1;
-
-  i=x+1;
-  while (board[i][y] == player && i < COLUMN) {
-    count++;
-    if (count == 5) return 1;
-    i++;
-  }
-
-  i=x-1;
-  while (board[i][y] == player && i >= 0) {
-    count++;
-    if (count == 5) return 1;
-    i--;
-  }
-  return 0;
-}
-
-int checkDiagonallyLine1(int player,int x,int y,int board[COLUMN][ROW]) {
-  int i,j,count=1;
-
-  i=x+1;
-  j=y-1;
-
-  while (board[i][j] == player && j >= 0 && i < COLUMN) {
-    count++;
-    if (count == 5) return 1;
-    i++;j--;
-  }
-
-  i=x-1;j=y+1;
-  while (board[i][j] == player && i >= 0 && j < ROW) {
-    count++;
-    if (count == 5) return 1;
-    i--;j++;
-  }
-  return 0;
-}
-
-int checkDiagonallyLine2(int player,int x,int y,int board[COLUMN][ROW]) {
-  int i,j,count=1;
-
-  i=x+1;
-  j=y+1;
-
-  while (board[i][j] == player && j < COLUMN && i < ROW) {
-    count++;
-    if (count == 5) return 1;
-    i++;j++;
-  }
-
-  i=x-1;j=y-1;
-  while (board[i][j] == player && i >= 0 && j >= 0) {
-    count++;
-    if (count == 5) return 1;
-    i--;j--;
-  }
-  return 0;
-}
-
-int checkWinning(int player,int x,int y,int board[COLUMN][ROW]) {
-  if (
-    checkVerticalLine(player,x,y,board)==1 ||
-    checkHorizontalLine(player,x,y,board)==1 ||
-    checkDiagonallyLine1(player,x,y,board)==1 ||
-    checkDiagonallyLine2(player,x,y,board)==1 )
-    return 1;
-  return 0;
-}
-
-void printBoard(int board[COLUMN][ROW]){
-  int i, j;
-  for (i = 0;i < COLUMN;i++) {
-    for (j = 0;j < ROW;j++)
-      printf("%d ", board[i][j]);
-    printf("\n");
-  }
-}
-
- int main() {
-   int komoku[COLUMN][ROW] = {
-     {0, 0, 0, 1, 0, 0, 0, 0},
-     {0, 2, 1, 1, 1, 1, 0, 0},
-     {0, 1, 2, 1, 2, 2, 0, 0},
-     {0, 2, 0, 2, 1, 2, 0, 0},
-     {0, 0, 0, 0, 0, 1, 0, 0},
-     {0, 0, 0, 0, 0, 0, 1, 0},
-     {0, 0, 0, 0, 0, 0, 0, 0},
-     {0, 0, 0, 0, 0, 0, 0, 0},
-   };
-
-   if (checkWinning(1,5,6,komoku) == 1)
-     printf("Nguoi 1 win!\n");
-   printf("Chua co gi !\n");
-   return 1;
- }

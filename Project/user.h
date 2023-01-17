@@ -3,7 +3,7 @@
 #ifndef __USER_H__
 #define __USER_H__
 
-#include "env.h"
+#include "config.h"
 
 typedef struct Achievement {
   int win;
@@ -16,9 +16,9 @@ typedef struct Achievement {
 
 typedef struct User {
   int id;
-  char email[MAX_LENGTH_EMAIL];
-  char username[MAX_LENGTH_USERNAME];
-  char password[MAX_LENGTH_PASSWORD];
+  char email[EMAIL_L];
+  char username[USERNAME_L];
+  char password[PASSWORD_L];
   Achievement achievement;
 } *User;
 

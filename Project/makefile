@@ -5,7 +5,7 @@ LIBS = -lm
 build: clean | server
 
 server: server.o auth.o utils.o message.o
-	${CC} server.o auth.o utils.o message.o -L/usr/local/mysql/lib -lmysqlclient -o server
+	${CC} server.o auth.o utils.o message.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -o server
 
 server.o: server.c
 	${CC} ${CFLAGS} server.c
@@ -13,7 +13,7 @@ server.o: server.c
 auth.o: auth.c
 	${CC} ${CFLAGS} auth.c
 
-message.o: message.c
+message.o: notify.c
 	${CC} ${CFLAGS} message.c
 
 utils.o: utils.c

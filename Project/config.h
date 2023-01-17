@@ -2,22 +2,25 @@
 #define SUCCESS 1
 #define FAILURE 0
 
-#define MAX_LENGTH_INPUT 1000
-#define MAX_LENGTH_PASSWORD 50
-#define MAX_LENGTH_USERNAME 50
+#define INPUT_L 1000
+#define PASSWORD_L 50
+#define USERNAME_L 50
 
 // https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address
-#define MAX_LENGTH_EMAIL 255
+#define EMAIL_L 255
 
-#define MAX_LENGTH_HTTP_METHOD 8
+#define CMD_L 10
+#define PATH_L 32
+#define PARAM_L 100
+#define CONTENT_L 2048
 
 // https://stackoverflow.com/questions/12931528/c-socket-programming-max-size-of-tcp-ip-socket-buffer
-#define MAX_LENGTH_REQUEST 2040
-#define MAX_LENGTH_RESPONSE 2040
-#define MAX_LENGTH_MESSAGE 2048
+#define REQ_L 2040
+#define RES_L 2040
+#define MESSAGE_L 2222
 
-#define NUMBER_MESSAGES 100
-#define MAX_LENGTH_QUERY 1000
+#define NOTIFY_L 100
+#define QUERY_L 1000
 
 #define DB_HOST "localhost"
 #define DB_USER "root"

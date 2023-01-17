@@ -1,5 +1,5 @@
 #include "algo.h"
-#include "env.h"
+#include "config.h"
 
 int ROW = 8, COLUMN = 8;
 

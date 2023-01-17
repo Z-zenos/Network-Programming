@@ -6,14 +6,14 @@
 #include <mysql/mysql.h>
 
 #include "auth.h"
-#include "env.h"
+#include "config.h"
 #include "utils.h"
-#include "message.h"
+#include "notify.h"
 #include "log.h"
 
 void connect_database(MYSQL *conn) {
   if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
-    t3_message("error", T3_DATABASE_CONNECT_FAILED);
+    notify("error", N_DATABASE_CONNECT_FAILED);
     log_error("%s", mysql_error(conn));
     mysql_close(conn);
     exit(FAILURE);

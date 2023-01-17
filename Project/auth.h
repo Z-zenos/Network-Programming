@@ -5,8 +5,10 @@
 
 #include <mysql/mysql.h>
 
+#include "http.h"
+
 int signin(MYSQL *);
-int signup(MYSQL *);
+int signup(MYSQL *, Message, char *);
 int signout();
 int change_password();
 int forgot_password();

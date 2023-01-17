@@ -2,38 +2,51 @@
 #ifndef _HTTP_H_
 #define _HTTP_H_
 
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
-typedef enum {
-  _200_,
-  _201_,
-  _202_,
-  _204_,
-  _400_,
-  _401_,
-  _403_,
-  _404_,
-  _500_,
-} HttpCode;
+#include "config.h"
 
-int http_code(HttpCode);
-char *http_message(HttpCode);
+/*
+ Message Design Example:
+ GET /accounts\r\n
+ Content-Length: 4\r\n
+ Params: id=1&lang=vn\r\n
+ \r\n
+ body
+ * */
+
+typedef struct Header {
+  char command[CMD_L];
+  char path[PATH_L];
+  int content_l;
+  char params[PARAM_L];
+} Header;
+
+typedef struct Body {
+  char content[CONTENT_L];
+} Body;
+
+typedef struct Message {
+  Header header;
+  Body body;
+} Message;
+
+Message m_parse(char *);
 
 
-char *get_socketaddr(const struct sockaddr *);
-void requestify(char *, char *);
-int server_init_connect(char *);
-int client_init_connect(char *, char *);
-int get_request(char *, char *);
-int get_response(char *);
-int send_request(char *, char *);
-int send_response(char *);
-void http_clear(char *, char *, char *);
+void print_socket_addr(const struct sockaddr *, FILE *);
+char *socket_addr(const struct sockaddr *);
+int setup_server(char *);
+int connect2server(char *, char *);
+Client accept(int);
+int get_req(int, char *);
+int get_res(int, char *);
+int send_req(int, char *);
+int send_res(int, char *, int, char*);
+void clear(char *, char*);
 
 #endif

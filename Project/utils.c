@@ -4,8 +4,8 @@
 #include <ctype.h>
 
 #include "utils.h"
-#include "message.h"
-#include "env.h"
+#include "notify.h"
+#include "config.h"
 
 void clear_buffer() {
   int c;
@@ -174,45 +174,45 @@ bool is_valid_text(char *str) {
 
 int input(char *type, char *str, int max_length) {
   if(!type) return FAILURE;
-  char input_console[MAX_LENGTH_INPUT];
+  char input_console[INPUT_L];
 
   if(strcmp(type, "password") == 0) {
     char *pw = input_console;
-    getpasswd (&pw, MAX_LENGTH_PASSWORD, '*', stdin);
+    getpasswd (&pw, PASSWORD_L, '*', stdin);
     printf("\n");
   }
   else {
-    fgets(input_console, MAX_LENGTH_INPUT, stdin);
+    fgets(input_console, INPUT_L, stdin);
     input_console[strlen(input_console) - 1] = '\0';
   }
 
   if(strlen(input_console) <= 0) {
-    t3_message("error", T3_INPUT_EMPTY);
+    notify("error", N_INPUT_EMPTY);
     return FAILURE;
   }
 
   if(strlen(input_console) > max_length) {
-    t3_message("error", T3_INPUT_TOO_LONG);
+    notify("error", N_INPUT_TOO_LONG);
     return FAILURE;
   }
 
   if(str_has_space(input_console)) {
-    t3_message("error", T3_INPUT_INVALID);
+    notify("error", N_INPUT_INVALID);
     return FAILURE;
   }
 
   strcpy(input_console, str_trim(input_console));
 
   if(strcmp(type, "text") == 0 && !is_valid_text(input_console)) {
-    t3_message("error", T3_INPUT_INVALID);
+    notify("error", N_INPUT_INVALID);
     return FAILURE;
   }
   else if(strcmp(type, "number") == 0 && !is_number(input_console)) {
-    t3_message("error", T3_INPUT_INVALID);
+    notify("error", N_INPUT_INVALID);
     return FAILURE;
   }
   else if(strcmp(type, "email") == 0 && !is_valid_email(input_console)) {
-    t3_message("error", T3_EMAIL_INVALID);
+    notify("error", N_EMAIL_INVALID);
     return FAILURE;
   }
 
@@ -221,7 +221,7 @@ int input(char *type, char *str, int max_length) {
 }
 
 int input_label(char *label, char *str, char *type,  int max_length) {
-  char opt[MAX_LENGTH_INPUT];
+  char opt[INPUT_L];
 
   do {
     strcpy(str, "");
@@ -235,7 +235,7 @@ int input_label(char *label, char *str, char *type,  int max_length) {
 
     do {
       printf("Would you like to continue? (y/n): ");
-      input("text", opt, MAX_LENGTH_INPUT);
+      input("text", opt, INPUT_L);
       if(strlen(opt) > 1)
         continue;
     } while(!(opt[0] == 'y' || opt[0] == 'n'));
