@@ -2,10 +2,10 @@
 #ifndef __ALGO_H__
 #define __ALGO_H__
 
-int checkVerticalLine     (int [][], int, int, int);
-int checkHorizontalLine   (int [][], int, int, int);
-int checkDiagonallyLine1  (int [][], int, int, int);
-int checkDiagonallyLine2  (int [][], int, int, int);
-int checkWinning          (int [][], int, int, int);
+int checkVerticalLine     (char [][], char, int, int);
+int checkHorizontalLine   (char [][], char, int, int);
+int checkDiagonallyLine1  (char [][], char, int, int);
+int checkDiagonallyLine2  (char [][], char, int, int);
+int checkWinning          (char [][], char, int, int);
 
 #endif

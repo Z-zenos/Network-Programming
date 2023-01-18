@@ -11,10 +11,16 @@
 #include "http.h"
 
 
-Message m_parse(char *req) {
-  Message msg;
-  sscanf(req, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", msg.header.command, msg.header.path, &msg.header.content_l, msg.header.params, msg.body.content);
-  return msg;
+void m_parse(Message *msg, char *req) {
+  sscanf(req, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", msg->header.command, msg->header.path, &msg->header.content_l, msg->header.params, msg->body.content);
+}
+
+void m_print(Message msg) {
+  printf("%s %s\n", msg.header.command, msg.header.path);
+  printf("Content-Length: %d\n", msg.header.content_l);
+  printf("Params: %s\n", msg.header.params);
+  printf("---------------\n");
+  printf("%s\n", msg.body.content);
 }
 
 void clear(char *req, char *res) {
@@ -132,7 +138,7 @@ char *socket_addr(const struct sockaddr *address) {
   }
 }
 
-int setup_server(char *service) {
+int server_init(char *service) {
   struct addrinfo addrConfig;
   memset(&addrConfig, 0, sizeof(addrConfig));
   addrConfig.ai_family = AF_INET;
@@ -142,7 +148,6 @@ int setup_server(char *service) {
 
   struct addrinfo *server;
   if (getaddrinfo(NULL, service, &addrConfig, &server) != 0) {
-    error(__func__, "getaddrinfo() fail");
     exit(FAILURE);
   }
 
@@ -155,7 +160,6 @@ int setup_server(char *service) {
       struct sockaddr_storage localAddr;
       socklen_t addrSize = sizeof(localAddr);
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
-        error(__func__, "getsockname() fail");
         exit(FAILURE);
       }
       fputs("Server listening at: ", stdout);
@@ -166,7 +170,6 @@ int setup_server(char *service) {
 
     close(server_fd);
     server_fd = -1;
-    error(__func__, "Bind / Listen fail");
     exit(FAILURE);
   }
 
@@ -183,7 +186,6 @@ int connect2server(char *server, char *port) {
 
   struct addrinfo *servAddr;
   if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
-    error(__func__, "getaddrinfo fail");
     exit(FAILURE);
   }
 
@@ -203,13 +205,12 @@ int connect2server(char *server, char *port) {
   return client_fd;
 }
 
-Client accept(int server_fd) {
+Client accept_conn(int server_fd) {
   Client client;
   socklen_t clientAddrLen = sizeof(client.addr);
 
   client.sock = accept(server_fd, (struct sockaddr *) &client.addr, &clientAddrLen);
   if (client.sock < 0) {
-    error(__func__, "accept denied");
     exit(FAILURE);
   }
   return client;

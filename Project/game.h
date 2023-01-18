@@ -13,12 +13,17 @@ typedef struct Game {
   int player2_id;
   int chat_id;
 
-  int board[BOARD_S][BOARD_S];
+  char board[BOARD_S][BOARD_S];
 
   int views;
 
   /* current: X or O */
   char turn;
+
+  /* Coordinate of X / O */
+  int col;
+  int row;
+
   int num_move;
   time_t time;
 
@@ -35,7 +40,7 @@ GameTree *game_new();
 void game_drop(GameTree *);
 int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
-int game_find(GameTree *, int);
+Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 
 #endif

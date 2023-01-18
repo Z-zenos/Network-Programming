@@ -80,7 +80,7 @@ int game_delete(GameTree *gametree, int id) {
   return 0;
 }
 
-int game_find(GameTree *gametree, int id) {
+Game *game_find(GameTree *gametree, int id) {
   Game *game, game_find;
 
   game_find.id = id;
@@ -88,7 +88,7 @@ int game_find(GameTree *gametree, int id) {
   if (!game) {
     return 0;
   }
-  return game->id;
+  return game;
 }
 
 void game_print_board(int board[BOARD_S][BOARD_S]) {
