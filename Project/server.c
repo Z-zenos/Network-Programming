@@ -27,62 +27,23 @@ void connect_database(MYSQL *conn) {
   }
 }
 
-/*
- PLAY /game\r\n
- Content-Type: 0\r\n
- Params: game_id=1&player_id=1&turn=X\r\n
- \r\n
- * */
-void handleGame(GameTree *gametree, char *req, char *res) {
-  Message msg;
-  m_parse(&msg, req);
-  int game_id, player_id, col, row;
-  char turn;
 
-  // TODO: Get id
-  sscanf(msg.header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
-
-  // TODO: Find game -> Update game board
-  Game *game = game_find(gametree, game_id);
-  game->turn = turn;
-  game->num_move++;
-  game->col = col;
-  game->row = row;
-
-  // TODO: Check state game
-  if(checkWinning(game->board, turn, game->col, game->row)) {
-    sprintf(res, "code: 200\r\ndata: win=%d", player_id);
-    return;
-  }
-
-  sprintf(res, "code: 200\r\ndata: turn=%c&col=%d&row=%d", turn, col, row);
-  return;
-}
-
-
-
-int route_null(char *request, char *response) { return FAIL; }
 
 int route(char *req, char *route_name) {
   return str_start_with(req, route_name);
 }
 
-int (*routeHandler(char *method, char *req))(char *, char *) {
-  if (strcmp(method, "GET") == 0) {
-    if(route(req, "/accounts/verify/username")) return verifyUsername;
-    if(route(req, "/accounts/verify/password")) return verifyPassword;
-    if(route(req, "/accounts/ipv4"))            return getIPv4;
-    if(route(req, "/accounts/domain"))          return getDomain;
-    if(route(req, "/accounts/search"))          return getAccount;
-  } else if (strcmp(method, "POST") == 0) {
-    if(route(req, "/accounts/activate"))        return activateAccount;
-    if(route(req, "/accounts/authen"))          return login;
-    if(route(req, "/accounts/register"))        return createAccount;
-  } else if (strcmp(method, "PATCH") == 0) {
+int route_handler(MYSQL *conn, GameTree * gametree, Message msg, char *res) {
+  if (strcmp(cmd, "PLAY") == 0) {
+    if(route(req, "/game")) game_handler(gametree, msg, res);
+  } else if (strcmp(cmd, "AUTH") == 0) {
+    if(route(req, "/account/login")) signin(conn, msg);
+    if(route(req, "/account/register")) signup(conn, msg);
+//    if(route(req, "/account/changePassword"))        return createAccount;
+  } else if (strcmp(cmd, "GET") == 0) {
     if(route(req, "/accounts/updatePassword"))  return updatePassword;
     if(route(req, "/accounts/logout"))          return logout;
   }
-  return route_null;
 }
 
 void signalHandler(int signo) {

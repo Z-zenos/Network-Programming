@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "http.h"
 #include "log.h"
 #include "game.h"
 #include "rbtree.h"
@@ -91,7 +92,7 @@ Game *game_find(GameTree *gametree, int id) {
   return game;
 }
 
-void game_print_board(int board[BOARD_S][BOARD_S]) {
+void game_print_board(char board[BOARD_S][BOARD_S]) {
   int i, j;
   for (i = 0; i < BOARD_S; i++) {
     for (j = 0; j < BOARD_S; j++) {
@@ -106,7 +107,6 @@ void game_info(GameTree *gametree) {
 
   rbtrav_t *rbtrav;
   rbtrav = rbtnew();
-  int i, j;
   game = rbtfirst(rbtrav, gametree);
   printf("id %d - views: %d - turn: %c - num_moves: %d - result: %d\n", game->id, game->views, game->turn, game->num_move, game->result);
   game_print_board(game->board);
@@ -116,6 +116,37 @@ void game_info(GameTree *gametree) {
     printf("id %d - views: %d - turn: %c - num_moves: %d - result: %d\n", game->id, game->views, game->turn, game->num_move, game->result);
     game_print_board(game->board);
   }
+}
+
+
+/*
+ PLAY /game\r\n
+ Content-Type: 0\r\n
+ Params: game_id=1&player_id=1&turn=X\r\n
+ \r\n
+ * */
+void game_handler(GameTree *gametree, Message msg, char *res) {
+  int game_id, player_id, col, row;
+  char turn;
+
+  // TODO: Get id
+  sscanf(msg.header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
+
+  // TODO: Find game -> Update game board
+  Game *game = game_find(gametree, game_id);
+  game->turn = turn;
+  game->num_move++;
+  game->col = col;
+  game->row = row;
+
+  // TODO: Check state game
+  if(checkWinning(game->board, turn, game->col, game->row)) {
+    sprintf(res, "code: 200\r\ndata: win=%d", player_id);
+    return;
+  }
+
+  sprintf(res, "code: 200\r\ndata: turn=%c&col=%d&row=%d", turn, col, row);
+  return;
 }
 
 /*

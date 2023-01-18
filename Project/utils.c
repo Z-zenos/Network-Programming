@@ -250,4 +250,20 @@ void str_clear(char *str) {
   strcpy(str, "");
 }
 
+static char *util_cat(char *dest, char *end, const char *str) {
+  while (dest < end && *str)
+    *dest++ = *str++;
+  return dest;
+}
 
+size_t strjoin(char *out_string, size_t out_bufsz, const char *delim, char **chararr) {
+  char *ptr = out_string;
+  char *strend = out_string + out_bufsz;
+  while (ptr < strend && *chararr) {
+    ptr = util_cat(ptr, strend, *chararr);
+    chararr++;
+    if (*chararr)
+      ptr = util_cat(ptr, strend, delim);
+  }
+  return ptr - out_string;
+}

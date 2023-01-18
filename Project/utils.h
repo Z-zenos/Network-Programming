@@ -15,3 +15,5 @@ void str_clear(char *);
 ssize_t getpasswd(char **, size_t, int, FILE *);
 int input(char *, char *, int);
 int input_label(char *, char *, char *, int);
+
+size_t strjoin(char *, size_t, const char *, char **);

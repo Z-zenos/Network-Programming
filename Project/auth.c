@@ -82,7 +82,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   char query[QUERY_L];
   sprintf(
     query,
-    "SELECT username FROM users WHERE username = '%s'",
+    "SELECT username FROM players WHERE username = '%s'",
     username
   );
 
@@ -109,7 +109,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   str_clear(query);
   sprintf(
     query,
-    "INSERT INTO users(username, password) VALUES('%s', '%s')",
+    "INSERT INTO players(username, password) VALUES('%s', '%s')",
     username, pwd_encrypted
   );
 
@@ -144,7 +144,7 @@ int signin(MYSQL *conn, MESSAGE msg, char *res) {
   char query[QUERY_L];
   sprintf(
     query,
-    "SELECT username, password FROM users WHERE username = '%s' AND password = '%s'",
+    "SELECT username, password FROM players WHERE username = '%s' AND password = '%s'",
     username, pwd_encrypted
   );
 
