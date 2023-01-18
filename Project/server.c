@@ -20,6 +20,8 @@ void connect_database(MYSQL *conn) {
   }
 }
 
+
+
 int main(int argc, char *argv[]) {
   MYSQL *conn = mysql_init(NULL);
   if(conn == NULL) {

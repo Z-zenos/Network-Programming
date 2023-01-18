@@ -7,12 +7,13 @@
 
 #include "config.h"
 
-
 typedef struct Game {
-  int game_id;
+  int id;
+  int player1_id;
+  int player2_id;
+  int chat_id;
+
   int board[BOARD_S][BOARD_S];
-  Player *player1;
-  Player *player2;
 
   int views;
 
@@ -26,10 +27,15 @@ typedef struct Game {
   ``if both player draw then [result = 0]
   */
   int result;
-  int chat_id;
-} *Game;
+} Game;
 
-int create_game();
-Game find_game(int game_id);
+typedef struct rbtree GameTree;
+
+GameTree *game_new();
+void game_drop(GameTree *);
+int game_add(GameTree *, Game);
+int game_delete(GameTree *, int);
+int game_find(GameTree *, int);
+void game_info(GameTree *);
 
 #endif
