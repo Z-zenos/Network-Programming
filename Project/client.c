@@ -7,6 +7,7 @@
 #include "config.h"
 #include "http.h"
 #include "utils.h"
+#include "log.h"
 
 int clnt_sock;
 
@@ -20,19 +21,19 @@ void exit_safely() {
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      warn("Caught signal Ctrl + C, coming out...\n");
+      log_warn("Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      warn("Caught signal Ctrl + \\, coming out...\n");
+      log_warn("Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
     case SIGTERM:
-      warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      warn("Killing the program, coming out...\n");
+      log_warn("Killing the program, coming out...\n");
       break;
     default: break;
   }
@@ -58,17 +59,13 @@ void requestify(char *req, char *input) {
 }
 
 int main(int argc, char *argv[]) {
-  if(argc != 3 || !is_ip(argv[1]) || !is_port(argv[2])) {
-    error(__func__, "Invalid parameter\nUsage: ./server <ipv4> <port>");
-    exit(FAILURE);
-  }
+
 
   printf("\n\tMESSAGE PROGRAM\n");
   printf("\t=======================\n");
 
   clnt_sock = connect2server(argv[1], argv[2]);
   if(clnt_sock < 0) {
-    error(__func__, "Can't connect to server");
     exit_safely();
   }
 
@@ -80,9 +77,8 @@ int main(int argc, char *argv[]) {
 
   int code;
   char input[CONTENT_L];
-  char req[REQ_L], res[RES_L], msg[RES_L], username[USN_L], cmd[CMD_L];
+  char req[REQ_L], res[RES_L], msg[RES_L], cmd[CMD_L];
 
-  int logged = false;
 
   do {
     clear(cmd, req, res);

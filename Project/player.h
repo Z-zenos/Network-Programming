@@ -5,6 +5,8 @@
 
 #include <mysql/mysql.h>
 
+#include "http.h"
+
 typedef struct Achievement {
   int win;
   int draw;

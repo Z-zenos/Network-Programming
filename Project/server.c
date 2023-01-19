@@ -32,7 +32,8 @@ int route(char *req, char *route_name) {
 }
 
 void route_handler(MYSQL *conn, GameTree * gametree, Message msg, char *res) {
-  char path[PATH_L];
+  char path[PATH_L], cmd[CMD_L];
+  strcpy(cmd, msg.header.command);
   strcpy(path, msg.header.path);
 
   if (strcmp(cmd, "PLAY") == 0) {
@@ -42,8 +43,8 @@ void route_handler(MYSQL *conn, GameTree * gametree, Message msg, char *res) {
   }
 
   if (strcmp(cmd, "AUTH") == 0) {
-    if(route(path, "/account/login")) signin(conn, msg);
-    if(route(path, "/account/register")) signup(conn, msg);
+    if(route(path, "/account/login")) signin(conn, msg, res);
+    if(route(path, "/account/register")) signup(conn, msg, res);
   }
 
   if (strcmp(cmd, "GET") == 0) {
@@ -98,7 +99,7 @@ void handle_client(MYSQL *conn, GameTree *gametree, Client client) {
   Message msg;
   while(1) {
     clear(cmd, req, res);
-    if (get_req(client, req) == FAIL) break;
+    if (get_req(client.sock, req) == FAILURE) break;
     m_parse(&msg, req);
     route_handler(conn, gametree, msg, res);
     send_res(client.sock, res, 200, "Hello");
@@ -137,7 +138,7 @@ void server_listen(MYSQL *conn, GameTree *gametree) {
     if(threadArgs == NULL) {
       log_error("malloc() failed");
       close(server_fd);
-      exit(FAIL);
+      exit(FAILURE);
     }
 
     threadArgs->client = client;
@@ -150,7 +151,7 @@ void server_listen(MYSQL *conn, GameTree *gametree) {
     if(rtnVal != 0) {
       log_error("pthread_create() failed with thread %lu\n", (unsigned long int)threadID);
       close(server_fd);
-      exit(FAIL);
+      exit(FAILURE);
     }
   }
 }

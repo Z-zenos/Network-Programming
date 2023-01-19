@@ -49,7 +49,7 @@ int add_player(PlayerTree *playertree, Player new_player) {
 //  player->achievement.draw = new_player.achievement.draw;
 //  player->achievement.loss = new_player.achievement.loss;
 //  player->achievement.rank = new_player.achievement.rank;
-//  player->achievement.rank_points = new_player.achievement.rank_points;
+//  player->achievement.points = new_player.achievement.points;
 //  player->achievement.streak = new_player.achievement.streak;
 //  player->achievement.win = new_player.achievement.win;
   player->achievement = new_player.achievement;
@@ -94,7 +94,7 @@ PlayerTree *load_players(MYSQL *conn) {
 //      "%d %s %s %d %d %d %d %d %d %d",
 //      &player.id, player.username, player.password, &player.sock,
 //      &player.achievement.win, &player.achievement.loss, &player.achievement.draw,
-//      &player.achievement.streak, &player.achievement.rank_points, &player.achievement.rank
+//      &player.achievement.streak, &player.achievement.points, &player.achievement.rank
 //    );
     player.id = atoi(row[0]);
     strcpy(player.username, row[1]);
@@ -105,7 +105,7 @@ PlayerTree *load_players(MYSQL *conn) {
     player.achievement.draw = atoi(row[6]);
     player.achievement.streak = atoi(row[7]);
     player.achievement.rank = atoi(row[8]);
-    player.achievement.rank_points = atoi(row[9]);
+    player.achievement.points = atoi(row[9]);
     add_player((PlayerTree *)rbtree, player);
     printf("\n");
   }
@@ -114,8 +114,4 @@ PlayerTree *load_players(MYSQL *conn) {
   notify("success", N_SIGNIN_SUCCESS);
 
   return rbtree;
-}
-
-int main() {
-
 }

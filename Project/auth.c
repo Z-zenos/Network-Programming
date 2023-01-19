@@ -42,7 +42,7 @@ char *encrypt(char *password) {
   SHA256_Update(&context, (unsigned char*)password, strlen(password));
   SHA256_Final(md, &context);
   char *converter = (char*)malloc(63);
-  int k = 0;
+  int i, k = 0;
   for(i = 0; i < sizeof(md); i++) {
     k += sprintf(converter + k, "%x", md[i]);
   }
@@ -125,7 +125,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   return SUCCESS;
 }
 
-int signin(MYSQL *conn, MESSAGE msg, char *res) {
+int signin(MYSQL *conn, Message msg, char *res) {
   // TESTING
   char username[USERNAME_L], password[PASSWORD_L];
 
