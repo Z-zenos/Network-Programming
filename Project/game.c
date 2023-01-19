@@ -142,6 +142,14 @@ void game_handler(GameTree *gametree, Message msg, char *res) {
   // TODO: Check state game
   if(checkWinning(game->board, turn, game->col, game->row)) {
     sprintf(res, "code: 200\r\ndata: win=%d", player_id);
+    Player *winner = find_player(playertree, winner_id);
+    Player *losser = find_player(playertree, losser_id);
+
+    winner.achivement.win++;
+    winner.achivement.point += 3;
+
+    losser.achivement.loss++;
+    losser.achivement.point -= 1;
     return;
   }
 

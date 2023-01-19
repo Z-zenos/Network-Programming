@@ -5,14 +5,13 @@
 
 #include <mysql/mysql.h>
 
-
 typedef struct Achievement {
   int win;
   int draw;
   int loss;
   int streak;
   int rank;
-  int rank_points;
+  int points;
 } Achievement;
 
 typedef struct User {

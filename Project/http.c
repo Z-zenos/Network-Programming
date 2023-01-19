@@ -23,7 +23,8 @@ void m_print(Message msg) {
   printf("%s\n", msg.body.content);
 }
 
-void clear(char *req, char *res) {
+void clear(char *cmd, char *req, char *res) {
+  memset(cmd, 0, CMD_L);
   memset(req, 0, REQ_L);
   memset(res, 0, RES_L);
 }

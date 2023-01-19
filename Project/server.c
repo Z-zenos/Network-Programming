@@ -27,22 +27,38 @@ void connect_database(MYSQL *conn) {
   }
 }
 
-
-
 int route(char *req, char *route_name) {
   return str_start_with(req, route_name);
 }
 
-int route_handler(MYSQL *conn, GameTree * gametree, Message msg, char *res) {
+void route_handler(MYSQL *conn, GameTree * gametree, Message msg, char *res) {
+  char path[PATH_L];
+  strcpy(path, msg.header.path);
+
   if (strcmp(cmd, "PLAY") == 0) {
-    if(route(req, "/game")) game_handler(gametree, msg, res);
-  } else if (strcmp(cmd, "AUTH") == 0) {
-    if(route(req, "/account/login")) signin(conn, msg);
-    if(route(req, "/account/register")) signup(conn, msg);
-//    if(route(req, "/account/changePassword"))        return createAccount;
-  } else if (strcmp(cmd, "GET") == 0) {
-    if(route(req, "/accounts/updatePassword"))  return updatePassword;
-    if(route(req, "/accounts/logout"))          return logout;
+//    if(route(path, "/game")) game_handler(gametree, msg, res);
+//    if(route(path, "/createGame")) create_game(conn, msg);
+//    if(route(path, "/joinGame")) join_game(conn, msg);
+  }
+
+  if (strcmp(cmd, "AUTH") == 0) {
+    if(route(path, "/account/login")) signin(conn, msg);
+    if(route(path, "/account/register")) signup(conn, msg);
+  }
+
+  if (strcmp(cmd, "GET") == 0) {
+//    if(route(path, "/rank")) rank(conn, msg);
+//    if(route(path, "/profile")) profile(conn, msg);
+//    if(route(path, "/viewgame")) view_game(conn, msg);
+  }
+
+  if(strcmp(cmd, "CHAT") == 0) {
+
+  }
+
+  if(strcmp(cmd, "UPDATE")) {
+//    if(route(path, "/account/forgotPassword")) forgot_password(conn, msg);
+//    if(route(path, "/account/updatePassword")) change_password(conn, msg);
   }
 }
 
@@ -77,20 +93,23 @@ void handle_signal() {
   signal(SIGUSR1, signalHandler);
 }
 
-void handleClient(Client client) {
-  char method[MAX_METHOD_LENGTH], req[MAX_REQUEST_LENGTH], res[MAX_RESPONSE_LENGTH];
-
+void handle_client(MYSQL *conn, GameTree *gametree, Client client) {
+  char cmd[CMD_L], req[REQ_L], res[RES_L];
+  Message msg;
   while(1) {
-    http_clear(method, req, res);
-    if (get_request(client, method, req) == FAIL) break;
-    routeHandler(method, req)(req, res);
-    send_response(client.sock, res);
+    clear(cmd, req, res);
+    if (get_req(client, req) == FAIL) break;
+    m_parse(&msg, req);
+    route_handler(conn, gametree, msg, res);
+    send_res(client.sock, res, 200, "Hello");
   }
 }
 
 // Structure of arguments to pass to client thread
 typedef struct ThreadArgs {
   Client client; // Socket descriptor for client
+  MYSQL *conn;
+  GameTree *gametree;
 } ThreadArgs;
 
 // Each thread executes this function
@@ -100,9 +119,11 @@ void *ThreadMain(void *threadArgs) {
 
   // Extract socket file descriptor argument
   Client client = ((ThreadArgs *)threadArgs)->client;
+  MYSQL *conn = ((ThreadArgs *)threadArgs)->conn;
+  GameTree *gametree = ((ThreadArgs *)threadArgs)->gametree;
   free(threadArgs); // Deallocate memory for argument
 
-  handleClient(client);
+  handle_client(conn, gametree, client);
   close(client.sock);
   return(NULL);
 }
@@ -120,6 +141,8 @@ void server_listen(MYSQL *conn, GameTree *gametree) {
     }
 
     threadArgs->client = client;
+    threadArgs->conn = conn;
+    threadArgs->gametree = gametree;
 
     // Create client thread
     pthread_t threadID;

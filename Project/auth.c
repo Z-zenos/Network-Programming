@@ -43,8 +43,8 @@ char *encrypt(char *password) {
   SHA256_Final(md, &context);
   char *converter = (char*)malloc(63);
   int k = 0;
-  for(i = 0; i < sizeof(pwd_encrypted); i++) {
-    k += sprintf(converter + k, "%x", pwd_encrypted[i]);
+  for(i = 0; i < sizeof(md); i++) {
+    k += sprintf(converter + k, "%x", md[i]);
   }
   return converter;
 }
@@ -109,7 +109,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   str_clear(query);
   sprintf(
     query,
-    "INSERT INTO players(username, password) VALUES('%s', '%s')",
+    "INSERT INTO players(username, password, win, draw, loss, streak, rank, points) VALUES('%s', '%s', 0 ,0, 0, 0, 0, 0)",
     username, pwd_encrypted
   );
 
