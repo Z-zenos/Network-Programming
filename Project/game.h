@@ -45,5 +45,5 @@ int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 void game_handler(GameTree *, PlayerTree *, Message, char *);
-
+void game_create(MYSQL *, GameTree *, PlayerTree *, Message, char *);
 #endif

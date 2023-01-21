@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "http.h"
 #include "log.h"
@@ -157,6 +158,35 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Message msg, char 
   }
 
   sprintf(res, "code: 200\r\ndata: turn=%c&col=%d&row=%d", turn, col, row);
+  return;
+}
+
+void game_create(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message msg, char *res) {
+  int player_id;
+
+  // TODO: Get player id
+  sscanf(msg.header.params, "player_id=%d", &player_id);
+
+  // TODO: Get last id
+  int last_game_id = mysql_insert_id(conn);
+
+  // TODO: random first turn for game board
+  int r = rand() % 2;
+
+  // TODO: Create game
+  Game new_game = {
+    .id = last_game_id + 1,
+    .views = 0,
+    .num_move = 0,
+    .result = 0,
+    .turn = (r == 1) ? 'X' : 'O',
+    .player1_id = player_id
+  };
+
+  game_add(gametree, new_game);
+
+  // TODO: game id for search room :>
+  sprintf(res, "code: 200\r\ndata: game_id=%d&turn=%c\r\nmessage: Create new game successfully", new_game.id, new_game.turn);
   return;
 }
 

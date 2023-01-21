@@ -6,6 +6,7 @@
 #include <mysql/mysql.h>
 #include <pthread.h>
 #include <signal.h>
+#include <time.h>
 
 #include "auth.h"
 #include "http.h"
@@ -39,7 +40,7 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Mess
 
   if (strcmp(cmd, "PLAY") == 0) {
     if(route(path, "/game")) game_handler(gametree, playertree, msg, res);
-//    if(route(path, "/createGame")) create_game(conn, msg);
+    if(route(path, "/createGame")) game_create(conn, gametree, playertree, msg, res);
 //    if(route(path, "/joinGame")) join_game(conn, msg);
   }
 
@@ -162,6 +163,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 
 int main(int argc, char *argv[]) {
   handle_signal();
+  srand(time(NULL));   // Initialization, should only be called once.
 
   server_fd = server_init(argv[1]);
 
