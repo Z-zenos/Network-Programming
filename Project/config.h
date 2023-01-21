@@ -28,4 +28,4 @@
 #define DB_HOST "localhost"
 #define DB_USER "root"
 #define DB_PASSWRD "@nhTu@n12o1"
-#define DB_NAME "tic_tac_toe"
+#define DB_NAME "Caro"
