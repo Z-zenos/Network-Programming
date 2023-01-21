@@ -70,7 +70,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
-  sscanf(msg.header.params, "username=%[^&]s&password=%[^\r]s", username, password);
+  sscanf(msg.header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
@@ -109,7 +109,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   str_clear(query);
   sprintf(
     query,
-    "INSERT INTO players(username, password, win, draw, loss, streak, rank, points) VALUES('%s', '%s', 0 ,0, 0, 0, 0, 0)",
+    "INSERT INTO players(username, password, win, draw, loss, streak, points) VALUES('%s', '%s', 0 ,0, 0, 0, 0)",
     username, pwd_encrypted
   );
 

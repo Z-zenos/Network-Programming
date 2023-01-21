@@ -12,7 +12,6 @@ typedef struct Achievement {
   int draw;
   int loss;
   int streak;
-  int rank;
   int points;
 } Achievement;
 

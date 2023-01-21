@@ -159,7 +159,7 @@ void server_listen(MYSQL *conn, GameTree *gametree) {
 int main(int argc, char *argv[]) {
   handle_signal();
 
-  server_fd = server_init(argv[2]);
+  server_fd = server_init(argv[1]);
 
   MYSQL *conn = mysql_init(NULL);
   GameTree *gametree;
