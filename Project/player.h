@@ -24,9 +24,9 @@ typedef struct User {
 } Player;
 
 typedef struct rbtree PlayerTree;
-PlayerTree *load_players(MYSQL *);
+PlayerTree *player_build(MYSQL *);
 //void drop_playertree(PlayerTree *);
-int add_player(PlayerTree *, Player);
+int player_add(PlayerTree *, Player);
 //int player_delete(PlayerTree *, int);
 //Game *player_find(PlayerTree *, int);
 void player_info(PlayerTree *);

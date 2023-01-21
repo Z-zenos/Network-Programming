@@ -15,6 +15,7 @@
 #include "log.h"
 #include "game.h"
 #include "algo.h"
+#include "player.h"
 
 int server_fd;
 
@@ -129,7 +130,7 @@ void *ThreadMain(void *threadArgs) {
   return(NULL);
 }
 
-void server_listen(MYSQL *conn, GameTree *gametree) {
+void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   for(;;) {
     Client client = accept_conn(server_fd);
 
@@ -163,6 +164,7 @@ int main(int argc, char *argv[]) {
 
   MYSQL *conn = mysql_init(NULL);
   GameTree *gametree;
+  PlayerTree *playertree;
 
   if(conn == NULL) {
     log_error("%s", mysql_error(conn));
@@ -171,12 +173,10 @@ int main(int argc, char *argv[]) {
 
   connect_database(conn);
   gametree = game_new();
+  playertree = player_build(conn);
+//  player_info(playertree);
 
-
-//  signup(conn);
-//  signin(conn);
-
-  server_listen(conn, gametree);
+  server_listen(conn, gametree, playertree);
   mysql_close(conn);
   return SUCCESS;
 }
