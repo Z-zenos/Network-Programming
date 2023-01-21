@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <mysql/mysql.h>
 #include <ctype.h>
-#include <openssl/evp.h>
 #include <openssl/sha.h>
 
 #include "auth.h"
@@ -13,8 +12,6 @@
 #include "notify.h"
 #include "log.h"
 #include "http.h"
-
-
 
 bool is_valid_username(char *username) {
   int i, username_l = strlen(username);
@@ -74,7 +71,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    strcpy(res, "Username / Password invalid");
+    strcpy(res, "400 Username / Password invalid");
     return FAILURE;
   }
 
@@ -116,12 +113,12 @@ int signup(MYSQL *conn, Message msg, char *res) {
   if (mysql_query(conn, query)) {
     notify("error", N_DATABASE_INSERT_FAILED);
     log_error("%s", mysql_error(conn));
-    strcpy(res, "Create new account failed");
+    strcpy(res, "400 Create new account failed");
     return FAILURE;
   }
 
   notify("success", N_DATABASE_INSERT_SUCCESS);
-  strcpy(res, "Create new account successfully");
+  strcpy(res, "201 Create new account successfully");
   return SUCCESS;
 }
 
@@ -134,7 +131,7 @@ int signin(MYSQL *conn, Message msg, char *res) {
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    strcpy(res, "Username / Password invalid");
+    strcpy(res, "400 Username / Password invalid");
     return FAILURE;
   }
 
@@ -158,13 +155,13 @@ int signin(MYSQL *conn, Message msg, char *res) {
   if(!qres->row_count) {
     notify("error", N_ACCOUNT_WRONG);
     mysql_free_result(qres);
-    strcpy(res, "Account does not exist");
+    strcpy(res, "400 Account does not exist");
     return FAILURE;
   }
 
   mysql_free_result(qres);
   notify("success", N_SIGNIN_SUCCESS);
-  strcpy(res, "Login successfully");
+  strcpy(res, "200 Login successfully");
   return SUCCESS;
 }
 

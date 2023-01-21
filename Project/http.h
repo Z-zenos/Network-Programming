@@ -53,7 +53,7 @@ Client accept_conn(int);
 int get_req(int, char *);
 int get_res(int, char *);
 int send_req(int, char *);
-int send_res(int, char *, int, char*);
+int send_res(int, char *);
 void clear(char *, char *, char*);
 
 #endif

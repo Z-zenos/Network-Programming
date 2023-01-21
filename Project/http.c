@@ -227,8 +227,7 @@ int get_res(int server_fd, char *res) {
   return SUCCESS;
 }
 
-int send_res(int client_fd, char *res, int code, char *msg) {
-  sprintf(res, "%d %s", code, msg);
+int send_res(int client_fd, char *res) {
   size_t res_l = strlen(res);
   ssize_t numBytesSent = send(client_fd, res, res_l, 0);
   return numBytesSent;

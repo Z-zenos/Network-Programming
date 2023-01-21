@@ -102,7 +102,7 @@ void handle_client(MYSQL *conn, GameTree *gametree, Client client) {
     if (get_req(client.sock, req) == FAILURE) break;
     m_parse(&msg, req);
     route_handler(conn, gametree, msg, res);
-    send_res(client.sock, res, 200, "Hello");
+    send_res(client.sock, res);
   }
 }
 
