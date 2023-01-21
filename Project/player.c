@@ -97,6 +97,17 @@ PlayerTree *player_build(MYSQL *conn) {
   return rbtree;
 }
 
+Player *player_find(PlayerTree *playertree, int player_id) {
+  Player *player, player_find;
+
+  player_find.id = player_id;
+  player = rbfind(playertree, &player_find);
+  if (!player) {
+    return 0;
+  }
+  return player;
+}
+
 void player_info(PlayerTree *playertree) {
   Player *player;
 

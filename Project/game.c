@@ -5,6 +5,8 @@
 #include "http.h"
 #include "log.h"
 #include "game.h"
+#include "algo.h"
+#include "player.h"
 #include "rbtree.h"
 
 static int game_cmp(const void *p1, const void *p2) {
@@ -125,37 +127,38 @@ void game_info(GameTree *gametree) {
  Params: game_id=1&player_id=1&turn=X\r\n
  \r\n
  * */
-//void game_handler(GameTree *gametree, Message msg, char *res) {
-//  int game_id, player_id, col, row;
-//  char turn;
-//
-//  // TODO: Get id
-//  sscanf(msg.header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
-//
-//  // TODO: Find game -> Update game board
-//  Game *game = game_find(gametree, game_id);
-//  game->turn = turn;
-//  game->num_move++;
-//  game->col = col;
-//  game->row = row;
-//
-//  // TODO: Check state game
-//  if(checkWinning(game->board, turn, game->col, game->row)) {
-//    sprintf(res, "code: 200\r\ndata: win=%d", player_id);
-//    Player *winner = find_player(playertree, winner_id);
-//    Player *losser = find_player(playertree, losser_id);
-//
-//    winner.achivement.win++;
-//    winner.achivement.point += 3;
-//
-//    losser.achivement.loss++;
-//    losser.achivement.point -= 1;
-//    return;
-//  }
-//
-//  sprintf(res, "code: 200\r\ndata: turn=%c&col=%d&row=%d", turn, col, row);
-//  return;
-//}
+void game_handler(GameTree *gametree, PlayerTree *playertree, Message msg, char *res) {
+  int game_id, player_id, col, row, opponent_id;
+  char turn;
+
+  // TODO: Get id
+  sscanf(msg.header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
+
+  // TODO: Find game -> Update game board
+  Game *game = game_find(gametree, game_id);
+  game->turn = turn;
+  game->num_move++;
+  game->col = col;
+  game->row = row;
+
+  // TODO: Check state game
+  if(checkWinning(game->board, turn, game->col, game->row)) {
+    sprintf(res, "code: 200\r\ndata: win=%d", player_id);
+    Player *winner = player_find(playertree, player_id);
+    opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
+    Player *losser = player_find(playertree, opponent_id);
+
+    winner->achievement.win++;
+    winner->achievement.points += 3;
+
+    losser->achievement.loss++;
+    losser->achievement.points -= 1;
+    return;
+  }
+
+  sprintf(res, "code: 200\r\ndata: turn=%c&col=%d&row=%d", turn, col, row);
+  return;
+}
 
 /*
 int main() {

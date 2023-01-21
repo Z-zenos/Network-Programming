@@ -32,13 +32,13 @@ int route(char *req, char *route_name) {
   return str_start_with(req, route_name);
 }
 
-void route_handler(MYSQL *conn, GameTree * gametree, Message msg, char *res) {
+void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message msg, char *res) {
   char path[PATH_L], cmd[CMD_L];
   strcpy(cmd, msg.header.command);
   strcpy(path, msg.header.path);
 
   if (strcmp(cmd, "PLAY") == 0) {
-//    if(route(path, "/game")) game_handler(gametree, msg, res);
+    if(route(path, "/game")) game_handler(gametree, playertree, msg, res);
 //    if(route(path, "/createGame")) create_game(conn, msg);
 //    if(route(path, "/joinGame")) join_game(conn, msg);
   }
@@ -95,14 +95,14 @@ void handle_signal() {
   signal(SIGUSR1, signalHandler);
 }
 
-void handle_client(MYSQL *conn, GameTree *gametree, Client client) {
+void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Client client) {
   char cmd[CMD_L], req[REQ_L], res[RES_L];
   Message msg;
   while(1) {
     clear(cmd, req, res);
     if (get_req(client.sock, req) == FAILURE) break;
     m_parse(&msg, req);
-    route_handler(conn, gametree, msg, res);
+    route_handler(conn, gametree, playertree, msg, res);
     send_res(client.sock, res);
   }
 }
@@ -112,6 +112,7 @@ typedef struct ThreadArgs {
   Client client; // Socket descriptor for client
   MYSQL *conn;
   GameTree *gametree;
+  PlayerTree *playertree;
 } ThreadArgs;
 
 // Each thread executes this function
@@ -123,9 +124,10 @@ void *ThreadMain(void *threadArgs) {
   Client client = ((ThreadArgs *)threadArgs)->client;
   MYSQL *conn = ((ThreadArgs *)threadArgs)->conn;
   GameTree *gametree = ((ThreadArgs *)threadArgs)->gametree;
+  PlayerTree *playertree = ((ThreadArgs *)threadArgs)->playertree;
   free(threadArgs); // Deallocate memory for argument
 
-  handle_client(conn, gametree, client);
+  handle_client(conn, gametree, playertree, client);
   close(client.sock);
   return(NULL);
 }
@@ -145,6 +147,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     threadArgs->client = client;
     threadArgs->conn = conn;
     threadArgs->gametree = gametree;
+    threadArgs->playertree = playertree;
 
     // Create client thread
     pthread_t threadID;
@@ -177,6 +180,8 @@ int main(int argc, char *argv[]) {
 //  player_info(playertree);
 
   server_listen(conn, gametree, playertree);
+
+  game_drop(gametree);
   mysql_close(conn);
   return SUCCESS;
 }

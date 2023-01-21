@@ -7,6 +7,7 @@
 #include <mysql/mysql.h>
 #include "http.h"
 #include "config.h"
+#include "player.h"
 
 typedef struct Game {
   int id;
@@ -43,6 +44,6 @@ int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 void game_info(GameTree *);
-void game_handler(GameTree *, Message, char *);
+void game_handler(GameTree *, PlayerTree *, Message, char *);
 
 #endif
