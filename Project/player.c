@@ -68,13 +68,14 @@ PlayerTree *player_build(MYSQL *conn) {
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     log_error("%s", mysql_error(conn));
+    return NULL;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     notify("error", N_ACCOUNT_WRONG);
     mysql_free_result(qres);
-    return FAILURE;
+    return NULL;
   }
 
   MYSQL_ROW row;
@@ -108,15 +109,57 @@ Player *player_find(PlayerTree *playertree, int player_id) {
   return player;
 }
 
+void player_print(Player *player) {
+  printf("id %d - username: %s - password: %s - won: %d - draw: %d - loss: %d - streak: %d - points: %d\n", player->id, player->username, player->password, player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points);
+}
+
 void player_info(PlayerTree *playertree) {
   Player *player;
 
   rbtrav_t *rbtrav;
   rbtrav = rbtnew();
   player = rbtfirst(rbtrav, playertree);
-  printf("id %d - username: %s - password: %s - won: %d - draw: %d - loss: %d - streak: %d - points: %d\n", player->id, player->username, player->password, player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points);
+  player_print(player);
 
   while ((player = rbtnext(rbtrav)) != NULL) {
-    printf("id %d - username: %s - password: %s - won: %d - draw: %d - loss: %d - streak: %d - points: %d\n", player->id, player->username, player->password, player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points);
+    player_print(player);
   }
+}
+
+void rank(MYSQL *conn, Message msg, char *res) {
+  // TODO: QUERY follow points from database
+  char query[QUERY_L] = "SELECT * FROM players ORDER BY points DESC";
+
+  if (mysql_query(conn, query)) {
+    notify("error", N_QUERY_FAILED);
+    log_error("%s", mysql_error(conn));
+    return;
+  }
+
+  MYSQL_RES *qres = mysql_store_result(conn);
+  if(!qres->row_count) {
+    mysql_free_result(qres);
+    return;
+  }
+
+  // TODO: Count number of records in db
+  int total_players = mysql_num_rows(qres), i = 0;
+  MYSQL_ROW row;
+  Player player[total_players];
+
+  while ((row = mysql_fetch_row(qres))) {
+    player[i].id = atoi(row[0]);
+    strcpy(player[i].username, row[1]);
+    strcpy(player[i].password, row[2]);
+    player[i].achievement.win = atoi(row[3]);
+    player[i].achievement.loss = atoi(row[4]);
+    player[i].achievement.draw = atoi(row[5]);
+    player[i].achievement.streak = atoi(row[6]);
+    player[i].achievement.points = atoi(row[7]);
+    player_print(&player[i]);
+    i++;
+  }
+
+  mysql_free_result(qres);
+  sprintf(res, "code: 200\r\ndata: ...\r\nmessage: Get rank successfully");
 }

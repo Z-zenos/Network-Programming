@@ -27,6 +27,7 @@ void connect_database(MYSQL *conn) {
     mysql_close(conn);
     exit(FAILURE);
   }
+  log_success("Connect database successfully...");
 }
 
 int route(char *req, char *route_name) {
@@ -50,7 +51,7 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Mess
   }
 
   if (strcmp(cmd, "GET") == 0) {
-//    if(route(path, "/rank")) rank(conn, msg);
+    if(route(path, "/rank")) rank(conn, msg, res);
 //    if(route(path, "/profile")) profile(conn, msg);
 //    if(route(path, "/viewgame")) view_game(conn, msg);
   }
@@ -179,7 +180,6 @@ int main(int argc, char *argv[]) {
   connect_database(conn);
   gametree = game_new();
   playertree = player_build(conn);
-//  player_info(playertree);
 
   server_listen(conn, gametree, playertree);
 

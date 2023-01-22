@@ -35,6 +35,7 @@ static void game_rel(void *p) { free(p); }
 GameTree *game_new() {
   rbtree_t *rbtree;
   rbtree = rbnew(game_cmp, game_dup, game_rel);
+  log_success("Build game tree successfully...");
   return rbtree;
 }
 

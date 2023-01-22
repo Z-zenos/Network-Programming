@@ -31,7 +31,7 @@ int player_add(PlayerTree *, Player);
 Player *player_find(PlayerTree *, int);
 void player_info(PlayerTree *);
 
-void rank(PlayerTree *, Message, char *);
+void rank(MYSQL *, Message, char *);
 
 
 #endif

@@ -4,10 +4,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#define log_success(...) do{                          \
-	fprintf(stdout,"\x1b[1;38;5;47mSuccess\x1b[0m \t"); \
-	fprintf(stdout,__VA_ARGS__);                        \
-	fputs("\n",stdout);                                 \
+#define log_success(...) do{                                                                     \
+	fprintf(stdout,"\x1b[1;38;5;47m[\xE2\x9C\x93]  %s\x1b[0m", __VA_ARGS__); \
+	fputs("\n",stdout);                                                                            \
 } while(0)
 
 #define log_warn(...) do{                                       \
