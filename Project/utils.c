@@ -2,6 +2,7 @@
 #include <termios.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "utils.h"
 #include "notify.h"
@@ -266,4 +267,46 @@ size_t strjoin(char *out_string, size_t out_bufsz, const char *delim, char **cha
       ptr = util_cat(ptr, strend, delim);
   }
   return ptr - out_string;
+}
+
+char *itoa(int value, int base) {
+  char *result = (char *)malloc(10);
+
+  // check that the base if valid
+  if (base < 2 || base > 36) { *result = '\0'; return result; }
+
+  char* ptr = result, *ptr1 = result, tmp_char;
+  int tmp_value;
+
+  do {
+    tmp_value = value;
+    value /= base;
+    *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * base)];
+  } while ( value );
+
+  // Apply negative sign
+  if (tmp_value < 0) *ptr++ = '-';
+  *ptr-- = '\0';
+  while(ptr1 < ptr) {
+    tmp_char = *ptr;
+    *ptr--= *ptr1;
+    *ptr1++ = tmp_char;
+  }
+  return result;
+}
+
+void logger(char *type, int argc, ...) {
+  va_list ptr;
+  va_start(ptr, argc);
+
+  if(strcmp(type, "error") == 0)   printf("\x1b[1;38;5;196m[x]  ");
+  if(strcmp(type, "success") == 0) printf("\x1b[1;38;5;47m[\xE2\x9C\x93]  ");
+  if(strcmp(type, "warn") == 0)    printf("\x1b[1;38;5;226m[!]  ");
+  if(strcmp(type, "info") == 0)    printf("\x1b[1;38;5;202m[i]  ");
+
+  for (int i = 0; i < argc; i++)
+    printf("%s", va_arg(ptr, char*));
+
+  printf("\x1b[0m\n");
+  va_end(ptr);
 }

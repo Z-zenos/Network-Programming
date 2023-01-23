@@ -40,11 +40,11 @@ void notify(char *type, Notify ntfCode) {
   for(int i = 0; i < NOTIFY_L; i++) {
     if(notifies[i].notifyCode == ntfCode) {
       if(strcmp(type, "error") == 0)
-        printf("\x1b[1;38;5;196mError\t%s\x1b[0m\n", notifies[i].notify);
+        printf("\x1b[1;38;5;196m[x]\t%s\x1b[0m\n", notifies[i].notify);
       else if(strcmp(type, "success") == 0)
-        printf("\x1b[1;38;5;47mSuccess\t%s\x1b[0m\n", notifies[i].notify);
+        printf("\x1b[1;38;5;47m[v]\t%s\x1b[0m\n", notifies[i].notify);
       else if(strcmp(type, "warn") == 0)
-        printf("\x1b[1;38;5;226mWarn\t%s\x1b[0m\n", notifies[i].notify);
+        printf("\x1b[1;38;5;226m[!]\t%s\x1b[0m\n", notifies[i].notify);
     }
   }
 }

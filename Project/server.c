@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include <sys/socket.h>
 #include <mysql/mysql.h>
 #include <pthread.h>
 #include <signal.h>
@@ -26,11 +24,10 @@ Response res;
 void connect_database(MYSQL *conn) {
   if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
     notify("error", N_DATABASE_CONNECT_FAILED);
-    log_error("%s", mysql_error(conn));
     mysql_close(conn);
     exit(FAILURE);
   }
-  log_success("Connect database successfully...");
+  logger("Connect database successfully...");
 }
 
 int route(char *path, char *route_name) {
@@ -175,6 +172,8 @@ int main(int argc, char *argv[]) {
     log_error("%s", mysql_error(conn));
     exit(FAILURE);
   }
+
+  log("success", "Build app successfully...");
 
   connect_database(conn);
   gametree = game_new();
