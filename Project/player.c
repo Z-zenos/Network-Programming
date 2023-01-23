@@ -126,7 +126,7 @@ void player_info(PlayerTree *playertree) {
   }
 }
 
-void rank(MYSQL *conn, Message msg, char *res) {
+void rank(MYSQL *conn, Request *req, Response *res) {
   // TODO: QUERY follow points from database
   char query[QUERY_L] = "SELECT * FROM players ORDER BY points DESC";
 
@@ -161,5 +161,5 @@ void rank(MYSQL *conn, Message msg, char *res) {
   }
 
   mysql_free_result(qres);
-  sprintf(res, "code: 200\r\ndata: ...\r\nmessage: Get rank successfully");
+  responsify(res, 200, "...", "Get rank successfully");
 }

@@ -12,7 +12,7 @@
 int clnt_sock;
 
 void exit_safely() {
-  send_req(clnt_sock, "EXIT HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
+//  send_req(clnt_sock, "EXIT \r\nContent-Length: 0\r\nParams: \r\n\r\n");
   close(clnt_sock);
   printf("Bye :)\n");
   exit(SUCCESS);
@@ -50,18 +50,14 @@ bool str_is_empty(char *str) {
   return SUCCESS;
 }
 
-void requestify(char *req, char *input) {
-  char cmd[CMD_L], content[CONTENT_L], path[PATH_L], params[PARAM_L];
-  sscanf(input, "%s %s %s %[^\n]s", cmd, path, params, content);
-  strcpy(content, str_trim(content));
-  int content_l = (int)strlen(content);
-  sprintf(req, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", cmd, path, content_l, params, content);
+
+
+void make_req(Request *req, char *input) {
+  sscanf(input, "%s %s %s %[^\n]s", req->header.command, req->header.path, req->header.params, req->body.content);
 }
 
 int main(int argc, char *argv[]) {
-
-
-  printf("\n\tMESSAGE PROGRAM\n");
+  printf("\n\tTEST API\n");
   printf("\t=======================\n");
 
   clnt_sock = connect2server(argv[1], argv[2]);
@@ -75,13 +71,13 @@ int main(int argc, char *argv[]) {
   signal(SIGTERM, signalHandler);
   signal(SIGUSR1, signalHandler);
 
-  int code;
   char input[CONTENT_L];
-  char req[REQ_L], res[RES_L], msg[RES_L], cmd[CMD_L];
-
+  char reqStr[REQ_L], resStr[RES_L], msg[RES_L], cmd[CMD_L];
+  Request reqObj;
+  Response resObj;
 
   do {
-    clear(cmd, req, res);
+    h_clear(cmd, reqStr, resStr);
     strcpy(msg, "");
     printf("[C]: ");
     scanf("%[^\n]s", input);
@@ -92,10 +88,10 @@ int main(int argc, char *argv[]) {
       exit_safely();
     }
 
-    requestify(req, input);
-    send_req(clnt_sock, req);
-    get_res(clnt_sock, res);
-    sscanf(res, "%d %[^\n]s", &code, msg);
-    printf("[S]: \x1b[1;38;5;47m%d\x1b[0m \x1b[1;38;5;226m%s\x1b[0m\n", code, msg);
+    make_req(&reqObj, input);
+    send_req(clnt_sock, reqObj);
+    get_res(clnt_sock, &resObj);
+    res_parse(&resObj, resStr);
+    printf("[S]: \x1b[1;38;5;47m%d\x1b[0m \x1b[1;38;5;226m%s\x1b[0m\n", resObj.code, resObj.message);
   } while(1);
 }

@@ -63,15 +63,15 @@ bool compare_password(char *password_input, unsigned char *password_db) {
   return SUCCESS;
 }
 
-int signup(MYSQL *conn, Message msg, char *res) {
+int signup(MYSQL *conn, Request *req, Response *res) {
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
-  sscanf(msg.header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
+  sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    strcpy(res, "400 Username / Password invalid");
+    responsify(res, 400, NULL, "Username / Password incorrect");
     return FAILURE;
   }
 
@@ -86,6 +86,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     log_error("%s", mysql_error(conn));
+    responsify(res, 400, NULL, "Internal server error");
     return FAILURE;
   }
 
@@ -93,7 +94,7 @@ int signup(MYSQL *conn, Message msg, char *res) {
   if(qres->row_count) {
     notify("error", N_USERNAME_ALREADY_EXISTS);
     mysql_free_result(qres);
-    strcpy(res, "Username already exists");
+    responsify(res, 400, NULL, "Username already exists");
     return FAILURE;
   }
 
@@ -113,25 +114,25 @@ int signup(MYSQL *conn, Message msg, char *res) {
   if (mysql_query(conn, query)) {
     notify("error", N_DATABASE_INSERT_FAILED);
     log_error("%s", mysql_error(conn));
-    strcpy(res, "400 Create new account failed");
+    responsify(res, 400, NULL, "Create new account failed");
     return FAILURE;
   }
 
   notify("success", N_DATABASE_INSERT_SUCCESS);
-  strcpy(res, "201 Create new account successfully");
+  responsify(res, 201, NULL, "Create new account successfully");
   return SUCCESS;
 }
 
-int signin(MYSQL *conn, Message msg, char *res) {
+int signin(MYSQL *conn, Request *req, Response *res) {
   // TESTING
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
-  sscanf(msg.header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
+  sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    strcpy(res, "400 Username / Password invalid");
+    responsify(res, 400, NULL, "Username / Password incorrect");
     return FAILURE;
   }
 
@@ -148,6 +149,7 @@ int signin(MYSQL *conn, Message msg, char *res) {
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     log_error("%s", mysql_error(conn));
+    responsify(res, 400, NULL, "Internal server error");
     return FAILURE;
   }
 
@@ -155,13 +157,13 @@ int signin(MYSQL *conn, Message msg, char *res) {
   if(!qres->row_count) {
     notify("error", N_ACCOUNT_WRONG);
     mysql_free_result(qres);
-    strcpy(res, "400 Account does not exist");
+    responsify(res, 400, NULL, "Account does not exist");
     return FAILURE;
   }
 
   mysql_free_result(qres);
   notify("success", N_SIGNIN_SUCCESS);
-  strcpy(res, "200 Login successfully");
+  responsify(res, 200, NULL, "Login successfully");
   return SUCCESS;
 }
 

@@ -39,7 +39,7 @@ GameTree *game_new() {
   return rbtree;
 }
 
-void game_drop(GameTree *gs) { rbdelete(gs); }
+void game_drop(GameTree *gametree) { rbdelete(gametree); }
 
 int game_add(GameTree *gametree, Game new_game) {
   int ret;
@@ -129,12 +129,12 @@ void game_info(GameTree *gametree) {
  Params: game_id=1&player_id=1&turn=X\r\n
  \r\n
  * */
-void game_handler(GameTree *gametree, PlayerTree *playertree, Message msg, char *res) {
+void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int game_id, player_id, col, row, opponent_id;
   char turn;
 
   // TODO: Get id
-  sscanf(msg.header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
+  sscanf(req->header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
 
   // TODO: Find game -> Update game board
   Game *game = game_find(gametree, game_id);
@@ -142,10 +142,14 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Message msg, char 
   game->num_move++;
   game->col = col;
   game->row = row;
+  char dataStr[100];
+
 
   // TODO: Check state game
   if(checkWinning(game->board, turn, game->col, game->row)) {
-    sprintf(res, "code: 200\r\ndata: win=%d", player_id);
+    sprintf(dataStr, "win=%d", player_id);
+    responsify(res, 200, dataStr, "Player id win");
+
     Player *winner = player_find(playertree, player_id);
     opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
     Player *losser = player_find(playertree, opponent_id);
@@ -158,15 +162,16 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Message msg, char 
     return;
   }
 
-  sprintf(res, "code: 200\r\ndata: turn=%c&col=%d&row=%d", turn, col, row);
+  sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
+  responsify(res, 200, dataStr, NULL);
   return;
 }
 
-void game_create(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message msg, char *res) {
+void game_create(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int player_id;
 
   // TODO: Get player id
-  sscanf(msg.header.params, "player_id=%d", &player_id);
+  sscanf(req->header.params, "player_id=%d", &player_id);
 
   // TODO: Get last id
   int last_game_id = mysql_insert_id(conn);
@@ -186,8 +191,9 @@ void game_create(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Messag
 
   game_add(gametree, new_game);
 
-  // TODO: game id for search room :>
-  sprintf(res, "code: 200\r\ndata: game_id=%d&turn=%c\r\nmessage: Create new game successfully", new_game.id, new_game.turn);
+  char dataStr[100];
+  sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
+  responsify(res, 200, dataStr, "Create new game successfully");
   return;
 }
 

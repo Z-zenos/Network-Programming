@@ -15,9 +15,11 @@
 #define CONTENT_L 2048
 
 // https://stackoverflow.com/questions/12931528/c-socket-programming-max-size-of-tcp-ip-socket-buffer
-#define REQ_L 2040
-#define RES_L 2040
-#define MESSAGE_L 2222
+#define REQ_L 2222
+#define RES_L 2222
+
+#define DATA_L 2048
+#define MESSAGE_L 100
 
 #define NOTIFY_L 100
 #define QUERY_L 1000

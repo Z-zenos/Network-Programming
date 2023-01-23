@@ -1,4 +1,3 @@
-
 #ifndef _HTTP_H_
 #define _HTTP_H_
 
@@ -11,12 +10,20 @@
 #include "config.h"
 
 /*
- Message Design Example:
+ Request Design:
  GET /accounts\r\n
  Content-Length: 4\r\n
  Params: id=1&lang=vn\r\n
  \r\n
  body
+ * */
+
+
+/*
+ Response Design:
+ code: 200\r\n
+ data: id=1&name=abc;id=2&name=xyz\r\n
+ message: cookout
  * */
 
 #include <stdio.h>
@@ -32,28 +39,42 @@ typedef struct Body {
   char content[CONTENT_L];
 } Body;
 
-typedef struct Message {
+typedef struct Request {
   Header header;
   Body body;
-} Message;
+} Request;
 
-typedef struct Client {
+typedef struct Response {
+  int code;
+  char data[DATA_L];
+  char message[MESSAGE_L];
+} Response;
+
+typedef struct ClientAddr {
   int sock;
   char addr[100];
-} Client;
+} ClientAddr;
 
-void m_parse(Message *, char *);
-void m_print(Message);
+void req_print(Request);
+void res_print(Response);
+
+/* Parse request to string */
+void req_parse(Request *, char *);
+
+/* Parse string to response object */
+void res_parse(Response *, char *);
+void requestify(Request *, char *, char *, int, char *, char *);
+void responsify(Response *, int, char *, char *);
 
 void print_socket_addr(const struct sockaddr *, FILE *);
 char *socket_addr(const struct sockaddr *);
 int server_init(char *);
 int connect2server(char *, char *);
-Client accept_conn(int);
-int get_req(int, char *);
-int get_res(int, char *);
-int send_req(int, char *);
-int send_res(int, char *);
-void clear(char *, char *, char*);
+ClientAddr accept_conn(int);
+int get_req(int, Request *);
+int get_res(int, Response *);
+int send_req(int, Request);
+int send_res(int, Response);
+void h_clear(char *, char *, char *);
 
 #endif

@@ -9,21 +9,49 @@
 
 #include "config.h"
 #include "http.h"
+#include "utils.h"
 
-
-void m_parse(Message *msg, char *req) {
-  sscanf(req, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", msg->header.command, msg->header.path, &msg->header.content_l, msg->header.params, msg->body.content);
+void req_parse(Request *req, char *str) {
+  sscanf(str, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", req->header.command, req->header.path, &req->header.content_l, req->header.params, req->body.content);
 }
 
-void m_print(Message msg) {
-  printf("%s %s\n", msg.header.command, msg.header.path);
-  printf("Content-Length: %d\n", msg.header.content_l);
-  printf("Params: %s\n", msg.header.params);
+void res_parse(Response *res, char *str) {
+  sscanf(str, "code: %d\r\ndata: %s\r\nmessage: %s", &res->code, res->data, res->message);
+}
+
+void req_print(Request req) {
+  printf("\n========\n");
+  printf("%s %s\n", req.header.command, req.header.path);
+  printf("Content-Length: %d\n", req.header.content_l);
+  printf("Params: %s\n", req.header.params);
   printf("---------------\n");
-  printf("%s\n", msg.body.content);
+  printf("%s\n", req.body.content);
+  printf("\n========\n");
 }
 
-void clear(char *cmd, char *req, char *res) {
+void res_print(Response res) {
+  printf("\n========\n");
+  printf("code: %d\n", res.code);
+  printf("data: %s\n", res.data);
+  printf("message: %s\n", res.message);
+  printf("\n========\n");
+}
+
+void responsify(Response *res, int code, char *data, char *msg) {
+  res->code = code;
+  strcpy(res->data, data ? data : "null");
+  strcpy(res->message, msg ? msg : "null");
+}
+
+void requestify(Request *req, char *cmd, char *path, int content_l, char *params, char *content) {
+  strcpy(req->header.command, cmd ? cmd : "null");
+  strcpy(req->header.path, path ? path : "null");
+  req->header.content_l = content_l;
+  strcpy(req->header.params, params ? params : "null");
+  strcpy(req->body.content, content ? content : "null");
+}
+
+void h_clear(char *cmd, char *req, char *res) {
   memset(cmd, 0, CMD_L);
   memset(req, 0, REQ_L);
   memset(res, 0, RES_L);
@@ -50,36 +78,6 @@ bool is_usr(char *str) {
     if (isalnum(*str++) == 0) return false;
   }
   return true;
-}
-
-char *trim(char *str) {
-  if( str == NULL ) { return NULL; }
-  if( str[0] == '\0' ) { return str; }
-
-  size_t len = 0;
-  char *frontp = str;
-  char *endp = NULL;
-
-  len = strlen(str);
-  endp = str + len;
-
-  while(isspace((unsigned char) *frontp)) { ++frontp; }
-  if( endp != frontp ) {
-    while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
-  }
-
-  if( frontp != str && endp == frontp )
-    *str = '\0';
-  else if( str + len - 1 != endp )
-    *(endp + 1) = '\0';
-
-  endp = str;
-  if( frontp != str ) {
-    while( *frontp ) { *endp++ = *frontp++; }
-    *endp = '\0';
-  }
-
-  return str;
 }
 
 void print_socket_addr(const struct sockaddr *address, FILE *stream) {
@@ -206,35 +204,46 @@ int connect2server(char *server, char *port) {
   return client_fd;
 }
 
-Client accept_conn(int server_fd) {
-  Client client;
-  socklen_t clientAddrLen = sizeof(client.addr);
+ClientAddr accept_conn(int server_fd) {
+  ClientAddr client_addr;
+  socklen_t clientAddrLen = sizeof(client_addr.addr);
 
-  client.sock = accept(server_fd, (struct sockaddr *) &client.addr, &clientAddrLen);
-  if (client.sock < 0) {
+  client_addr.sock = accept(server_fd, (struct sockaddr *) &client_addr.addr, &clientAddrLen);
+  if (client_addr.sock < 0) {
     exit(FAILURE);
   }
-  return client;
+  return client_addr;
 }
 
-int get_req(int client_fd, char *req) {
-  ssize_t numBytesRcvd = recv(client_fd, req, REQ_L, 0);
+int get_req(int client_fd, Request *req) {
+  char reqStr[REQ_L];
+  ssize_t numBytesRcvd = recv(client_fd, reqStr, REQ_L, 0);
+  if(numBytesRcvd <= 0) {
+
+  }
+  req_parse(req, reqStr);
   return numBytesRcvd;
 }
 
-int get_res(int server_fd, char *res) {
-  recv(server_fd, res, RES_L, 0);
+int get_res(int server_fd, Response *res) {
+  char resStr[RES_L];
+  recv(server_fd, resStr, RES_L, 0);
+  res_parse(res, resStr);
   return SUCCESS;
 }
 
-int send_res(int client_fd, char *res) {
-  size_t res_l = strlen(res);
-  ssize_t numBytesSent = send(client_fd, res, res_l, 0);
+int send_res(int client_fd, Response res) {
+  char resStr[RES_L];
+  sprintf(resStr, "code: %d\r\ndata: %s\r\nmessage: %s", res.code, res.data, res.message);
+  size_t res_l = strlen(resStr);
+  ssize_t numBytesSent = send(client_fd, resStr, res_l, 0);
   return numBytesSent;
 }
 
-int send_req(int server_fd, char *req) {
-  size_t req_l = strlen(req);
-  ssize_t numBytes = send(server_fd, req, req_l, 0);
-  return numBytes;
+int send_req(int server_fd, Request req) {
+  char reqStr[REQ_L];
+  sprintf(reqStr, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", req.header.command, req.header.path, req.header.content_l, req.header.params, req.body.content);
+  size_t req_l = strlen(reqStr);
+  ssize_t numBytesSent = send(server_fd, reqStr, req_l, 0);
+  return numBytesSent;
 }

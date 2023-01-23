@@ -18,7 +18,10 @@
 #include "algo.h"
 #include "player.h"
 
+/* Global variable */
 int server_fd;
+Request req;
+Response res;
 
 void connect_database(MYSQL *conn) {
   if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
@@ -30,30 +33,30 @@ void connect_database(MYSQL *conn) {
   log_success("Connect database successfully...");
 }
 
-int route(char *req, char *route_name) {
-  return str_start_with(req, route_name);
+int route(char *path, char *route_name) {
+  return str_start_with(path, route_name);
 }
 
-void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message msg, char *res) {
+void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   char path[PATH_L], cmd[CMD_L];
-  strcpy(cmd, msg.header.command);
-  strcpy(path, msg.header.path);
+  strcpy(cmd, req.header.command);
+  strcpy(path, req.header.path);
 
   if (strcmp(cmd, "PLAY") == 0) {
-    if(route(path, "/game")) game_handler(gametree, playertree, msg, res);
-    if(route(path, "/createGame")) game_create(conn, gametree, playertree, msg, res);
-//    if(route(path, "/joinGame")) join_game(conn, msg);
+    if(route(path, "/game")) game_handler(gametree, playertree, &req, &res);
+    if(route(path, "/createGame")) game_create(conn, gametree, playertree, &req, &res);
+//    if(route(path, "/joinGame")) join_game(conn, &res, &res);
   }
 
   if (strcmp(cmd, "AUTH") == 0) {
-    if(route(path, "/account/login")) signin(conn, msg, res);
-    if(route(path, "/account/register")) signup(conn, msg, res);
+    if(route(path, "/account/login")) signin(conn, &req, &res);
+    if(route(path, "/account/register")) signup(conn, &req, &res);
   }
 
   if (strcmp(cmd, "GET") == 0) {
-    if(route(path, "/rank")) rank(conn, msg, res);
-//    if(route(path, "/profile")) profile(conn, msg);
-//    if(route(path, "/viewgame")) view_game(conn, msg);
+    if(route(path, "/rank")) rank(conn, &req, &res);
+//    if(route(path, "/profile")) profile(conn, &req, &res);
+//    if(route(path, "/viewgame")) view_game(conn, &req, &res);
   }
 
   if(strcmp(cmd, "CHAT") == 0) {
@@ -61,8 +64,8 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Mess
   }
 
   if(strcmp(cmd, "UPDATE")) {
-//    if(route(path, "/account/forgotPassword")) forgot_password(conn, msg);
-//    if(route(path, "/account/updatePassword")) change_password(conn, msg);
+//    if(route(path, "/account/forgotPassword")) forgot_password(conn, &req, &res);
+//    if(route(path, "/account/updatePassword")) change_password(conn, &req, &res);
   }
 }
 
@@ -97,21 +100,19 @@ void handle_signal() {
   signal(SIGUSR1, signalHandler);
 }
 
-void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Client client) {
-  char cmd[CMD_L], req[REQ_L], res[RES_L];
-  Message msg;
+void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, ClientAddr client_addr) {
+  char cmd[CMD_L], reqStr[REQ_L], resStr[RES_L];
   while(1) {
-    clear(cmd, req, res);
-    if (get_req(client.sock, req) == FAILURE) break;
-    m_parse(&msg, req);
-    route_handler(conn, gametree, playertree, msg, res);
-    send_res(client.sock, res);
+    h_clear(cmd, reqStr, resStr);
+    if (get_req(client_addr.sock, &req) == FAILURE) break;
+    route_handler(conn, gametree, playertree);
+    send_res(client_addr.sock, res);
   }
 }
 
 // Structure of arguments to pass to client thread
 typedef struct ThreadArgs {
-  Client client; // Socket descriptor for client
+  ClientAddr client_addr; // Socket descriptor for client
   MYSQL *conn;
   GameTree *gametree;
   PlayerTree *playertree;
@@ -123,20 +124,20 @@ void *ThreadMain(void *threadArgs) {
   pthread_detach(pthread_self());
 
   // Extract socket file descriptor argument
-  Client client = ((ThreadArgs *)threadArgs)->client;
+  ClientAddr client_addr = ((ThreadArgs *)threadArgs)->client_addr;
   MYSQL *conn = ((ThreadArgs *)threadArgs)->conn;
   GameTree *gametree = ((ThreadArgs *)threadArgs)->gametree;
   PlayerTree *playertree = ((ThreadArgs *)threadArgs)->playertree;
   free(threadArgs); // Deallocate memory for argument
 
-  handle_client(conn, gametree, playertree, client);
-  close(client.sock);
+  handle_client(conn, gametree, playertree, client_addr);
+  close(client_addr.sock);
   return(NULL);
 }
 
 void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   for(;;) {
-    Client client = accept_conn(server_fd);
+    ClientAddr client_addr = accept_conn(server_fd);
 
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
@@ -146,7 +147,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
       exit(FAILURE);
     }
 
-    threadArgs->client = client;
+    threadArgs->client_addr = client_addr;
     threadArgs->conn = conn;
     threadArgs->gametree = gametree;
     threadArgs->playertree = playertree;
@@ -163,10 +164,8 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 }
 
 int main(int argc, char *argv[]) {
-  handle_signal();
   srand(time(NULL));   // Initialization, should only be called once.
-
-  server_fd = server_init(argv[1]);
+  handle_signal();
 
   MYSQL *conn = mysql_init(NULL);
   GameTree *gametree;
@@ -181,6 +180,7 @@ int main(int argc, char *argv[]) {
   gametree = game_new();
   playertree = player_build(conn);
 
+  server_fd = server_init(argv[1]);
   server_listen(conn, gametree, playertree);
 
   game_drop(gametree);
