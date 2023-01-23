@@ -1,69 +1,21 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <mysql/mysql.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "auth.h"
-#include "http.h"
 #include "config.h"
-#include "utils.h"
-#include "notify.h"
 #include "game.h"
-#include "algo.h"
+#include "http.h"
 #include "player.h"
+#include "utils.h"
 
 /* Global variable */
 int server_fd;
 Request req;
 Response res;
-
-void connect_database(MYSQL *conn) {
-  if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
-    notify("error", N_DATABASE_CONNECT_FAILED);
-    mysql_close(conn);
-    exit(FAILURE);
-  }
-  logger(L_SUCCESS, 1, "Connect database successfully...");
-}
-
-int route(char *path, char *route_name) {
-  return str_start_with(path, route_name);
-}
-
-void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
-  char path[PATH_L], cmd[CMD_L];
-  strcpy(cmd, req.header.command);
-  strcpy(path, req.header.path);
-
-  if (strcmp(cmd, "PLAY") == 0) {
-    if(route(path, "/game")) game_handler(gametree, playertree, &req, &res);
-    if(route(path, "/createGame")) game_create(conn, gametree, playertree, &req, &res);
-//    if(route(path, "/joinGame")) join_game(conn, &res, &res);
-  }
-
-  if (strcmp(cmd, "AUTH") == 0) {
-    if(route(path, "/account/login")) signin(conn, &req, &res);
-    if(route(path, "/account/register")) signup(conn, &req, &res);
-  }
-
-  if (strcmp(cmd, "GET") == 0) {
-    if(route(path, "/rank")) rank(conn, &req, &res);
-//    if(route(path, "/profile")) profile(conn, &req, &res);
-//    if(route(path, "/viewgame")) view_game(conn, &req, &res);
-  }
-
-  if(strcmp(cmd, "CHAT") == 0) {
-
-  }
-
-  if(strcmp(cmd, "UPDATE")) {
-//    if(route(path, "/account/forgotPassword")) forgot_password(conn, &req, &res);
-//    if(route(path, "/account/updatePassword")) change_password(conn, &req, &res);
-  }
-}
 
 void signalHandler(int signo) {
   switch (signo) {
@@ -96,11 +48,54 @@ void handle_signal() {
   signal(SIGUSR1, signalHandler);
 }
 
+void connect_database(MYSQL *conn) {
+  if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
+    logger(L_ERROR, 1, "Connect to database failed !");
+    mysql_close(conn);
+    exit(FAILURE);
+  }
+  logger(L_SUCCESS, 1, "Connect database successfully...");
+}
+
+int route(char *path, char *route_name) { return str_start_with(path, route_name); }
+
+void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
+  char path[PATH_L], cmd[CMD_L];
+  strcpy(cmd, req.header.command);
+  strcpy(path, req.header.path);
+
+  if (strcmp(cmd, "PLAY") == 0) {
+    if(route(path, "/game")) game_handler(gametree, playertree, &req, &res);
+    if(route(path, "/createGame")) game_create(conn, gametree, &req, &res);
+//    if(route(path, "/joinGame")) join_game(conn, &res, &res);
+  }
+
+  if (strcmp(cmd, "AUTH") == 0) {
+    if(route(path, "/account/login")) signin(conn, &req, &res);
+    if(route(path, "/account/register")) signup(conn, &req, &res);
+  }
+
+  if (strcmp(cmd, "GET") == 0) {
+    if(route(path, "/rank")) rank(conn, &req, &res);
+//    if(route(path, "/profile")) profile(conn, &req, &res);
+//    if(route(path, "/viewgame")) view_game(conn, &req, &res);
+  }
+
+  if(strcmp(cmd, "CHAT") == 0) {
+
+  }
+
+  if(strcmp(cmd, "UPDATE") == 0) {
+//    if(route(path, "/account/forgotPassword")) forgot_password(conn, &req, &res);
+//    if(route(path, "/account/updatePassword")) change_password(conn, &req, &res);
+  }
+}
+
 void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, ClientAddr client_addr) {
-  char cmd[CMD_L], reqStr[REQ_L], resStr[RES_L];
+  int nbytes;
   while(1) {
-    h_clear(cmd, reqStr, resStr);
-    if (get_req(client_addr.sock, &req) == FAILURE) break;
+    if ((nbytes = get_req(client_addr.sock, &req)) <= 0) break;
+    time_print(client_addr.addr, req.header.command, req.header.path, nbytes);
     route_handler(conn, gametree, playertree);
     send_res(client_addr.sock, res);
   }

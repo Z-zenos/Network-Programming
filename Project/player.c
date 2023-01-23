@@ -128,7 +128,7 @@ void player_info(PlayerTree *playertree) {
 
 void rank(MYSQL *conn, Request *req, Response *res) {
   // TODO: QUERY follow points from database
-  char query[QUERY_L] = "SELECT * FROM players ORDER BY points DESC";
+  char query[QUERY_L] = "SELECT username, win, draw, loss, points FROM players ORDER BY points DESC";
 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
@@ -148,15 +148,12 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   Player player[total_players];
 
   while ((row = mysql_fetch_row(qres))) {
-    player[i].id = atoi(row[0]);
-    strcpy(player[i].username, row[1]);
-    strcpy(player[i].password, row[2]);
-    player[i].achievement.win = atoi(row[3]);
-    player[i].achievement.loss = atoi(row[4]);
-    player[i].achievement.draw = atoi(row[5]);
-    player[i].achievement.streak = atoi(row[6]);
-    player[i].achievement.points = atoi(row[7]);
-    player_print(&player[i]);
+    strcpy(player[i].username, row[0]);
+    player[i].achievement.win = atoi(row[1]);
+    player[i].achievement.draw = atoi(row[2]);
+    player[i].achievement.loss = atoi(row[3]);
+    player[i].achievement.points = atoi(row[4]);
+    printf("no: %d - username: %s - win: %d - draw: %d - loss: %d - points: %d\n", i + 1, player[i].username, player[i].achievement.win, player[i].achievement.draw, player[i].achievement.loss, player[i].achievement.points);
     i++;
   }
 

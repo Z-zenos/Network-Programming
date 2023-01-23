@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <time.h>
 
 #include "utils.h"
 #include "notify.h"
@@ -309,4 +310,11 @@ void logger(char *type, int argc, ...) {
 
   printf("\x1b[0m\n");
   va_end(ptr);
+}
+
+void time_print(char *addr, char *cmd, char *path, int nbytes) {
+  time_t now = time(0);
+  char req_time[100];
+  strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
+  printf("\x1b[1;38;5;256m%s>\x1b[0m [@\x1b[1;38;5;202m%s\x1b[0m] \x1b[1;38;5;47m%s\x1b[0m \x1b[4m%s\x1b[0m \x1b[1;38;5;226m%d\x1b[0m\n", req_time, addr, cmd, path, nbytes);
 }

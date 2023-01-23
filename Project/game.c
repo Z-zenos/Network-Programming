@@ -168,7 +168,7 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
   return;
 }
 
-void game_create(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
+void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   int player_id;
 
   // TODO: Get player id
