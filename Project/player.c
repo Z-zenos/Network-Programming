@@ -7,7 +7,7 @@
 #include "notify.h"
 #include "player.h"
 #include "http.h"
-#include "log.h"
+
 #include "game.h"
 #include "config.h"
 #include "rbtree.h"
@@ -50,7 +50,7 @@ int player_add(PlayerTree *playertree, Player new_player) {
 
   ret = rbinsert(playertree, (void *)player);
   if (ret == 0) {
-    log_error("Can't insert new player for players");
+    logger(L_ERROR, 1, "Can't insert new player for players");
     free(player);
     return -1;
   }
@@ -67,7 +67,7 @@ PlayerTree *player_build(MYSQL *conn) {
 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
-    log_error("%s", mysql_error(conn));
+    logger(L_ERROR, 1, mysql_error(conn));
     return NULL;
   }
 
@@ -132,7 +132,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
-    log_error("%s", mysql_error(conn));
+    logger(L_ERROR, 1, mysql_error(conn));
     return;
   }
 

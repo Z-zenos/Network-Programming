@@ -11,7 +11,6 @@
 #include "config.h"
 #include "utils.h"
 #include "notify.h"
-#include "log.h"
 #include "game.h"
 #include "algo.h"
 #include "player.h"
@@ -27,7 +26,7 @@ void connect_database(MYSQL *conn) {
     mysql_close(conn);
     exit(FAILURE);
   }
-  logger("Connect database successfully...");
+  logger(L_SUCCESS, 1, "Connect database successfully...");
 }
 
 int route(char *path, char *route_name) {
@@ -69,19 +68,19 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      log_warn("Caught signal Ctrl + C, coming out...\n");
+      logger(L_WARN, 1, "Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      log_warn("Caught signal Ctrl + \\, coming out...\n");
+      logger(L_WARN, 1, "Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      logger(L_WARN, 1, "The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
     case SIGTERM:
-      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      logger(L_WARN, 1, "The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      log_warn("Killing the program, coming out...\n");
+      logger(L_WARN, 1, "Killing the program, coming out...\n");
       break;
   }
 
@@ -139,7 +138,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
     if(threadArgs == NULL) {
-      log_error("malloc() failed");
+      logger(L_ERROR, 1, "malloc() failed");
       close(server_fd);
       exit(FAILURE);
     }
@@ -153,7 +152,6 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     pthread_t threadID;
     int rtnVal = pthread_create(&threadID, NULL, ThreadMain, threadArgs);
     if(rtnVal != 0) {
-      log_error("pthread_create() failed with thread %lu\n", (unsigned long int)threadID);
       close(server_fd);
       exit(FAILURE);
     }
@@ -169,11 +167,9 @@ int main(int argc, char *argv[]) {
   PlayerTree *playertree;
 
   if(conn == NULL) {
-    log_error("%s", mysql_error(conn));
+    logger(L_ERROR, 1, mysql_error(conn));
     exit(FAILURE);
   }
-
-  log("success", "Build app successfully...");
 
   connect_database(conn);
   gametree = game_new();

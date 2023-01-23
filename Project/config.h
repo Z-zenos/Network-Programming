@@ -31,3 +31,8 @@
 #define DB_USER "root"
 #define DB_PASSWRD "@nhTu@n12o1"
 #define DB_NAME "Caro"
+
+#define L_INFO "info"
+#define L_SUCCESS "success"
+#define L_WARN "warn"
+#define L_ERROR "error"

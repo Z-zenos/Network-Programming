@@ -7,7 +7,7 @@
 #include "config.h"
 #include "http.h"
 #include "utils.h"
-#include "log.h"
+
 
 int clnt_sock;
 
@@ -21,19 +21,19 @@ void exit_safely() {
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      log_warn("Caught signal Ctrl + C, coming out...\n");
+      logger(L_WARN, 1, "Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      log_warn("Caught signal Ctrl + \\, coming out...\n");
+      logger(L_WARN, 1, "Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      log_warn("The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      logger(L_WARN, 1, "The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
     case SIGTERM:
-      log_warn("The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      logger(L_WARN, 1, "The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      log_warn("Killing the program, coming out...\n");
+      logger(L_WARN, 1, "Killing the program, coming out...\n");
       break;
     default: break;
   }

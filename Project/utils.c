@@ -299,10 +299,10 @@ void logger(char *type, int argc, ...) {
   va_list ptr;
   va_start(ptr, argc);
 
-  if(strcmp(type, "error") == 0)   printf("\x1b[1;38;5;196m[x]  ");
-  if(strcmp(type, "success") == 0) printf("\x1b[1;38;5;47m[\xE2\x9C\x93]  ");
-  if(strcmp(type, "warn") == 0)    printf("\x1b[1;38;5;226m[!]  ");
-  if(strcmp(type, "info") == 0)    printf("\x1b[1;38;5;202m[i]  ");
+  if(strcmp(type, L_ERROR) == 0)   printf("\x1b[1;38;5;196m[x]  ");
+  if(strcmp(type, L_SUCCESS) == 0) printf("\x1b[1;38;5;47m[\xE2\x9C\x93]  ");
+  if(strcmp(type, L_WARN) == 0)    printf("\x1b[1;38;5;226m[!]  ");
+  if(strcmp(type, L_INFO) == 0)    printf("\x1b[1;38;5;202m[i]  ");
 
   for (int i = 0; i < argc; i++)
     printf("%s", va_arg(ptr, char*));

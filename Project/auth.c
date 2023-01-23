@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "config.h"
 #include "notify.h"
-#include "log.h"
+
 #include "http.h"
 
 bool is_valid_username(char *username) {
@@ -85,7 +85,7 @@ int signup(MYSQL *conn, Request *req, Response *res) {
 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
-    log_error("%s", mysql_error(conn));
+    logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error");
     return FAILURE;
   }
@@ -113,7 +113,7 @@ int signup(MYSQL *conn, Request *req, Response *res) {
 
   if (mysql_query(conn, query)) {
     notify("error", N_DATABASE_INSERT_FAILED);
-    log_error("%s", mysql_error(conn));
+    logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Create new account failed");
     return FAILURE;
   }
@@ -148,7 +148,7 @@ int signin(MYSQL *conn, Request *req, Response *res) {
 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
-    log_error("%s", mysql_error(conn));
+    logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error");
     return FAILURE;
   }

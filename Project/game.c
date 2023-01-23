@@ -4,10 +4,11 @@
 #include <time.h>
 
 #include "http.h"
-#include "log.h"
+
 #include "game.h"
 #include "algo.h"
 #include "player.h"
+#include "utils.h"
 #include "rbtree.h"
 
 static int game_cmp(const void *p1, const void *p2) {
@@ -35,7 +36,7 @@ static void game_rel(void *p) { free(p); }
 GameTree *game_new() {
   rbtree_t *rbtree;
   rbtree = rbnew(game_cmp, game_dup, game_rel);
-  log_success("Build game tree successfully...");
+  logger(L_SUCCESS, 1, "Build game tree successfully...");
   return rbtree;
 }
 
@@ -60,7 +61,7 @@ int game_add(GameTree *gametree, Game new_game) {
 
   ret = rbinsert(gametree, (void *)game);
   if (ret == 0) {
-    log_error("Can't insert new game for players");
+    logger(L_ERROR, 1, "Can't insert new game for players");
     free(game);
     return -1;
   }
@@ -77,7 +78,7 @@ int game_delete(GameTree *gametree, int id) {
 
   ret = rberase(gametree, (void *)game);
   if (ret == 0) {
-    log_error("Can't delete game id: %d", id);
+    logger(L_ERROR, 1, "Can't delete game id: ", itoa(id, 10));
     free(game);
     return -1;
   }

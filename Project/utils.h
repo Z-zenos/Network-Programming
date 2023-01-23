@@ -20,4 +20,4 @@ int input_label(char *, char *, char *, int);
 size_t strjoin(char *, size_t, const char *, char **);
 
 char *itoa(int, int);
-void log(char *, ...);
+void logger(char *, int, ...);
