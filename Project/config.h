@@ -23,6 +23,7 @@
 
 #define NOTIFY_L 100
 #define QUERY_L 1000
+#define ADDR_L 50
 
 #define BOARD_S 2
 #define BACKLOG 10

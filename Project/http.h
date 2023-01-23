@@ -52,7 +52,8 @@ typedef struct Response {
 
 typedef struct ClientAddr {
   int sock;
-  char addr[100];
+  struct sockaddr_storage __addr__;
+  char address[ADDR_L];
 } ClientAddr;
 
 void req_print(Request);

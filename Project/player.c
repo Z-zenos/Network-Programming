@@ -94,7 +94,7 @@ PlayerTree *player_build(MYSQL *conn) {
   }
 
   mysql_free_result(qres);
-
+  logger(L_SUCCESS, 1, "Build playertree successfully...");
   return rbtree;
 }
 

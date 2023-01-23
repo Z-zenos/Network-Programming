@@ -95,7 +95,7 @@ void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Clie
   int nbytes;
   while(1) {
     if ((nbytes = get_req(client_addr.sock, &req)) <= 0) break;
-    time_print(client_addr.addr, req.header.command, req.header.path, nbytes);
+    time_print(client_addr.address, req.header.command, req.header.path, nbytes);
     route_handler(conn, gametree, playertree);
     send_res(client_addr.sock, res);
   }
@@ -129,6 +129,7 @@ void *ThreadMain(void *threadArgs) {
 void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   for(;;) {
     ClientAddr client_addr = accept_conn(server_fd);
+    time_print(client_addr.address, "ACCESS", "/play", 1);
 
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
@@ -154,7 +155,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 }
 
 int main(int argc, char *argv[]) {
-  srand(time(NULL));   // Initialization, should only be called once.
+  srand(time(NULL));
   handle_signal();
 
   MYSQL *conn = mysql_init(NULL);

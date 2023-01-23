@@ -141,7 +141,6 @@ int server_init(char *service) {
   struct addrinfo addrConfig;
   memset(&addrConfig, 0, sizeof(addrConfig));
   addrConfig.ai_family = AF_INET;
-  addrConfig.ai_flags = AI_PASSIVE;
   addrConfig.ai_socktype = SOCK_STREAM;
   addrConfig.ai_protocol = IPPROTO_TCP;
 
@@ -161,7 +160,7 @@ int server_init(char *service) {
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
         exit(FAILURE);
       }
-      fputs("Server listening at: ", stdout);
+      logger(L_SUCCESS, 1, "Server listening at: ");
       print_socket_addr((struct sockaddr *) &localAddr, stdout);
       fputc('\n', stdout);
       break;
@@ -185,6 +184,7 @@ int connect2server(char *server, char *port) {
 
   struct addrinfo *servAddr;
   if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
+    logger(L_ERROR, 1, "Can't find server address...");
     exit(FAILURE);
   }
 
@@ -206,12 +206,13 @@ int connect2server(char *server, char *port) {
 
 ClientAddr accept_conn(int server_fd) {
   ClientAddr client_addr;
-  socklen_t clientAddrLen = sizeof(client_addr.addr);
+  socklen_t clientAddrLen = sizeof(client_addr.__addr__);
 
-  client_addr.sock = accept(server_fd, (struct sockaddr *) &client_addr.addr, &clientAddrLen);
+  client_addr.sock = accept(server_fd, (struct sockaddr *) &client_addr.__addr__, &clientAddrLen);
   if (client_addr.sock < 0) {
     exit(FAILURE);
   }
+  strcpy(client_addr.address, socket_addr((struct sockaddr *) &client_addr.__addr__));
   return client_addr;
 }
 

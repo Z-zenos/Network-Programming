@@ -300,6 +300,7 @@ void logger(char *type, int argc, ...) {
   va_list ptr;
   va_start(ptr, argc);
 
+  printf("\n");
   if(strcmp(type, L_ERROR) == 0)   printf("\x1b[1;38;5;196m[x]  ");
   if(strcmp(type, L_SUCCESS) == 0) printf("\x1b[1;38;5;47m[\xE2\x9C\x93]  ");
   if(strcmp(type, L_WARN) == 0)    printf("\x1b[1;38;5;226m[!]  ");
@@ -308,7 +309,7 @@ void logger(char *type, int argc, ...) {
   for (int i = 0; i < argc; i++)
     printf("%s", va_arg(ptr, char*));
 
-  printf("\x1b[0m\n");
+  printf("\x1b[0m");
   va_end(ptr);
 }
 
