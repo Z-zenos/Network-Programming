@@ -170,6 +170,24 @@ int main(int argc, char *argv[]) {
 
   connect_database(conn);
   gametree = game_new();
+  Game g = {
+    .id = 1,
+    .views = 199,
+    .num_move = 48,
+    .result = 0,
+    .turn = 'O',
+    .player1_id = 1,
+    .player2_id = 2,
+    .board = {
+      {'_', 'O', 'X'},
+      {'X', '_', '_'},
+      {'O', 'X', '_'}
+    } ,
+    .col = 1,
+    .row = 0,
+  };
+
+  game_add(gametree, g);
   playertree = player_build(conn);
 
   server_fd = server_init(argv[1]);

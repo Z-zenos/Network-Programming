@@ -25,7 +25,7 @@
 #define QUERY_L 1000
 #define ADDR_L 50
 
-#define BOARD_S 2
+#define BOARD_S 3
 #define BACKLOG 10
 
 #define DB_HOST "localhost"

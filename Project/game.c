@@ -55,6 +55,8 @@ int game_add(GameTree *gametree, Game new_game) {
   game->player2_id = new_game.player2_id;
   game->chat_id = new_game.chat_id;
   game->num_move = new_game.num_move;
+  game->col = new_game.col;
+  game->row = new_game.row;
   for ( int i = 0; i < BOARD_S; ++i ){
     memcpy(game->board[i], new_game.board[i], sizeof new_game.board[i]);
   }
@@ -198,6 +200,15 @@ void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   return;
 }
 
+char *game_board2string(char board[BOARD_S][BOARD_S]) {
+  char *boardStr = (char*)calloc('\0', BOARD_S * BOARD_S);
+  int i;
+  for(i = 0; i < BOARD_S; i++)
+    strcat(boardStr, board[i]);
+  boardStr[BOARD_S * BOARD_S] = '\0';
+  return boardStr;
+}
+
 void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L];
@@ -205,7 +216,7 @@ void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   memset(dataStr, '\0', DATA_L);
 
 
-  // TODO: Get player id
+  // TODO: Get player id if exists and game id from user
   sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id);
 
   // TODO: Find game room for player
@@ -219,9 +230,15 @@ void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
 
   game_found->views++;
 
-  sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
-  sprintf(msgStr, "Join game [%d] successfully", game_id);
+  sprintf(
+    dataStr,
+    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
+    game_found->id, game_found->turn, game_found->views, game_found->num_move,
+    game_found->player1_id, game_found->player2_id,
+    game_board2string(game_found->board), game_found->col, game_found->row
+  );
 
+  sprintf(msgStr, "You have become a spectator of the game [%d]", game_id);
   responsify(res, 200, dataStr, msgStr);
   return;
 }
