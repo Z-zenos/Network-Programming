@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -7,7 +6,6 @@
 #include "notify.h"
 #include "player.h"
 #include "http.h"
-
 #include "game.h"
 #include "config.h"
 #include "rbtree.h"
@@ -98,10 +96,21 @@ PlayerTree *player_build(MYSQL *conn) {
   return rbtree;
 }
 
-Player *player_find(PlayerTree *playertree, int player_id) {
+Player *player_find_by_id(PlayerTree *playertree, int player_id) {
   Player *player, player_find;
 
   player_find.id = player_id;
+  player = rbfind(playertree, &player_find);
+  if (!player) {
+    return 0;
+  }
+  return player;
+}
+
+Player *player_find_by_username(PlayerTree *playertree, char *username) {
+  Player *player, player_find;
+
+  strcpy(player_find.username, username);
   player = rbfind(playertree, &player_find);
   if (!player) {
     return 0;
@@ -126,9 +135,55 @@ void player_info(PlayerTree *playertree) {
   }
 }
 
+int my_rank(MYSQL *conn, int player_id, Response *res) {
+  // TODO: QUERY find rank of specified player id
+  char query[QUERY_L] = ""
+    "select er.id, er.username, er.win, er.draw, er.loss, er.points, (@rank := if(@points = points, @rank, if(@points := points, @rank + 1, @rank + 1))) as ranking "
+    "from players er cross join (select @rank := 0, @points := -1) params "
+    "order by points desc";
+
+  if (mysql_query(conn, query)) {
+    notify("error", N_QUERY_FAILED);
+    logger(L_ERROR, 1, mysql_error(conn));
+    return -1;
+  }
+
+  MYSQL_RES *qres = mysql_store_result(conn);
+  if(!qres->row_count) {
+    mysql_free_result(qres);
+    return -1;
+  }
+
+  // TODO: Count number of records in db
+  MYSQL_ROW row;
+  char *idStr = itoa(player_id, 10);
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  while ((row = mysql_fetch_row(qres))) {
+    if(strcmp(row[0], idStr) == 0) {
+      sprintf(dataStr, "username=%s&win=%d&draw=%d&loss=%d&points=%d", row[1], atoi(row[2]), atoi(row[3]), atoi(row[4]), atoi(row[5]));
+      strcpy(res->data, dataStr);
+      mysql_free_result(qres);
+      return atoi(row[6]);
+    }
+  }
+
+  mysql_free_result(qres);
+  return -1;
+}
+
 void rank(MYSQL *conn, Request *req, Response *res) {
+  int player_id;
+
+  // TODO: Get player id from request
+  if(sscanf(req->header.params, "player_id=%d", &player_id) <= 0) {
+    responsify(res, 400, NULL, "Bad request. Usage: GET /rank player_id=...");
+    return;
+  }
+
   // TODO: QUERY follow points from database
-  char query[QUERY_L] = "SELECT username, win, draw, loss, points FROM players ORDER BY points DESC";
+  char query[QUERY_L] = "SELECT username, win, draw, loss, points FROM players ORDER BY points DESC LIMIT 10";
 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
@@ -162,5 +217,39 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   }
 
   mysql_free_result(qres);
+  my_rank(conn, player_id, res);
   responsify(res, 200, dataStr, "Get rank successfully");
+}
+
+void profile(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
+  char username[USERNAME_L];
+  char msgStr[MESSAGE_L], dataStr[DATA_L];
+  memset(msgStr, '\0', MESSAGE_L);
+  memset(dataStr, '\0', DATA_L);
+
+  // TODO: Get player id from request
+  if(sscanf(req->header.params, "username=%s", username) <= 0) {
+    responsify(res, 400, NULL, "Bad request. Usage: GET /profile username=...");
+    return;
+  }
+
+  // TODO: Find player
+  Player *player_found = player_find_by_username(playertree, username);
+  if(!player_found) {
+    sprintf(msgStr, "Player [%s] does not exist", username);
+    responsify(res, 400, NULL, msgStr);
+    return;
+  }
+
+  int ranking = my_rank(conn, player_found->id, res);
+
+  sprintf(
+    dataStr,
+    "username=%s&win=%d&draw=%d&loss=%d&streak=%d&points=%d&rank=%d",
+    player_found->username, player_found->achievement.win, player_found->achievement.draw, player_found->achievement.loss,
+    player_found->achievement.streak, player_found->achievement.points, ranking
+  );
+
+  sprintf(msgStr, "Get info of [%s] successfully", username);
+  responsify(res, 200, dataStr, msgStr);
 }

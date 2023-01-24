@@ -123,7 +123,6 @@ void game_info(GameTree *gametree) {
   }
 }
 
-
 /*
  PLAY /game\r\n
  Content-Type: 0\r\n
@@ -146,15 +145,14 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
 
-
   // TODO: Check state game
   if(checkWinning(game->board, turn, game->col, game->row)) {
     sprintf(dataStr, "win=%d", player_id);
     responsify(res, 200, dataStr, "Player id win");
 
-    Player *winner = player_find(playertree, player_id);
+    Player *winner = player_find_by_id(playertree, player_id);
     opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
-    Player *losser = player_find(playertree, opponent_id);
+    Player *losser = player_find_by_id(playertree, opponent_id);
 
     winner->achievement.win++;
     winner->achievement.points += 3;
@@ -164,6 +162,7 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
     return;
   }
 
+  // Gửi như này là sai nhé, phải gửi cho cả 2 thằng cùng đang chơi cơ mà.
   sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
   responsify(res, 200, dataStr, NULL);
   return;
@@ -217,7 +216,10 @@ void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
 
 
   // TODO: Get player id if exists and game id from user
-  sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id);
+  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
+    responsify(res, 400, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]");
+    return;
+  }
 
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);

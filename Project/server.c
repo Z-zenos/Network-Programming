@@ -65,9 +65,9 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   strcpy(path, req.header.path);
 
   if (strcmp(cmd, "PLAY") == 0) {
-    if(route(path, "/game")) game_handler(gametree, playertree, &req, &res);
-    if(route(path, "/createGame")) game_create(conn, gametree, &req, &res);
-//    if(route(path, "/joinGame")) join_game(conn, &res, &res);
+    if(route(path, "/game/play")) game_handler(gametree, playertree, &req, &res);
+    if(route(path, "/game/create")) game_create(conn, gametree, &req, &res);
+//    if(route(path, "/game/join")) game_join(conn, gametree, &res, &res);
   }
 
   if (strcmp(cmd, "AUTH") == 0) {
@@ -77,8 +77,8 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 
   if (strcmp(cmd, "GET") == 0) {
     if(route(path, "/rank")) rank(conn, &req, &res);
-//    if(route(path, "/profile")) profile(conn, &req, &res);
-    if(route(path, "/viewgame")) game_view(conn, gametree, &req, &res);
+    if(route(path, "/profile")) profile(conn, playertree, &req, &res);
+    if(route(path, "/game/view")) game_view(conn, gametree, &req, &res);
   }
 
   if(strcmp(cmd, "CHAT") == 0) {

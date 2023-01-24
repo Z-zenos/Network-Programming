@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef _PLAYER_H_
+#define _PLAYER_H_
 
 #include <mysql/mysql.h>
 
@@ -28,10 +28,11 @@ PlayerTree *player_build(MYSQL *);
 //void drop_playertree(PlayerTree *);
 int player_add(PlayerTree *, Player);
 //int player_delete(PlayerTree *, int);
-Player *player_find(PlayerTree *, int);
+Player *player_find_by_id(PlayerTree *, int);
+Player *player_find_by_username(PlayerTree *, char *);
 void player_info(PlayerTree *);
 
 void rank(MYSQL *, Request *, Response *);
-
+void profile(MYSQL *, PlayerTree *, Request *, Response *);
 
 #endif
