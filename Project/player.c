@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <mysql/mysql.h>
+#include <ctype.h>
 
 #include "notify.h"
 #include "player.h"
@@ -96,24 +97,13 @@ PlayerTree *player_build(MYSQL *conn) {
   return rbtree;
 }
 
-Player *player_find_by_id(PlayerTree *playertree, int player_id) {
+Player *player_find(PlayerTree *playertree, int player_id) {
   Player *player, player_find;
 
   player_find.id = player_id;
   player = rbfind(playertree, &player_find);
   if (!player) {
-    return 0;
-  }
-  return player;
-}
-
-Player *player_find_by_username(PlayerTree *playertree, char *username) {
-  Player *player, player_find;
-
-  strcpy(player_find.username, username);
-  player = rbfind(playertree, &player_find);
-  if (!player) {
-    return 0;
+    return NULL;
   }
   return player;
 }
@@ -135,7 +125,7 @@ void player_info(PlayerTree *playertree) {
   }
 }
 
-int my_rank(MYSQL *conn, int player_id, Response *res) {
+int my_rank(MYSQL *conn, int player_id, char *dataStr) {
   // TODO: QUERY find rank of specified player id
   char query[QUERY_L] = ""
     "select er.id, er.username, er.win, er.draw, er.loss, er.points, (@rank := if(@points = points, @rank, if(@points := points, @rank + 1, @rank + 1))) as ranking "
@@ -157,13 +147,13 @@ int my_rank(MYSQL *conn, int player_id, Response *res) {
   // TODO: Count number of records in db
   MYSQL_ROW row;
   char *idStr = itoa(player_id, 10);
-  char dataStr[DATA_L];
-  memset(dataStr, '\0', DATA_L);
+  char line[DATA_L];
+  memset(line, '\0', DATA_L);
 
   while ((row = mysql_fetch_row(qres))) {
     if(strcmp(row[0], idStr) == 0) {
-      sprintf(dataStr, "username=%s&win=%d&draw=%d&loss=%d&points=%d", row[1], atoi(row[2]), atoi(row[3]), atoi(row[4]), atoi(row[5]));
-      strcpy(res->data, dataStr);
+      sprintf(line, "username=%s&win=%d&draw=%d&loss=%d&points=%d", row[1], atoi(row[2]), atoi(row[3]), atoi(row[4]), atoi(row[5]));
+      strcat(dataStr, line);
       mysql_free_result(qres);
       return atoi(row[6]);
     }
@@ -217,39 +207,73 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   }
 
   mysql_free_result(qres);
-  my_rank(conn, player_id, res);
+  my_rank(conn, player_id, dataStr);
   responsify(res, 200, dataStr, "Get rank successfully");
 }
 
 void profile(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
-  char username[USERNAME_L];
-  char msgStr[MESSAGE_L], dataStr[DATA_L];
+  char key[USERNAME_L];
+  char msgStr[MESSAGE_L], dataStr[DATA_L], tmp[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
 
-  // TODO: Get player id from request
-  if(sscanf(req->header.params, "username=%s", username) <= 0) {
-    responsify(res, 400, NULL, "Bad request. Usage: GET /profile username=...");
+  // TODO: Get key from request
+  if(sscanf(req->header.params, "key=%s", key) <= 0) {
+    responsify(res, 400, NULL, "Bad request. Usage: GET /profile key=[player_id | username]");
     return;
   }
 
-  // TODO: Find player
-  Player *player_found = player_find_by_username(playertree, username);
-  if(!player_found) {
-    sprintf(msgStr, "Player [%s] does not exist", username);
+  // TODO:
+  int i, key_l = strlen(key), type = 0;
+  for(i = 0; i < key_l; i++) {
+    if(isalpha(key[i])) {
+      type = 1;
+      break;
+    }
+  }
+
+  // TODO: QUERY
+  char query[QUERY_L];
+  memset(query, '\0', QUERY_L);
+
+  switch (type) {
+    // if key = 0 -> info is player id
+    case 0:
+      sprintf(query, "SELECT id, username, win, draw, loss, points FROM players WHERE id = %d", atoi(key));
+      break;
+
+    // if key = 1 -> info is username
+    case 1:
+      sprintf(query, "SELECT id, username, win, draw, loss, points FROM players WHERE username = %s", key);
+      break;
+
+    default: break;
+  }
+
+  if (mysql_query(conn, query)) {
+    notify("error", N_QUERY_FAILED);
+    logger(L_ERROR, 1, mysql_error(conn));
+    return;
+  }
+
+  MYSQL_RES *qres = mysql_store_result(conn);
+  if(!qres->row_count) {
+    sprintf(msgStr, "Player [%s] does not exist", key);
     responsify(res, 400, NULL, msgStr);
+    mysql_free_result(qres);
     return;
   }
 
-  int ranking = my_rank(conn, player_found->id, res);
+  MYSQL_ROW row;
+  while ((row = mysql_fetch_row(qres))) {
+    sprintf(
+      dataStr,
+      "username=%s&win=%d&draw=%d&loss=%d&streak=%d&points=%d&rank=%d",
+      row[1], atoi(row[2]), atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), my_rank(conn, type ? atoi(row[0]) : atoi(key), tmp)
+    );
+  }
 
-  sprintf(
-    dataStr,
-    "username=%s&win=%d&draw=%d&loss=%d&streak=%d&points=%d&rank=%d",
-    player_found->username, player_found->achievement.win, player_found->achievement.draw, player_found->achievement.loss,
-    player_found->achievement.streak, player_found->achievement.points, ranking
-  );
-
-  sprintf(msgStr, "Get info of [%s] successfully", username);
+  mysql_free_result(qres);
+  sprintf(msgStr, "Get info of player [%s] successfully", key);
   responsify(res, 200, dataStr, msgStr);
 }

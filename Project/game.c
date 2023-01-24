@@ -150,9 +150,9 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
     sprintf(dataStr, "win=%d", player_id);
     responsify(res, 200, dataStr, "Player id win");
 
-    Player *winner = player_find_by_id(playertree, player_id);
+    Player *winner = player_find(playertree, player_id);
     opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
-    Player *losser = player_find_by_id(playertree, opponent_id);
+    Player *losser = player_find(playertree, opponent_id);
 
     winner->achievement.win++;
     winner->achievement.points += 3;

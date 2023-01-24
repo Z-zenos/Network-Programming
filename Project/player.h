@@ -28,8 +28,7 @@ PlayerTree *player_build(MYSQL *);
 //void drop_playertree(PlayerTree *);
 int player_add(PlayerTree *, Player);
 //int player_delete(PlayerTree *, int);
-Player *player_find_by_id(PlayerTree *, int);
-Player *player_find_by_username(PlayerTree *, char *);
+Player *player_find(PlayerTree *, int);
 void player_info(PlayerTree *);
 
 void rank(MYSQL *, Request *, Response *);
