@@ -91,10 +91,8 @@ Game *game_find(GameTree *gametree, int id) {
 
   game_find.id = id;
   game = rbfind(gametree, &game_find);
-  if (!game) {
-    return 0;
-  }
-  return game;
+
+  return !game ? NULL : game;
 }
 
 void game_print_board(char board[BOARD_S][BOARD_S]) {
@@ -197,6 +195,34 @@ void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   memset(dataStr, '\0', sizeof dataStr);
   sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
   responsify(res, 200, dataStr, "Create new game successfully");
+  return;
+}
+
+void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
+  int player_id, game_id;
+  char msgStr[MESSAGE_L], dataStr[DATA_L];
+  memset(msgStr, '\0', MESSAGE_L);
+  memset(dataStr, '\0', DATA_L);
+
+
+  // TODO: Get player id
+  sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id);
+
+  // TODO: Find game room for player
+  Game *game_found = game_find(gametree, game_id);
+
+  if(!game_found) {
+    sprintf(msgStr, "Game [%d] does not exist", game_id);
+    responsify(res, 400, NULL, msgStr);
+    return;
+  }
+
+  game_found->views++;
+
+  sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
+  sprintf(msgStr, "Join game [%d] successfully", game_id);
+
+  responsify(res, 200, dataStr, msgStr);
   return;
 }
 

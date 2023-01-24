@@ -46,4 +46,5 @@ Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 void game_handler(GameTree *, PlayerTree *, Request *, Response *);
 void game_create(MYSQL *, GameTree *, Request *, Response *);
+void game_view(MYSQL *, GameTree *, Request *, Response *);
 #endif
