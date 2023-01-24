@@ -77,7 +77,7 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 
   if (strcmp(cmd, "GET") == 0) {
     if(route(path, "/rank")) rank(conn, &req, &res);
-    if(route(path, "/profile")) profile(conn, playertree, &req, &res);
+    if(route(path, "/profile")) profile(conn, &req, &res);
     if(route(path, "/game/view")) game_view(conn, gametree, &req, &res);
   }
 

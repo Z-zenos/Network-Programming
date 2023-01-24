@@ -211,7 +211,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   responsify(res, 200, dataStr, "Get rank successfully");
 }
 
-void profile(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
+void profile(MYSQL *conn, Request *req, Response *res) {
   char key[USERNAME_L];
   char msgStr[MESSAGE_L], dataStr[DATA_L], tmp[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
@@ -244,7 +244,7 @@ void profile(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
 
     // if key = 1 -> info is username
     case 1:
-      sprintf(query, "SELECT id, username, win, draw, loss, points FROM players WHERE username = %s", key);
+      sprintf(query, "SELECT id, username, win, draw, loss, points FROM players WHERE username = '%s'", key);
       break;
 
     default: break;
