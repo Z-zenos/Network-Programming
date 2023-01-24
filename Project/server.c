@@ -94,6 +94,7 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, ClientAddr client_addr) {
   int nbytes;
   while(1) {
+    cleanup(&req, &res);
     if ((nbytes = get_req(client_addr.sock, &req)) <= 0) break;
     time_print(client_addr.address, req.header.command, req.header.path, nbytes);
     route_handler(conn, gametree, playertree);

@@ -143,7 +143,8 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
   game->num_move++;
   game->col = col;
   game->row = row;
-  char dataStr[100];
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', sizeof dataStr);
 
 
   // TODO: Check state game
@@ -192,7 +193,8 @@ void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
 
   game_add(gametree, new_game);
 
-  char dataStr[100];
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', sizeof dataStr);
   sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
   responsify(res, 200, dataStr, "Create new game successfully");
   return;

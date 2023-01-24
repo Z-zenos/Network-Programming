@@ -50,8 +50,6 @@ bool str_is_empty(char *str) {
   return SUCCESS;
 }
 
-
-
 void make_req(Request *req, char *input) {
   sscanf(input, "%s %s %s %[^\n]s", req->header.command, req->header.path, req->header.params, req->body.content);
 }
@@ -72,13 +70,11 @@ int main(int argc, char *argv[]) {
   signal(SIGUSR1, signalHandler);
 
   char input[CONTENT_L];
-  char reqStr[REQ_L], resStr[RES_L], msg[RES_L], cmd[CMD_L];
   Request reqObj;
   Response resObj;
 
   do {
-    h_clear(cmd, reqStr, resStr);
-    strcpy(msg, "");
+    cleanup(&reqObj, &resObj);
     printf("[C]: ");
     scanf("%[^\n]s", input);
     clear_buffer();
@@ -91,7 +87,6 @@ int main(int argc, char *argv[]) {
     make_req(&reqObj, input);
     send_req(clnt_sock, reqObj);
     get_res(clnt_sock, &resObj);
-    res_parse(&resObj, resStr);
-    printf("[S]: \x1b[1;38;5;47m%d\x1b[0m \x1b[1;38;5;226m%s\x1b[0m\n", resObj.code, resObj.message);
+    printf("[S]: \n\t%d\n\t%s\n\t%s\n", resObj.code, resObj.data, resObj.message);
   } while(1);
 }

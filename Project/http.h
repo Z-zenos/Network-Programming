@@ -56,6 +56,7 @@ typedef struct ClientAddr {
   char address[ADDR_L];
 } ClientAddr;
 
+void cleanup(Request *, Response *);
 void req_print(Request);
 void res_print(Response);
 

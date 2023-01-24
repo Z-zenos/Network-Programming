@@ -146,6 +146,8 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   int total_players = mysql_num_rows(qres), i = 0;
   MYSQL_ROW row;
   Player player[total_players];
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', sizeof dataStr);
 
   while ((row = mysql_fetch_row(qres))) {
     strcpy(player[i].username, row[0]);
@@ -153,10 +155,12 @@ void rank(MYSQL *conn, Request *req, Response *res) {
     player[i].achievement.draw = atoi(row[2]);
     player[i].achievement.loss = atoi(row[3]);
     player[i].achievement.points = atoi(row[4]);
-    printf("no: %d - username: %s - win: %d - draw: %d - loss: %d - points: %d\n", i + 1, player[i].username, player[i].achievement.win, player[i].achievement.draw, player[i].achievement.loss, player[i].achievement.points);
+    char line[100];
+    sprintf(line, "username=%s&win=%d&draw=%d&loss=%d&points=%d;", player[i].username, player[i].achievement.win, player[i].achievement.draw, player[i].achievement.loss, player[i].achievement.points);
+    strcat(dataStr, line);
     i++;
   }
 
   mysql_free_result(qres);
-  responsify(res, 200, "...", "Get rank successfully");
+  responsify(res, 200, dataStr, "Get rank successfully");
 }

@@ -11,12 +11,21 @@
 #include "http.h"
 #include "utils.h"
 
+void cleanup(Request *req, Response *res) {
+  memset(req->header.command, '\0', CMD_L);
+  memset(req->header.path, '\0', PATH_L);
+  memset(req->header.params, '\0', PARAM_L);
+  memset(req->body.content, '\0', CONTENT_L);
+  memset(res->data, '\0', DATA_L);
+  memset(res->message, '\0', MESSAGE_L);
+}
+
 void req_parse(Request *req, char *str) {
-  sscanf(str, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%s", req->header.command, req->header.path, &req->header.content_l, req->header.params, req->body.content);
+  sscanf(str, "%s %s\r\nContent-Length: %d\r\nParams: %s\r\n\r\n%[^\n]", req->header.command, req->header.path, &req->header.content_l, req->header.params, req->body.content);
 }
 
 void res_parse(Response *res, char *str) {
-  sscanf(str, "code: %d\r\ndata: %s\r\nmessage: %s", &res->code, res->data, res->message);
+  sscanf(str, "code: %d\r\ndata: %s\r\nmessage: %[^\n]", &res->code, res->data, res->message);
 }
 
 void req_print(Request req) {

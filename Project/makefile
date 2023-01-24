@@ -41,4 +41,4 @@ player.o: player.c
 	${CC} ${CFLAGS} player.c
 
 clean:
-	rm -f *.o *~ | rm -rf server
+	rm -f *.o *~ | rm -rf server client
