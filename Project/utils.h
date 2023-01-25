@@ -21,4 +21,4 @@ size_t strjoin(char *, size_t, const char *, char **);
 
 char *itoa(int, int);
 void logger(char *, int, ...);
-void time_print(char *, char *, char *, int);
+void time_print(char *, char *, char *, char *, int);

@@ -9,6 +9,7 @@
 #include "auth.h"
 #include "utils.h"
 #include "config.h"
+#include "player.h"
 #include "notify.h"
 
 #include "http.h"
@@ -63,7 +64,7 @@ bool compare_password(char *password_input, unsigned char *password_db) {
   return SUCCESS;
 }
 
-int signup(MYSQL *conn, Request *req, Response *res) {
+int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
@@ -118,6 +119,7 @@ int signup(MYSQL *conn, Request *req, Response *res) {
     return FAILURE;
   }
 
+  playertree = player_build(conn);
   notify("success", N_DATABASE_INSERT_SUCCESS);
   responsify(res, 201, NULL, "Create new account successfully");
   return SUCCESS;
@@ -167,6 +169,74 @@ int signin(MYSQL *conn, Request *req, Response *res) {
   return SUCCESS;
 }
 
-//int signout();
-int change_password();
+int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
+  int player_id;
+  char old_password[PASSWORD_L], new_password[PASSWORD_L];
+  char dataStr[DATA_L], msgStr[MESSAGE_L];
+  memset(old_password, '\0', PASSWORD_L);
+  memset(new_password, '\0', PASSWORD_L);
+  memset(msgStr, '\0', MESSAGE_L);
+  memset(dataStr, '\0', DATA_L);
+
+  // TODO: Get player id, old password and new password
+  if(sscanf(req->header.params, "player_id=%d&old_password=%[A-Za-z0-9]&new_password=%[A-Za-z0-9]", &player_id, old_password, new_password) != 3) {
+    responsify(res, 400, NULL, "Bad request. Usage: UPDATE /account/updatePassword player_id=...&old_password=...&new_password=...");
+    return FAILURE;
+  }
+
+  // TODO: Encrypt password
+  char *old_pwd_encrypted = encrypt(old_password);
+
+  // TODO: Validate old password
+  char query[QUERY_L];
+  memset(query, '\0', QUERY_L);
+  sprintf(
+    query,
+    "SELECT * FROM players WHERE id = %d AND password = '%s'",
+    player_id, old_pwd_encrypted
+  );
+
+  if (mysql_query(conn, query)) {
+    notify("error", N_QUERY_FAILED);
+    logger(L_ERROR, 1, mysql_error(conn));
+    responsify(res, 400, NULL, "Internal server error");
+    return FAILURE;
+  }
+
+  MYSQL_RES *qres = mysql_store_result(conn);
+  if(!qres->row_count) {
+    mysql_free_result(qres);
+    responsify(res, 400, NULL, "Current password incorrect");
+    return FAILURE;
+  }
+
+  // TODO: Validate new password
+  if(!is_valid_password(new_password)) {
+    sprintf(msgStr, "New password invalid. Password must include alpha, digit and have 4 < length < %d", PASSWORD_L);
+    responsify(res, 400, NULL, msgStr);
+    return FAILURE;
+  }
+
+  // TODO: Encrypt new password and update database
+  char *new_pwd_encrypted = encrypt(new_password);
+  memset(query, '\0', QUERY_L);
+  sprintf(
+    query,
+    "UPDATE players SET password = '%s' WHERE id = %d",
+    new_pwd_encrypted, player_id
+  );
+
+  if (mysql_query(conn, query)) {
+    notify("error", N_QUERY_FAILED);
+    logger(L_ERROR, 1, mysql_error(conn));
+    responsify(res, 400, NULL, "Internal server error");
+    return FAILURE;
+  }
+
+  playertree = player_build(conn);
+  mysql_free_result(qres);
+  responsify(res, 200, NULL, "Update new password successfully");
+  return SUCCESS;
+}
+
 int forgot_password();

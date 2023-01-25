@@ -19,7 +19,7 @@
 #define RES_L 2222
 
 #define DATA_L 2048
-#define MESSAGE_L 100
+#define MESSAGE_L 128
 
 #define NOTIFY_L 100
 #define QUERY_L 1000

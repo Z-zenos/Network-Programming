@@ -1,16 +1,16 @@
 #pragma once
 
-#ifndef __AUTH_H__
-#define __AUTH_H_
+#ifndef _AUTH_H_
+#define _AUTH_H_
 
 #include <mysql/mysql.h>
+#include "player.h"
 
 #include "http.h"
 
 int signin(MYSQL *, Request *, Response *);
-int signup(MYSQL *, Request *, Response *);
-int signout();
-int change_password();
+int signup(MYSQL *, PlayerTree *, Request *, Response *);
+int change_password(MYSQL *, PlayerTree *, Request *, Response *);
 int forgot_password();
 
 #endif
