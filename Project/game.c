@@ -245,6 +245,46 @@ void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   return;
 }
 
+
+void game_join(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
+  int player_id, game_id;
+  char msgStr[MESSAGE_L], dataStr[DATA_L];
+  memset(msgStr, '\0', MESSAGE_L);
+  memset(dataStr, '\0', DATA_L);
+
+
+  // TODO: Get player id if exists and game id from user
+  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
+    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...");
+    return;
+  }
+
+  // TODO: AUTH player: If player haven't registered yet
+
+  // TODO: Find game room for player
+  Game *game_found = game_find(gametree, game_id);
+
+  if(!game_found) {
+    sprintf(msgStr, "Game [%d] does not exist", game_id);
+    responsify(res, 400, NULL, msgStr);
+    return;
+  }
+
+  if(game_found->player1_id) game_found->player2_id = player_id;
+  else game_found->player1_id = player_id;
+
+  sprintf(
+    dataStr,
+    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
+    game_found->id, game_found->turn, game_found->views, game_found->num_move,
+    game_found->player1_id, game_found->player2_id,
+    game_board2string(game_found->board), game_found->col, game_found->row
+  );
+
+  responsify(res, 200, dataStr, "Join game successfully");
+  return;
+}
+
 /*
 int main() {
   GameTree *gametree;

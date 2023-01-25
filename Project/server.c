@@ -67,7 +67,7 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   if (strcmp(cmd, "PLAY") == 0) {
     if(route(path, "/game/play")) game_handler(gametree, playertree, &req, &res);
     if(route(path, "/game/create")) game_create(conn, gametree, &req, &res);
-//    if(route(path, "/game/join")) game_join(conn, gametree, &res, &res);
+    if(route(path, "/game/join")) game_join(conn, gametree, &req, &res);
   }
 
   if (strcmp(cmd, "AUTH") == 0) {

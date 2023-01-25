@@ -48,4 +48,5 @@ void game_handler(GameTree *, PlayerTree *, Request *, Response *);
 void game_create(MYSQL *, GameTree *, Request *, Response *);
 void game_view(MYSQL *, GameTree *, Request *, Response *);
 char *game_board2string(char [BOARD_S][BOARD_S]);
+void game_join(MYSQL *, GameTree *, Request *, Response *);
 #endif

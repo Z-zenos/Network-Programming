@@ -228,6 +228,7 @@ ClientAddr accept_conn(int server_fd) {
 int get_req(int client_fd, Request *req) {
   char reqStr[REQ_L];
   ssize_t numBytesRcvd = recv(client_fd, reqStr, REQ_L, 0);
+  reqStr[numBytesRcvd] = '\0';
   if(numBytesRcvd <= 0) {
 
   }
