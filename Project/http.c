@@ -237,9 +237,10 @@ int get_req(int client_fd, Request *req) {
 
 int get_res(int server_fd, Response *res) {
   char resStr[RES_L];
-  recv(server_fd, resStr, RES_L, 0);
+  ssize_t numBytesRcvd = recv(server_fd, resStr, RES_L, 0);
+  resStr[numBytesRcvd] = '\0';
   res_parse(res, resStr);
-  return SUCCESS;
+  return numBytesRcvd;
 }
 
 int send_res(int client_fd, Response res) {
