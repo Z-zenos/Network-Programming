@@ -8,7 +8,7 @@
 
 #include "http.h"
 
-int signin(MYSQL *, Request *, Response *);
+int signin(MYSQL *, ClientAddr, PlayerTree *,Request *, Response *);
 int signup(MYSQL *, PlayerTree *, Request *, Response *);
 int change_password(MYSQL *, PlayerTree *, Request *, Response *);
 int forgot_password();

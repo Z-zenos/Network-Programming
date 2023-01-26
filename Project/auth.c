@@ -125,14 +125,14 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   return SUCCESS;
 }
 
-int signin(MYSQL *conn, Request *req, Response *res) {
-  // TESTING
+int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Response *res) {
+  int client_fd, player_id;
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
-  sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
+  sscanf(req->header.params, "sock=%d&username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", &client_fd, username, password);
 
-  // TODO: Validate
+  // TODO: Validate username & password
   if(!is_valid_username(username) || !is_valid_password(password)) {
     responsify(res, 400, NULL, "Username / Password incorrect");
     return FAILURE;
@@ -144,7 +144,7 @@ int signin(MYSQL *conn, Request *req, Response *res) {
   char query[QUERY_L];
   sprintf(
     query,
-    "SELECT username, password FROM players WHERE username = '%s' AND password = '%s'",
+    "SELECT id, username, password FROM players WHERE username = '%s' AND password = '%s'",
     username, pwd_encrypted
   );
 
@@ -163,9 +163,23 @@ int signin(MYSQL *conn, Request *req, Response *res) {
     return FAILURE;
   }
 
+  // TODO: Check if the account is logged in on other device?
+  MYSQL_ROW row = mysql_fetch_row(qres);
+  player_id = atoi(row[0]);
+
+  Player *player_found = player_find(playertree, player_id);
+  if(!player_found->sock) player_found->sock = client_fd;
+  else {
+    responsify(res, 400, NULL, "The account is already logged in somewhere else");
+    mysql_free_result(qres);
+    return FAILURE;
+  }
+
   mysql_free_result(qres);
-  notify("success", N_SIGNIN_SUCCESS);
-  responsify(res, 200, NULL, "Login successfully");
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+  sprintf(dataStr, "sock=%d", client_fd);
+  responsify(res, 200, dataStr, "Login successfully");
   return SUCCESS;
 }
 

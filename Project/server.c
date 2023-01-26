@@ -48,6 +48,20 @@ void handle_signal() {
   signal(SIGUSR1, signalHandler);
 }
 
+void disconnect(ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Response *res) {
+  int player_id, client_fd;
+
+  if(sscanf(req->header.params, "sock=%d&player_id=%d", &client_fd, &player_id) != 2) {
+    responsify(res, 400, NULL, "Bad request. Usage: EXIT /exit sock=...&player_id=...");
+    return;
+  }
+
+  Player *player_found = player_find(playertree, player_id);
+  player_found->sock = 0;
+  time_print(clnt_addr.address, "OFFLINE", "", "", 0);
+  close(client_fd);
+}
+
 void connect_database(MYSQL *conn) {
   if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
     logger(L_ERROR, 1, "Connect to database failed !");
@@ -59,7 +73,7 @@ void connect_database(MYSQL *conn) {
 
 int route(char *path, char *route_name) { return str_start_with(path, route_name); }
 
-void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
+void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
   char path[PATH_L], cmd[CMD_L];
   strcpy(cmd, req.header.command);
   strcpy(path, req.header.path);
@@ -68,36 +82,44 @@ void route_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     if(route(path, "/game/play")) game_handler(gametree, playertree, &req, &res);
     if(route(path, "/game/create")) game_create(conn, gametree, &req, &res);
     if(route(path, "/game/join")) game_join(conn, gametree, &req, &res);
+    if(route(path, "/game/quit")) game_quit(conn, gametree, &req, &res);
   }
 
-  if (strcmp(cmd, "AUTH") == 0) {
-    if(route(path, "/account/login")) signin(conn, &req, &res);
+  else if (strcmp(cmd, "AUTH") == 0) {
+    if(route(path, "/account/login")) signin(conn, clnt_addr, playertree, &req, &res);
     if(route(path, "/account/register")) signup(conn, playertree, &req, &res);
+    if(route(path, "/account/logout")) signout(conn, playertree, &req, &res);
   }
 
-  if (strcmp(cmd, "GET") == 0) {
+  else if (strcmp(cmd, "GET") == 0) {
     if(route(path, "/rank")) rank(conn, &req, &res);
     if(route(path, "/profile")) profile(conn, &req, &res);
     if(route(path, "/game/view")) game_view(conn, gametree, &req, &res);
   }
 
-  if(strcmp(cmd, "CHAT") == 0) {
-
+  else if(strcmp(cmd, "CHAT") == 0) {
+    if(route(path, "/chat")) chat(conn, gametree, &req, &res);
   }
 
-  if(strcmp(cmd, "UPDATE") == 0) {
+  else if(strcmp(cmd, "UPDATE") == 0) {
 //    if(route(path, "/account/forgotPassword")) forgot_password(conn, &req, &res);
     if(route(path, "/account/updatePassword")) change_password(conn, playertree, &req, &res);
   }
+  else if(strcmp(cmd, "EXIT") == 0) {
+    if(route(path, "/exit")) disconnect(clnt_addr, playertree, &req, &res);
+  }
+  else {
+    responsify(res, 404, NULL, "Resource does not exist");
+  }
 }
 
-void handle_client(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, ClientAddr client_addr) {
+void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, ClientAddr client_addr) {
   int nbytes;
   while(1) {
     cleanup(&req, &res);
     if ((nbytes = get_req(client_addr.sock, &req)) <= 0) break;
     time_print(client_addr.address, req.header.command, req.header.path, req.header.params, nbytes);
-    route_handler(conn, gametree, playertree);
+    route_handler(conn, clnt_addr, gametree, playertree);
     send_res(client_addr.sock, res);
   }
 }
@@ -122,7 +144,7 @@ void *ThreadMain(void *threadArgs) {
   PlayerTree *playertree = ((ThreadArgs *)threadArgs)->playertree;
   free(threadArgs); // Deallocate memory for argument
 
-  handle_client(conn, gametree, playertree, client_addr);
+  handle_client(conn, client_addr, gametree, playertree, client_addr);
   close(client_addr.sock);
   return(NULL);
 }
@@ -130,7 +152,7 @@ void *ThreadMain(void *threadArgs) {
 void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   for(;;) {
     ClientAddr client_addr = accept_conn(server_fd);
-    time_print(client_addr.address, "ACCESS", "/play", "null", 1);
+    time_print(client_addr.address, "ONLINE", "", "", 0);
 
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));

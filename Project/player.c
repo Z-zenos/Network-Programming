@@ -89,6 +89,7 @@ PlayerTree *player_build(MYSQL *conn) {
     player.achievement.draw = atoi(row[5]);
     player.achievement.streak = atoi(row[6]);
     player.achievement.points = atoi(row[7]);
+    player.sock = 0;
     player_add(rbtree, player);
   }
 
