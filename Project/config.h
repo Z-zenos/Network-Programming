@@ -16,9 +16,9 @@
 
 // https://stackoverflow.com/questions/12931528/c-socket-programming-max-size-of-tcp-ip-socket-buffer
 #define REQ_L 2222
-#define RES_L 2222
+#define RES_L 3333
 
-#define DATA_L 2048
+#define DATA_L 3000
 #define MESSAGE_L 128
 #define MAX_SPECTATOR 20
 

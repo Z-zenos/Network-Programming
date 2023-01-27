@@ -13,4 +13,6 @@ typedef struct Chat {
 
 } Chat;
 
-int chat(GameTree *, PlayerTree *, Request *, Response *);
+void chat(GameTree *, PlayerTree *, Request *, Response *);
+
+#endif

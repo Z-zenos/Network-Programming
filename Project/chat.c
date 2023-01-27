@@ -52,13 +52,13 @@ void chat(GameTree *gametree, PlayerTree *playertree, Request *req, Response *re
   // TODO: Send to all spectators and remain player
   int remain_player_id = (game_found->player1_id == player_id ? player_id : game_found->player2_id);
   // If there is a 2nd player -> send
-  if(remain_player_id) send_res(player_fd(playertree, remain_player_id), res);
+  if(remain_player_id) send_res(player_fd(playertree, remain_player_id), *res);
 
   int curr_fd;
   for(int i = 0; i < MAX_SPECTATOR; i++) {
     if(game_found->spectators[i]) {
       curr_fd = player_fd(playertree, game_found->spectators[i]);
-      send_res(curr_fd, res);
+      send_res(curr_fd, *res);
     }
   }
 }
