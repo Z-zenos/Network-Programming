@@ -30,7 +30,7 @@ int player_add(PlayerTree *, Player);
 //int player_delete(PlayerTree *, int);
 Player *player_find(PlayerTree *, int);
 void player_info(PlayerTree *);
-
+int player_fd(PlayerTree *, int);
 void rank(MYSQL *, Request *, Response *);
 void profile(MYSQL *, Request *, Response *);
 

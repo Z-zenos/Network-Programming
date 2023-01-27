@@ -20,6 +20,7 @@
 
 #define DATA_L 2048
 #define MESSAGE_L 128
+#define MAX_SPECTATOR 20
 
 #define NOTIFY_L 100
 #define QUERY_L 1000

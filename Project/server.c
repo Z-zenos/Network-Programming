@@ -81,20 +81,20 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   if (strcmp(cmd, "PLAY") == 0) {
     if(route(path, "/game/play")) game_handler(gametree, playertree, &req, &res);
     if(route(path, "/game/create")) game_create(conn, gametree, &req, &res);
-    if(route(path, "/game/join")) game_join(conn, gametree, &req, &res);
-    if(route(path, "/game/quit")) game_quit(conn, gametree, &req, &res);
+    if(route(path, "/game/join")) game_join(gametree, &req, &res);
+    if(route(path, "/game/quit")) game_quit(gametree, &req, &res);
   }
 
   else if (strcmp(cmd, "AUTH") == 0) {
     if(route(path, "/account/login")) signin(conn, clnt_addr, playertree, &req, &res);
     if(route(path, "/account/register")) signup(conn, playertree, &req, &res);
-    if(route(path, "/account/logout")) signout(conn, playertree, &req, &res);
+//    if(route(path, "/account/logout")) signout(conn, playertree, &req, &res);
   }
 
   else if (strcmp(cmd, "GET") == 0) {
     if(route(path, "/rank")) rank(conn, &req, &res);
     if(route(path, "/profile")) profile(conn, &req, &res);
-    if(route(path, "/game/view")) game_view(conn, gametree, &req, &res);
+    if(route(path, "/game/view")) game_view(gametree, &req, &res);
   }
 
   else if(strcmp(cmd, "CHAT") == 0) {
@@ -109,7 +109,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     if(route(path, "/exit")) disconnect(clnt_addr, playertree, &req, &res);
   }
   else {
-    responsify(res, 404, NULL, "Resource does not exist");
+    responsify(&res, 404, NULL, "Resource does not exist");
   }
 }
 
@@ -170,6 +170,9 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     // Create client thread
     pthread_t threadID;
     int rtnVal = pthread_create(&threadID, NULL, ThreadMain, threadArgs);
+
+    /* Reduce CPU usage */
+    sleep(1);
     if(rtnVal != 0) {
       close(server_fd);
       exit(FAILURE);

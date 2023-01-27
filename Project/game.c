@@ -208,7 +208,7 @@ char *game_board2string(char board[BOARD_S][BOARD_S]) {
   return boardStr;
 }
 
-void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
+void game_view(GameTree *gametree, Request *req, Response *res) {
   int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
@@ -230,7 +230,14 @@ void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
     return;
   }
 
-  game_found->views++;
+
+  ++game_found->views;
+  if(game_found->views > MAX_SPECTATOR) {
+    responsify(res, 403, NULL, "Max clients reached");
+    return;
+  }
+
+  game_found->spectators[game_found->views - 1] = player_id;
 
   sprintf(
     dataStr,
@@ -245,8 +252,7 @@ void game_view(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   return;
 }
 
-
-void game_join(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
+void game_join(GameTree *gametree, Request *req, Response *res) {
   int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
@@ -282,6 +288,55 @@ void game_join(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   );
 
   responsify(res, 200, dataStr, "Join game successfully");
+  return;
+}
+
+void game_quit(GameTree *gametree, Request *req, Response *res) {
+  int player_id, game_id;
+  char msgStr[MESSAGE_L], dataStr[DATA_L];
+  memset(msgStr, '\0', MESSAGE_L);
+  memset(dataStr, '\0', DATA_L);
+
+
+  // TODO: Get player id if exists and game id from user
+  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
+    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/quit game_id=...&player_id=...");
+    return;
+  }
+
+  // TODO: Find game room for player
+  Game *game_found = game_find(gametree, game_id);
+
+  if(!game_found) {
+    sprintf(msgStr, "Game [%d] does not exist", game_id);
+    responsify(res, 400, NULL, msgStr);
+    return;
+  }
+
+  if(game_found->player1_id == player_id) game_found->player1_id = 0;
+  else if(game_found->player2_id == player_id) game_found->player2_id = 0;
+  else {
+    game_found->views--;
+    for(int i = 0; i < MAX_SPECTATOR; i++) {
+      if(game_found->spectators[i] == player_id) {
+        game_found->spectators[i] = 0;
+        break;
+      }
+    }
+  }
+
+  // TODO: Send res str to remain player and other spectators
+//  sprintf(
+//    dataStr,
+//    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
+//    game_found->id, game_found->turn, game_found->views, game_found->num_move,
+//    game_found->player1_id, game_found->player2_id,
+//    game_board2string(game_found->board), game_found->col, game_found->row
+//  );
+
+
+  // TODO: Send response to quited player
+  responsify(res, 200, NULL, "Quit game successfully");
   return;
 }
 

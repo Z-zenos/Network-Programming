@@ -12,7 +12,17 @@
 int clnt_sock;
 
 void exit_safely() {
-  send_req(clnt_sock, "EXIT /exit\r\nContent-Length: 0\r\nParams: \r\n\r\n");
+  Request req = {
+    .header = {
+      .command = "EXIT",
+      .path = "/exit",
+      .params = "",
+      .content_l = 0
+    },
+    .body.content = ""
+  };
+
+  send_req(clnt_sock, req);
   close(clnt_sock);
   printf("Bye :)\n");
   exit(SUCCESS);
