@@ -2,6 +2,10 @@
 #ifndef _CHAT_H_
 #define _CHAT_H_
 
+#include "game.h"
+#include "config.h"
+#include "player.h"
+
 typedef struct Chat {
   int id;
   int player1_id;
@@ -9,4 +13,4 @@ typedef struct Chat {
 
 } Chat;
 
-int send_msg(int );
+int chat(GameTree *, PlayerTree *, Request *, Response *);

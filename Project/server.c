@@ -6,6 +6,7 @@
 #include <time.h>
 
 #include "auth.h"
+#include "chat.h"
 #include "config.h"
 #include "game.h"
 #include "http.h"
@@ -98,7 +99,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   }
 
   else if(strcmp(cmd, "CHAT") == 0) {
-    if(route(path, "/chat")) chat(conn, gametree, &req, &res);
+    if(route(path, "/chat")) chat(gametree, playertree, &req, &res);
   }
 
   else if(strcmp(cmd, "UPDATE") == 0) {

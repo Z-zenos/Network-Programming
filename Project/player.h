@@ -31,6 +31,7 @@ int player_add(PlayerTree *, Player);
 Player *player_find(PlayerTree *, int);
 void player_info(PlayerTree *);
 int player_fd(PlayerTree *, int);
+char *player_username(PlayerTree *, int);
 void rank(MYSQL *, Request *, Response *);
 void profile(MYSQL *, Request *, Response *);
 

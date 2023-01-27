@@ -131,6 +131,12 @@ int player_fd(PlayerTree *playertree, int player_id) {
   return player_found->sock;
 }
 
+char *player_username(PlayerTree *playertree, int player_id) {
+  Player *player_found = player_find(playertree, player_id);
+  return player_found->username;
+}
+
+
 int my_rank(MYSQL *conn, int player_id, char *dataStr) {
   // TODO: QUERY find rank of specified player id
   char query[QUERY_L] = ""
