@@ -82,9 +82,9 @@ int main(int argc, char *argv[]) {
   char input[CONTENT_L];
   Request reqObj;
   Response resObj;
-
+  int receiver[MAX_SPECTATOR + 2];
   do {
-    cleanup(&reqObj, &resObj);
+    cleanup(&reqObj, &resObj, receiver);
     printf("[C]: ");
     scanf("%[^\n]s", input);
     clear_buffer();

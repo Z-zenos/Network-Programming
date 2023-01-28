@@ -11,13 +11,15 @@
 #include "http.h"
 #include "utils.h"
 
-void cleanup(Request *req, Response *res) {
+void cleanup(Request *req, Response *res, int *receiver) {
+  res->send_type = SEND_ME;
   memset(req->header.command, '\0', CMD_L);
   memset(req->header.path, '\0', PATH_L);
   memset(req->header.params, '\0', PARAM_L);
   memset(req->body.content, '\0', CONTENT_L);
   memset(res->data, '\0', DATA_L);
   memset(res->message, '\0', MESSAGE_L);
+  memset(receiver, 0, MAX_SPECTATOR + 2);
 }
 
 void req_parse(Request *req, char *str) {
@@ -46,10 +48,11 @@ void res_print(Response res) {
   printf("\n========\n");
 }
 
-void responsify(Response *res, int code, char *data, char *msg) {
+void responsify(Response *res, int code, char *data, char *msg, int send_type) {
   res->code = code;
   strcpy(res->data, data ? data : "null");
   strcpy(res->message, msg ? msg : "null");
+  res->send_type = send_type;
 }
 
 void requestify(Request *req, char *cmd, char *path, int content_l, char *params, char *content) {
@@ -244,12 +247,13 @@ int get_res(int server_fd, Response *res) {
   return numBytesRcvd;
 }
 
-int send_res(int client_fd, Response res) {
+int send_res(int *receiver, Response res) {
   char resStr[RES_L];
   sprintf(resStr, "code: %d\r\ndata: %s\r\nmessage: %s", res.code, res.data, res.message);
   size_t res_l = strlen(resStr);
-  ssize_t numBytesSent = send(client_fd, resStr, res_l, 0);
-  return numBytesSent;
+  for(int i = 0; i < MAX_SPECTATOR + 2; i++)
+    if(receiver[i]) send(receiver[i], resStr, res_l, 0);
+  return SUCCESS;
 }
 
 int send_req(int server_fd, Request req) {

@@ -72,7 +72,7 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    responsify(res, 400, NULL, "Username / Password incorrect");
+    responsify(res, 400, NULL, "Username / Password incorrect", SEND_ME);
     return FAILURE;
   }
 
@@ -87,7 +87,7 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
-    responsify(res, 400, NULL, "Internal server error");
+    responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
 
@@ -95,7 +95,7 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   if(qres->row_count) {
     notify("error", N_USERNAME_ALREADY_EXISTS);
     mysql_free_result(qres);
-    responsify(res, 400, NULL, "Username already exists");
+    responsify(res, 400, NULL, "Username already exists", SEND_ME);
     return FAILURE;
   }
 
@@ -115,13 +115,13 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   if (mysql_query(conn, query)) {
     notify("error", N_DATABASE_INSERT_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
-    responsify(res, 400, NULL, "Create new account failed");
+    responsify(res, 400, NULL, "Create new account failed", SEND_ME);
     return FAILURE;
   }
 
   playertree = player_build(conn);
   notify("success", N_DATABASE_INSERT_SUCCESS);
-  responsify(res, 201, NULL, "Create new account successfully");
+  responsify(res, 201, NULL, "Create new account successfully", SEND_ME);
   return SUCCESS;
 }
 
@@ -130,11 +130,14 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
-  sscanf(req->header.params, "sock=%d&username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", &client_fd, username, password);
+  if(sscanf(req->header.params, "sock=%d&username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", &client_fd, username, password) != 3) {
+    responsify(res, 400, NULL, "Bad request. Usage: AUTH /account/signin sock=...&username=...&password=...", SEND_ME);
+    return FAILURE;
+  }
 
   // TODO: Validate username & password
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    responsify(res, 400, NULL, "Username / Password incorrect");
+    responsify(res, 400, NULL, "Username / Password incorrect", SEND_ME);
     return FAILURE;
   }
 
@@ -151,7 +154,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
-    responsify(res, 400, NULL, "Internal server error");
+    responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
 
@@ -159,7 +162,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   if(!qres->row_count) {
     notify("error", N_ACCOUNT_WRONG);
     mysql_free_result(qres);
-    responsify(res, 400, NULL, "Account does not exist");
+    responsify(res, 400, NULL, "Account does not exist", SEND_ME);
     return FAILURE;
   }
 
@@ -170,7 +173,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   Player *player_found = player_find(playertree, player_id);
   if(!player_found->sock) player_found->sock = client_fd;
   else {
-    responsify(res, 400, NULL, "The account is already logged in somewhere else");
+    responsify(res, 400, NULL, "The account is already logged in somewhere else", SEND_ME);
     mysql_free_result(qres);
     return FAILURE;
   }
@@ -179,7 +182,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   char dataStr[DATA_L];
   memset(dataStr, '\0', DATA_L);
   sprintf(dataStr, "sock=%d", client_fd);
-  responsify(res, 200, dataStr, "Login successfully");
+  responsify(res, 200, dataStr, "Login successfully", SEND_ME);
   return SUCCESS;
 }
 
@@ -194,7 +197,7 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
 
   // TODO: Get player id, old password and new password
   if(sscanf(req->header.params, "player_id=%d&old_password=%[A-Za-z0-9]&new_password=%[A-Za-z0-9]", &player_id, old_password, new_password) != 3) {
-    responsify(res, 400, NULL, "Bad request. Usage: UPDATE /account/updatePassword player_id=...&old_password=...&new_password=...");
+    responsify(res, 400, NULL, "Bad request. Usage: UPDATE /account/updatePassword player_id=...&old_password=...&new_password=...", SEND_ME);
     return FAILURE;
   }
 
@@ -213,21 +216,21 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
-    responsify(res, 400, NULL, "Internal server error");
+    responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
-    responsify(res, 400, NULL, "Current password incorrect");
+    responsify(res, 400, NULL, "Current password incorrect", SEND_ME);
     return FAILURE;
   }
 
   // TODO: Validate new password
   if(!is_valid_password(new_password)) {
     sprintf(msgStr, "New password invalid. Password must include alpha, digit and have 4 < length < %d", PASSWORD_L);
-    responsify(res, 400, NULL, msgStr);
+    responsify(res, 400, NULL, msgStr, SEND_ME);
     return FAILURE;
   }
 
@@ -243,13 +246,13 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   if (mysql_query(conn, query)) {
     notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
-    responsify(res, 400, NULL, "Internal server error");
+    responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
 
   playertree = player_build(conn);
   mysql_free_result(qres);
-  responsify(res, 200, NULL, "Update new password successfully");
+  responsify(res, 200, NULL, "Update new password successfully", SEND_ME);
   return SUCCESS;
 }
 

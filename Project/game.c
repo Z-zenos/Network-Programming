@@ -148,7 +148,7 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
   // TODO: Check state game
   if(checkWinning(game->board, turn, game->col, game->row)) {
     sprintf(dataStr, "win=%d", player_id);
-    responsify(res, 200, dataStr, "Player id win");
+    responsify(res, 200, dataStr, "Player id win", SEND_JOINER);
 
     Player *winner = player_find(playertree, player_id);
     opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
@@ -164,7 +164,7 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
 
   // Gửi như này là sai nhé, phải gửi cho cả 2 thằng cùng đang chơi cơ mà.
   sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
-  responsify(res, 200, dataStr, NULL);
+  responsify(res, 200, dataStr, NULL, SEND_JOINER);
   return;
 }
 
@@ -174,7 +174,7 @@ void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   // TODO: Get player id
   sscanf(req->header.params, "player_id=%d", &player_id);
 
-  // TODO: Get last id
+  // TODO: Get last id -> sai nhé đây là id của người chơi chứ có phải id của game đâu
   int last_game_id = mysql_insert_id(conn);
 
   // TODO: random first turn for game board
@@ -195,7 +195,7 @@ void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
   sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
-  responsify(res, 200, dataStr, "Create new game successfully");
+  responsify(res, 200, dataStr, "Create new game successfully", SEND_ME);
   return;
 }
 
@@ -217,7 +217,7 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
 
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
-    responsify(res, 400, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]");
+    responsify(res, 400, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]", SEND_ME);
     return;
   }
 
@@ -226,14 +226,13 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
 
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, msgStr);
+    responsify(res, 400, NULL, msgStr, SEND_ME);
     return;
   }
 
-
   ++game_found->views;
   if(game_found->views > MAX_SPECTATOR) {
-    responsify(res, 403, NULL, "Max clients reached");
+    responsify(res, 403, NULL, "Max clients reached", SEND_ME);
     return;
   }
 
@@ -248,7 +247,7 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
   );
 
   sprintf(msgStr, "You have become a spectator of the game [%d]", game_id);
-  responsify(res, 200, dataStr, msgStr);
+  responsify(res, 200, dataStr, msgStr, SEND_JOINER);
   return;
 }
 
@@ -261,7 +260,7 @@ void game_join(GameTree *gametree, Request *req, Response *res) {
 
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...");
+    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...", SEND_ME);
     return;
   }
 
@@ -272,7 +271,7 @@ void game_join(GameTree *gametree, Request *req, Response *res) {
 
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, msgStr);
+    responsify(res, 400, NULL, msgStr, SEND_ME);
     return;
   }
 
@@ -287,7 +286,7 @@ void game_join(GameTree *gametree, Request *req, Response *res) {
     game_board2string(game_found->board), game_found->col, game_found->row
   );
 
-  responsify(res, 200, dataStr, "Join game successfully");
+  responsify(res, 200, dataStr, "Join game successfully", SEND_JOINER);
   return;
 }
 
@@ -297,10 +296,9 @@ void game_quit(GameTree *gametree, Request *req, Response *res) {
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
 
-
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/quit game_id=...&player_id=...");
+    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/quit game_id=...&player_id=...", SEND_ME);
     return;
   }
 
@@ -309,7 +307,7 @@ void game_quit(GameTree *gametree, Request *req, Response *res) {
 
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, msgStr);
+    responsify(res, 400, NULL, msgStr, SEND_ME);
     return;
   }
 
@@ -325,18 +323,16 @@ void game_quit(GameTree *gametree, Request *req, Response *res) {
     }
   }
 
-  // TODO: Send res str to remain player and other spectators
-//  sprintf(
-//    dataStr,
-//    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
-//    game_found->id, game_found->turn, game_found->views, game_found->num_move,
-//    game_found->player1_id, game_found->player2_id,
-//    game_board2string(game_found->board), game_found->col, game_found->row
-//  );
-
+  sprintf(
+    dataStr,
+    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
+    game_found->id, game_found->turn, game_found->views, game_found->num_move,
+    game_found->player1_id, game_found->player2_id,
+    game_board2string(game_found->board), game_found->col, game_found->row
+  );
 
   // TODO: Send response to quited player
-  responsify(res, 200, NULL, "Quit game successfully");
+  responsify(res, 200, dataStr, "Quit game successfully", SEND_JOINER);
   return;
 }
 

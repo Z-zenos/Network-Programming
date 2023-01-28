@@ -17,6 +17,8 @@
 int server_fd;
 Request req;
 Response res;
+int receiver[MAX_SPECTATOR + 2];
+int send_type;
 
 void signalHandler(int signo) {
   switch (signo) {
@@ -53,7 +55,7 @@ void disconnect(ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Resp
   int player_id, client_fd;
 
   if(sscanf(req->header.params, "sock=%d&player_id=%d", &client_fd, &player_id) != 2) {
-    responsify(res, 400, NULL, "Bad request. Usage: EXIT /exit sock=...&player_id=...");
+    responsify(res, 400, NULL, "Bad request. Usage: EXIT /exit sock=...&player_id=...", SEND_ME);
     return;
   }
 
@@ -73,6 +75,45 @@ void connect_database(MYSQL *conn) {
 }
 
 int route(char *path, char *route_name) { return str_start_with(path, route_name); }
+
+void receiver_build(GameTree *gametree, PlayerTree *playertree, int curr_fd) {
+  int player_id = 0, game_id = 0, i = 0;
+
+  // TODO: Filter to get game id and player id
+  char *game_id_str = "game_id";
+  char *player_id_str = "player_id";
+  char **params = str_split(req.header.params, '&');
+  while(params[i]) {
+    if(strstr(params[i], game_id_str) != NULL)
+      sscanf(params[i], "game_id=%d", &game_id);
+    if(strstr(params[i], player_id_str) != NULL)
+      sscanf(params[i], "player_id=%d", &player_id);
+    i++;
+  }
+
+  receiver[0] = curr_fd;
+
+  switch (send_type) {
+    case SEND_ME:
+      break;
+
+    case SEND_JOINER: {
+      Game *game_found = game_find(gametree, game_id);
+      // TODO: Send to all spectators and remain player
+      int remain_player_id = (game_found->player1_id == player_id ? player_id : game_found->player2_id);
+      // If there is a 2nd player -> send
+      if(remain_player_id) receiver[1] = player_fd(playertree, remain_player_id);
+
+      for(i = 0; i < MAX_SPECTATOR; i++) {
+        if(game_found->spectators[i])
+          receiver[i + 2] = player_fd(playertree, game_found->spectators[i]);
+      }
+    }
+
+    case SEND_ALL:
+      break;
+  }
+}
 
 void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
   char path[PATH_L], cmd[CMD_L];
@@ -110,18 +151,20 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     if(route(path, "/exit")) disconnect(clnt_addr, playertree, &req, &res);
   }
   else {
-    responsify(&res, 404, NULL, "Resource does not exist");
+    responsify(&res, 404, NULL, "Resource does not exist", SEND_ME);
   }
 }
 
-void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, ClientAddr client_addr) {
+void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
   int nbytes;
   while(1) {
-    cleanup(&req, &res);
-    if ((nbytes = get_req(client_addr.sock, &req)) <= 0) break;
-    time_print(client_addr.address, req.header.command, req.header.path, req.header.params, nbytes);
+    cleanup(&req, &res, receiver);
+    if ((nbytes = get_req(clnt_addr.sock, &req)) <= 0) break;
+    time_print(clnt_addr.address, req.header.command, req.header.path, req.header.params, nbytes);
     route_handler(conn, clnt_addr, gametree, playertree);
-    send_res(client_addr.sock, res);
+    send_type = res.send_type;
+    receiver_build(gametree, playertree, clnt_addr.sock);
+    send_res(receiver, res);
   }
 }
 
@@ -139,14 +182,14 @@ void *ThreadMain(void *threadArgs) {
   pthread_detach(pthread_self());
 
   // Extract socket file descriptor argument
-  ClientAddr client_addr = ((ThreadArgs *)threadArgs)->client_addr;
+  ClientAddr clnt_addr = ((ThreadArgs *)threadArgs)->client_addr;
   MYSQL *conn = ((ThreadArgs *)threadArgs)->conn;
   GameTree *gametree = ((ThreadArgs *)threadArgs)->gametree;
   PlayerTree *playertree = ((ThreadArgs *)threadArgs)->playertree;
   free(threadArgs); // Deallocate memory for argument
 
-  handle_client(conn, client_addr, gametree, playertree, client_addr);
-  close(client_addr.sock);
+  handle_client(conn, clnt_addr, gametree, playertree);
+  close(clnt_addr.sock);
   return(NULL);
 }
 

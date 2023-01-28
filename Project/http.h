@@ -48,6 +48,7 @@ typedef struct Response {
   int code;
   char data[DATA_L];
   char message[MESSAGE_L];
+  int send_type;
 } Response;
 
 typedef struct ClientAddr {
@@ -56,7 +57,7 @@ typedef struct ClientAddr {
   char address[ADDR_L];
 } ClientAddr;
 
-void cleanup(Request *, Response *);
+void cleanup(Request *, Response *, int *);
 void req_print(Request);
 void res_print(Response);
 
@@ -66,7 +67,7 @@ void req_parse(Request *, char *);
 /* Parse string to response object */
 void res_parse(Response *, char *);
 void requestify(Request *, char *, char *, int, char *, char *);
-void responsify(Response *, int, char *, char *);
+void responsify(Response *, int, char *, char *, int);
 
 void print_socket_addr(const struct sockaddr *, FILE *);
 char *socket_addr(const struct sockaddr *);
@@ -76,7 +77,7 @@ ClientAddr accept_conn(int);
 int get_req(int, Request *);
 int get_res(int, Response *);
 int send_req(int, Request);
-int send_res(int, Response);
+int send_res(int *, Response);
 void h_clear(char *, char *, char *);
 
 #endif

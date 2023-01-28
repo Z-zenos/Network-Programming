@@ -1,13 +1,9 @@
-
 #define SUCCESS 1
 #define FAILURE 0
 
 #define INPUT_L 1000
 #define PASSWORD_L 50
 #define USERNAME_L 50
-
-// https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address
-#define EMAIL_L 255
 
 #define CMD_L 10
 #define PATH_L 32
@@ -38,3 +34,7 @@
 #define L_SUCCESS "success"
 #define L_WARN "warn"
 #define L_ERROR "error"
+
+#define SEND_ME 1
+#define SEND_JOINER 2
+#define SEND_ALL 3

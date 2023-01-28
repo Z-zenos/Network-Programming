@@ -136,7 +136,6 @@ char *player_username(PlayerTree *playertree, int player_id) {
   return player_found->username;
 }
 
-
 int my_rank(MYSQL *conn, int player_id, char *dataStr) {
   // TODO: QUERY find rank of specified player id
   char query[QUERY_L] = ""
@@ -180,7 +179,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
 
   // TODO: Get player id from request
   if(sscanf(req->header.params, "player_id=%d", &player_id) <= 0) {
-    responsify(res, 400, NULL, "Bad request. Usage: GET /rank player_id=...");
+    responsify(res, 400, NULL, "Bad request. Usage: GET /rank player_id=...", SEND_ME);
     return;
   }
 
@@ -220,7 +219,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
 
   mysql_free_result(qres);
   my_rank(conn, player_id, dataStr);
-  responsify(res, 200, dataStr, "Get rank successfully");
+  responsify(res, 200, dataStr, "Get rank successfully", SEND_ME);
 }
 
 void profile(MYSQL *conn, Request *req, Response *res) {
@@ -231,7 +230,7 @@ void profile(MYSQL *conn, Request *req, Response *res) {
 
   // TODO: Get key from request
   if(sscanf(req->header.params, "key=%s", key) <= 0) {
-    responsify(res, 400, NULL, "Bad request. Usage: GET /profile key=[player_id | username]");
+    responsify(res, 400, NULL, "Bad request. Usage: GET /profile key=[player_id | username]", SEND_ME);
     return;
   }
 
@@ -271,7 +270,7 @@ void profile(MYSQL *conn, Request *req, Response *res) {
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     sprintf(msgStr, "Player [%s] does not exist", key);
-    responsify(res, 400, NULL, msgStr);
+    responsify(res, 400, NULL, msgStr, SEND_ME);
     mysql_free_result(qres);
     return;
   }
@@ -287,5 +286,5 @@ void profile(MYSQL *conn, Request *req, Response *res) {
 
   mysql_free_result(qres);
   sprintf(msgStr, "Get info of player [%s] successfully", key);
-  responsify(res, 200, dataStr, msgStr);
+  responsify(res, 200, dataStr, msgStr, SEND_ME);
 }
