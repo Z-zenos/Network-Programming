@@ -42,7 +42,7 @@ int player_add(PlayerTree *playertree, Player new_player) {
   player->id = new_player.id;
   strcpy(player->username, new_player.username);
   strcpy(player->password, new_player.password);
-  player->sock = -1;
+  player->sock = 0;
   player->achievement = new_player.achievement;
 
   ret = rbinsert(playertree, (void *)player);

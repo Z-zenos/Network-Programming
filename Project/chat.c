@@ -13,7 +13,7 @@ void chat(GameTree *gametree, PlayerTree *playertree, Request *req, Response *re
   memset(content, '\0', CONTENT_L);
 
   // TODO: Get player id and game id from user
-  if(sscanf(req->header.params, "sock=%d&game_id=%d&player_id=%d", &client_fd, &game_id, &player_id) != 2) {
+  if(sscanf(req->header.params, "sock=%d&game_id=%d&player_id=%d", &client_fd, &game_id, &player_id) != 3) {
     responsify(res, 400, NULL, "Bad request. Usage: CHAT /chat sock=...&game_id=...&player_id=...", SEND_ME);
     return;
   }
@@ -45,6 +45,6 @@ void chat(GameTree *gametree, PlayerTree *playertree, Request *req, Response *re
     return;
   }
 
-  sprintf(dataStr, "username=%s&message=%s", player_username(playertree, player_id), content);
+  sprintf(dataStr, "username=%s&content=%s", player_username(playertree, player_id), content);
   responsify(res, 200, dataStr, "Chat successfully", SEND_JOINER);
 }

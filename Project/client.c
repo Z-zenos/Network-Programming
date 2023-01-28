@@ -62,6 +62,7 @@ bool str_is_empty(char *str) {
 
 void make_req(Request *req, char *input) {
   sscanf(input, "%s %s %s %[^\n]s", req->header.command, req->header.path, req->header.params, req->body.content);
+  req->header.content_l = strlen(req->body.content);
 }
 
 int main(int argc, char *argv[]) {

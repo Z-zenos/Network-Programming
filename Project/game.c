@@ -192,7 +192,7 @@ void game_create(GameTree *gametree, Request *req, Response *res) {
 
   // TODO: Create game
   Game new_game = {
-    .id = !last_game ? last_game->id + 1 : 1,
+    .id = !last_game ? 1 : last_game->id + 1,
     .views = 0,
     .num_move = 0,
     .result = 0,

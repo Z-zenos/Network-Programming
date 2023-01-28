@@ -27,7 +27,7 @@ void req_parse(Request *req, char *str) {
 }
 
 void res_parse(Response *res, char *str) {
-  sscanf(str, "code: %d\r\ndata: %s\r\nmessage: %[^\n]", &res->code, res->data, res->message);
+  sscanf(str, "code: %d\r\ndata: %[^\n]\r\nmessage: %[^\n]", &res->code, res->data, res->message);
 }
 
 void req_print(Request req) {
@@ -246,7 +246,7 @@ int send_res(int *receiver, Response res) {
   sprintf(resStr, "code: %d\r\ndata: %s\r\nmessage: %s", res.code, res.data, res.message);
   size_t res_l = strlen(resStr);
   for(int i = 0; i < MAX_SPECTATOR + 2; i++)
-    if(receiver[i]) send(receiver[i], resStr, res_l, 0);
+    if(receiver[i] > 0) send(receiver[i], resStr, res_l, 0);
   return SUCCESS;
 }
 
