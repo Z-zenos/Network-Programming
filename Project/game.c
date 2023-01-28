@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include "http.h"
 
@@ -59,6 +58,9 @@ int game_add(GameTree *gametree, Game new_game) {
   game->row = new_game.row;
   for ( int i = 0; i < BOARD_S; ++i ){
     memcpy(game->board[i], new_game.board[i], sizeof new_game.board[i]);
+  }
+  for ( int i = 0; i < MAX_SPECTATOR; ++i ){
+    game->spectators[i] = new_game.spectators[i];
   }
 
   ret = rbinsert(gametree, (void *)game);
@@ -168,27 +170,35 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
   return;
 }
 
-void game_create(MYSQL *conn, GameTree *gametree, Request *req, Response *res) {
+void game_create(GameTree *gametree, Request *req, Response *res) {
   int player_id;
 
   // TODO: Get player id
   sscanf(req->header.params, "player_id=%d", &player_id);
 
-  // TODO: Get last id -> sai nhé đây là id của người chơi chứ có phải id của game đâu
-  int last_game_id = mysql_insert_id(conn);
-
   // TODO: random first turn for game board
   int r = rand() % 2;
 
+  rbtrav_t *rbtrav;
+  rbtrav = rbtnew();
+  Game *last_game = rbtlast(rbtrav, gametree);
+
   // TODO: Create game
   Game new_game = {
-    .id = last_game_id + 1,
+    .id = !last_game ? last_game->id + 1 : 1,
     .views = 0,
     .num_move = 0,
     .result = 0,
     .turn = (r == 1) ? 'X' : 'O',
-    .player1_id = player_id
+    .player1_id = player_id,
+    .player2_id = 0,
+    .col = 0,
+    .row = 0,
   };
+  for ( int i = 0; i < BOARD_S; ++i ){
+    memset(new_game.board[i], '_', sizeof new_game.board[i]);
+  }
+  memset(new_game.spectators, 0, sizeof new_game.spectators);
 
   game_add(gametree, new_game);
 

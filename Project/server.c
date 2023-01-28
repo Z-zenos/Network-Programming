@@ -122,7 +122,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
 
   if (strcmp(cmd, "PLAY") == 0) {
     if(route(path, "/game/play")) game_handler(gametree, playertree, &req, &res);
-    if(route(path, "/game/create")) game_create(conn, gametree, &req, &res);
+    if(route(path, "/game/create")) game_create(gametree, &req, &res);
     if(route(path, "/game/join")) game_join(gametree, &req, &res);
     if(route(path, "/game/quit")) game_quit(gametree, &req, &res);
   }
