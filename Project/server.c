@@ -82,13 +82,15 @@ void receiver_build(GameTree *gametree, PlayerTree *playertree, int curr_fd) {
   // TODO: Filter to get game id and player id
   char *game_id_str = "game_id";
   char *player_id_str = "player_id";
-  char **params = str_split(req.header.params, '&');
-  while(params[i]) {
-    if(strstr(params[i], game_id_str) != NULL)
-      sscanf(params[i], "game_id=%d", &game_id);
-    if(strstr(params[i], player_id_str) != NULL)
-      sscanf(params[i], "player_id=%d", &player_id);
-    i++;
+  if(strlen(req.header.params) > 0) {
+    char **params = str_split(req.header.params, '&');
+    while (params[i]) {
+      if (strstr(params[i], game_id_str) != NULL)
+        sscanf(params[i], "game_id=%d", &game_id);
+      if (strstr(params[i], player_id_str) != NULL)
+        sscanf(params[i], "player_id=%d", &player_id);
+      i++;
+    }
   }
 
   receiver[0] = curr_fd;
@@ -241,7 +243,7 @@ int main(int argc, char *argv[]) {
   gametree = game_new();
   Game g = {
     .id = 1,
-    .views = 199,
+    .views = 9,
     .num_move = 48,
     .result = 0,
     .turn = 'O',
@@ -255,6 +257,7 @@ int main(int argc, char *argv[]) {
     .col = 1,
     .row = 0,
   };
+  memset(g.spectators, 0, sizeof g.spectators);
 
   game_add(gametree, g);
   playertree = player_build(conn);

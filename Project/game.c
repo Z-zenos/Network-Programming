@@ -247,6 +247,13 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
     return;
   }
 
+  for(int i = 0; i < MAX_SPECTATOR; i++) {
+    if(game_found->spectators[i] == player_id) {
+      responsify(res, 403, NULL, "You were a spectator of this game", SEND_ME);
+      return;
+    }
+  }
+
   ++game_found->views;
   if(game_found->views > MAX_SPECTATOR) {
     responsify(res, 403, NULL, "Max clients reached", SEND_ME);
