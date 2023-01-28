@@ -60,7 +60,7 @@ int game_add(GameTree *gametree, Game new_game) {
     memcpy(game->board[i], new_game.board[i], sizeof new_game.board[i]);
   }
   for ( int i = 0; i < MAX_SPECTATOR; ++i ){
-    game->spectators[i] = new_game.spectators[i];
+    game->joiner[i] = new_game.joiner[i];
   }
 
   ret = rbinsert(gametree, (void *)game);
@@ -171,7 +171,6 @@ void game_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Reque
     return;
   }
 
-  // Gửi như này là sai nhé, phải gửi cho cả 2 thằng cùng đang chơi cơ mà.
   sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
   responsify(res, 200, dataStr, NULL, SEND_JOINER);
   return;
@@ -206,7 +205,8 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
   for ( int i = 0; i < BOARD_S; ++i ){
     memset(new_game.board[i], '_', sizeof new_game.board[i]);
   }
-  memset(new_game.spectators, 0, sizeof new_game.spectators);
+  memset(new_game.joiner, 0, sizeof new_game.joiner);
+  new_game.joiner[0] = clnt_addr.sock;
 
   game_add(gametree, new_game);
 
@@ -229,8 +229,8 @@ char *game_board2string(char board[BOARD_S][BOARD_S]) {
   return boardStr;
 }
 
-void game_view(GameTree *gametree, Request *req, Response *res) {
-  int player_id, game_id;
+void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response *res) {
+  int player_id = 0, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
@@ -250,20 +250,18 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
     return;
   }
 
-  for(int i = 0; i < MAX_SPECTATOR; i++) {
-    if(game_found->spectators[i] == player_id) {
-      responsify(res, 403, NULL, "You were a spectator of this game", SEND_ME);
-      return;
-    }
-  }
-
   ++game_found->views;
   if(game_found->views > MAX_SPECTATOR) {
-    responsify(res, 403, NULL, "Max clients reached", SEND_ME);
+    responsify(res, 403, NULL, "Max spectators reached", SEND_ME);
     return;
   }
 
-  game_found->spectators[game_found->views - 1] = player_id;
+  for(int i = 2; i < MAX_SPECTATOR + 2; i++) {
+    if (game_found->joiner[i] == 0) {
+      game_found->joiner[i] = clnt_addr.sock;
+      break;
+    }
+  }
 
   sprintf(
     dataStr,
@@ -305,6 +303,9 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
   if(game_found->player1_id) game_found->player2_id = player_id;
   else game_found->player1_id = player_id;
 
+  if(game_found->joiner[0]) game_found->joiner[1] = clnt_addr.sock;
+  else game_found->joiner[0] = clnt_addr.sock;
+
   Player *player_found = player_find(playertree, player_id);
   player_found->sock = clnt_addr.sock;
 
@@ -320,7 +321,7 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
   return;
 }
 
-void game_quit(GameTree *gametree, Request *req, Response *res) {
+void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response *res) {
   int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
@@ -341,13 +342,17 @@ void game_quit(GameTree *gametree, Request *req, Response *res) {
     return;
   }
 
+  // TODO: Update game state: Unset socket of player or spectator
+  if(game_found->joiner[0] == clnt_addr.sock) game_found->joiner[0] = 0;
+  else game_found->joiner[1] = 0;
+
   if(game_found->player1_id == player_id) game_found->player1_id = 0;
   else if(game_found->player2_id == player_id) game_found->player2_id = 0;
   else {
     game_found->views--;
-    for(int i = 0; i < MAX_SPECTATOR; i++) {
-      if(game_found->spectators[i] == player_id) {
-        game_found->spectators[i] = 0;
+    for(int i = 2; i < MAX_SPECTATOR + 2; i++) {
+      if(game_found->joiner[i] == clnt_addr.sock) {
+        game_found->joiner[i] = 0;
         break;
       }
     }

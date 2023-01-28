@@ -76,39 +76,30 @@ void connect_database(MYSQL *conn) {
 
 int route(char *path, char *route_name) { return str_start_with(path, route_name); }
 
-void receiver_build(GameTree *gametree, PlayerTree *playertree, int curr_fd) {
-  int player_id = 0, game_id = 0, i = 0;
+void receiver_build(GameTree *gametree, int curr_fd) {
+  int game_id = 0, i = 0, k = 0;
 
   // TODO: Filter to get game id and player id
   char *game_id_str = "game_id";
-  char *player_id_str = "player_id";
   if(strlen(req.header.params) > 0) {
     char **params = str_split(req.header.params, '&');
     while (params[i]) {
       if (strstr(params[i], game_id_str) != NULL)
         sscanf(params[i], "game_id=%d", &game_id);
-      if (strstr(params[i], player_id_str) != NULL)
-        sscanf(params[i], "player_id=%d", &player_id);
       i++;
     }
   }
 
-  receiver[0] = curr_fd;
-
   switch (send_type) {
     case SEND_ME:
+      receiver[0] = curr_fd;
       break;
 
     case SEND_JOINER: {
       Game *game_found = game_find(gametree, game_id);
-      // TODO: Send to all spectators and remain player
-      int remain_player_id = (game_found->player1_id == player_id ? game_found->player2_id : player_id);
-      // If there is a 2nd player -> send
-      if(remain_player_id) receiver[1] = player_fd(playertree, remain_player_id);
-
-      for(i = 0; i < MAX_SPECTATOR; i++) {
-        if(game_found->spectators[i])
-          receiver[i + 2] = player_fd(playertree, game_found->spectators[i]);
+      for(i = 0; i < MAX_SPECTATOR + 2; i++) {
+        if(game_found->joiner[i])
+          receiver[k++] = game_found->joiner[i];
       }
     }
 
@@ -126,11 +117,11 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     if(route(path, "/game/play")) game_handler(conn, gametree, playertree, &req, &res);
     if(route(path, "/game/create")) game_create(clnt_addr, gametree, playertree, &req, &res);
     if(route(path, "/game/join")) game_join(clnt_addr, gametree, playertree, &req, &res);
-    if(route(path, "/game/quit")) game_quit(gametree, &req, &res);
+    if(route(path, "/game/quit")) game_quit(clnt_addr, gametree, &req, &res);
   }
 
   else if (strcmp(cmd, "AUTH") == 0) {
-    if(route(path, "/account/login")) signin(conn, clnt_addr, playertree, &req, &res);
+    if(route(path, "/account/login")) signin(conn, playertree, &req, &res);
     if(route(path, "/account/register")) signup(conn, playertree, &req, &res);
 //    if(route(path, "/account/logout")) signout(conn, playertree, &req, &res);
   }
@@ -138,7 +129,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   else if (strcmp(cmd, "GET") == 0) {
     if(route(path, "/rank")) rank(conn, &req, &res);
     if(route(path, "/profile")) profile(conn, &req, &res);
-    if(route(path, "/game/view")) game_view(gametree, &req, &res);
+    if(route(path, "/game/view")) game_view(clnt_addr, gametree, &req, &res);
   }
 
   else if(strcmp(cmd, "CHAT") == 0) {
@@ -165,7 +156,7 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     time_print(clnt_addr.address, req.header.command, req.header.path, req.header.params, nbytes);
     route_handler(conn, clnt_addr, gametree, playertree);
     send_type = res.send_type;
-    receiver_build(gametree, playertree, clnt_addr.sock);
+    receiver_build(gametree, clnt_addr.sock);
     send_res(receiver, res);
   }
 }
@@ -257,7 +248,7 @@ int main(int argc, char *argv[]) {
     .col = 1,
     .row = 0,
   };
-  memset(g.spectators, 0, sizeof g.spectators);
+  memset(g.joiner, 0, sizeof g.joiner);
 
   game_add(gametree, g);
   playertree = player_build(conn);

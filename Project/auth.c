@@ -120,7 +120,7 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   return SUCCESS;
 }
 
-int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Response *res) {
+int signin(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   int client_fd, player_id;
   char username[USERNAME_L], password[PASSWORD_L];
 

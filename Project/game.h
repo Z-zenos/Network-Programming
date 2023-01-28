@@ -18,7 +18,9 @@ typedef struct Game {
   char board[BOARD_S][BOARD_S];
 
   int views;
-  int spectators[MAX_SPECTATOR];
+
+  /* joiner array contains socket of player 1, player 2 and 20 spectators */
+  int joiner[MAX_SPECTATOR + 2];
 
   /* current: X or O */
   char turn;
@@ -47,8 +49,8 @@ Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 void game_handler(MYSQL *, GameTree *, PlayerTree *, Request *, Response *);
 void game_create(ClientAddr, GameTree *, PlayerTree *, Request *, Response *);
-void game_view(GameTree *, Request *, Response *);
+void game_view(ClientAddr, GameTree *, Request *, Response *);
 char *game_board2string(char [BOARD_S][BOARD_S]);
 void game_join(ClientAddr, GameTree *, PlayerTree *, Request *, Response *);
-void game_quit(GameTree *, Request *, Response *);
+void game_quit(ClientAddr, GameTree *, Request *, Response *);
 #endif
