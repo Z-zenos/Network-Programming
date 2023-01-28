@@ -10,7 +10,6 @@
 #include "utils.h"
 #include "config.h"
 #include "player.h"
-#include "notify.h"
 
 #include "http.h"
 
@@ -85,7 +84,6 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   );
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
@@ -93,7 +91,6 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(qres->row_count) {
-    notify("error", N_USERNAME_ALREADY_EXISTS);
     mysql_free_result(qres);
     responsify(res, 400, NULL, "Username already exists", SEND_ME);
     return FAILURE;
@@ -113,14 +110,12 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   );
 
   if (mysql_query(conn, query)) {
-    notify("error", N_DATABASE_INSERT_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Create new account failed", SEND_ME);
     return FAILURE;
   }
 
   playertree = player_build(conn);
-  notify("success", N_DATABASE_INSERT_SUCCESS);
   responsify(res, 201, NULL, "Create new account successfully", SEND_ME);
   return SUCCESS;
 }
@@ -152,7 +147,6 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   );
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
@@ -160,7 +154,6 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
-    notify("error", N_ACCOUNT_WRONG);
     mysql_free_result(qres);
     responsify(res, 400, NULL, "Account does not exist", SEND_ME);
     return FAILURE;
@@ -214,7 +207,6 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   );
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
     logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
@@ -244,7 +236,7 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   );
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
+    logger("error", 1, "Query to database failed");
     logger(L_ERROR, 1, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;

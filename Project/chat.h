@@ -6,13 +6,6 @@
 #include "config.h"
 #include "player.h"
 
-typedef struct Chat {
-  int id;
-  int player1_id;
-  int player2_id;
-
-} Chat;
-
 void chat(GameTree *, PlayerTree *, Request *, Response *);
 
 #endif

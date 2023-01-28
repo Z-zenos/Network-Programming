@@ -4,11 +4,11 @@ LIBS = -lm
 
 build: clean | client server
 
-client: client.o http.o utils.o notify.o
-	${CC} client.o http.o utils.o notify.o -o client
+client: client.o http.o utils.o
+	${CC} client.o http.o utils.o -o client
 
-server: server.o auth.o http.o utils.o notify.o game.o algo.o player.o rbtree.o chat.o
-	${CC} server.o auth.o http.o utils.o notify.o game.o algo.o player.o rbtree.o chat.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
+server: server.o auth.o http.o utils.o game.o algo.o player.o rbtree.o chat.o
+	${CC} server.o auth.o http.o utils.o game.o algo.o player.o rbtree.o chat.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
 
 client.o: client.c
 	${CC} ${CFLAGS} client.c
@@ -24,9 +24,6 @@ http.o: http.c
 
 auth.o: auth.c
 	${CC} ${CFLAGS} auth.c
-
-notify.o: notify.c
-	${CC} ${CFLAGS} notify.c
 
 utils.o: utils.c
 	${CC} ${CFLAGS} utils.c

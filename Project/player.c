@@ -4,10 +4,8 @@
 #include <mysql/mysql.h>
 #include <ctype.h>
 
-#include "notify.h"
 #include "player.h"
 #include "http.h"
-#include "game.h"
 #include "config.h"
 #include "rbtree.h"
 #include "utils.h"
@@ -65,14 +63,13 @@ PlayerTree *player_build(MYSQL *conn) {
   char query[QUERY_L] = "SELECT * FROM players";
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
+    logger("error", 1, "Query to database failed");
     logger(L_ERROR, 1, mysql_error(conn));
     return NULL;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
-    notify("error", N_ACCOUNT_WRONG);
     mysql_free_result(qres);
     return NULL;
   }
@@ -144,7 +141,7 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
     "order by points desc";
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
+    logger("error", 1, "Query to database failed");
     logger(L_ERROR, 1, mysql_error(conn));
     return -1;
   }
@@ -187,7 +184,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   char query[QUERY_L] = "SELECT username, win, draw, loss, points FROM players ORDER BY points DESC LIMIT 10";
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
+    logger("error", 1, "Query to database failed");
     logger(L_ERROR, 1, mysql_error(conn));
     return;
   }
@@ -262,7 +259,7 @@ void profile(MYSQL *conn, Request *req, Response *res) {
   }
 
   if (mysql_query(conn, query)) {
-    notify("error", N_QUERY_FAILED);
+    logger("error", 1, "Query to database failed");
     logger(L_ERROR, 1, mysql_error(conn));
     return;
   }

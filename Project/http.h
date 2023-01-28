@@ -27,6 +27,7 @@
  * */
 
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct Header {
   char command[CMD_L];
@@ -78,6 +79,7 @@ int get_req(int, Request *);
 int get_res(int, Response *);
 int send_req(int, Request);
 int send_res(int *, Response);
-void h_clear(char *, char *, char *);
 
+bool is_port(char *);
+bool is_ip(const char *);
 #endif

@@ -63,12 +63,6 @@ void requestify(Request *req, char *cmd, char *path, int content_l, char *params
   strcpy(req->body.content, content ? content : "null");
 }
 
-void h_clear(char *cmd, char *req, char *res) {
-  memset(cmd, 0, CMD_L);
-  memset(req, 0, REQ_L);
-  memset(res, 0, RES_L);
-}
-
 bool is_ip(const char *ip) {    /* Handle login */
   struct sockaddr_in sa;
   char ip_tmp[CONTENT_L];

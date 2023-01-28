@@ -7,7 +7,6 @@
 #include <time.h>
 
 #include "utils.h"
-#include "notify.h"
 #include "config.h"
 
 void clear_buffer() {
@@ -190,32 +189,26 @@ int input(char *type, char *str, int max_length) {
   }
 
   if(strlen(input_console) <= 0) {
-    notify("error", N_INPUT_EMPTY);
     return FAILURE;
   }
 
   if(strlen(input_console) > max_length) {
-    notify("error", N_INPUT_TOO_LONG);
     return FAILURE;
   }
 
   if(str_has_space(input_console)) {
-    notify("error", N_INPUT_INVALID);
     return FAILURE;
   }
 
   strcpy(input_console, str_trim(input_console));
 
   if(strcmp(type, "text") == 0 && !is_valid_text(input_console)) {
-    notify("error", N_INPUT_INVALID);
     return FAILURE;
   }
   else if(strcmp(type, "number") == 0 && !is_number(input_console)) {
-    notify("error", N_INPUT_INVALID);
     return FAILURE;
   }
   else if(strcmp(type, "email") == 0 && !is_valid_email(input_console)) {
-    notify("error", N_EMAIL_INVALID);
     return FAILURE;
   }
 
