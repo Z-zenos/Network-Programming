@@ -177,7 +177,7 @@ void game_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Reque
   return;
 }
 
-void game_create(GameTree *gametree, Request *req, Response *res) {
+void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int player_id;
 
   // TODO: Get player id
@@ -202,12 +202,16 @@ void game_create(GameTree *gametree, Request *req, Response *res) {
     .col = 0,
     .row = 0,
   };
+
   for ( int i = 0; i < BOARD_S; ++i ){
     memset(new_game.board[i], '_', sizeof new_game.board[i]);
   }
   memset(new_game.spectators, 0, sizeof new_game.spectators);
 
   game_add(gametree, new_game);
+
+  Player *player_found = player_find(playertree, player_id);
+  player_found->sock = clnt_addr.sock;
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
@@ -230,7 +234,6 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
   char msgStr[MESSAGE_L], dataStr[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
-
 
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
@@ -275,7 +278,7 @@ void game_view(GameTree *gametree, Request *req, Response *res) {
   return;
 }
 
-void game_join(GameTree *gametree, Request *req, Response *res) {
+void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L];
   memset(msgStr, '\0', MESSAGE_L);
@@ -301,6 +304,9 @@ void game_join(GameTree *gametree, Request *req, Response *res) {
 
   if(game_found->player1_id) game_found->player2_id = player_id;
   else game_found->player1_id = player_id;
+
+  Player *player_found = player_find(playertree, player_id);
+  player_found->sock = clnt_addr.sock;
 
   sprintf(
     dataStr,

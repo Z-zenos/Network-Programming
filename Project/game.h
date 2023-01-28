@@ -46,9 +46,9 @@ int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 void game_handler(MYSQL *, GameTree *, PlayerTree *, Request *, Response *);
-void game_create(GameTree *, Request *, Response *);
+void game_create(ClientAddr, GameTree *, PlayerTree *, Request *, Response *);
 void game_view(GameTree *, Request *, Response *);
 char *game_board2string(char [BOARD_S][BOARD_S]);
-void game_join(GameTree *, Request *, Response *);
+void game_join(ClientAddr, GameTree *, PlayerTree *, Request *, Response *);
 void game_quit(GameTree *, Request *, Response *);
 #endif

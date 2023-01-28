@@ -95,7 +95,7 @@ void recv_handler() {
     cleanup(&reqObj, &resObj, receiver);
     numBytesRcvd = get_res(clnt_sock, &resObj);
     if(numBytesRcvd > 0)
-      printf("\n[S]: \n\t%d\n\t%s\n\t%s\n[C]: ", resObj.code, resObj.data, resObj.message);
+      printf("\n[S]: \n\t%d\n\t%s\n\t%s\n", resObj.code, resObj.data, resObj.message);
     else break;
   }
 }

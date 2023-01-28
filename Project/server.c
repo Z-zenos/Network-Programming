@@ -102,7 +102,7 @@ void receiver_build(GameTree *gametree, PlayerTree *playertree, int curr_fd) {
     case SEND_JOINER: {
       Game *game_found = game_find(gametree, game_id);
       // TODO: Send to all spectators and remain player
-      int remain_player_id = (game_found->player1_id == player_id ? player_id : game_found->player2_id);
+      int remain_player_id = (game_found->player1_id == player_id ? game_found->player2_id : player_id);
       // If there is a 2nd player -> send
       if(remain_player_id) receiver[1] = player_fd(playertree, remain_player_id);
 
@@ -124,8 +124,8 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
 
   if (strcmp(cmd, "PLAY") == 0) {
     if(route(path, "/game/play")) game_handler(conn, gametree, playertree, &req, &res);
-    if(route(path, "/game/create")) game_create(gametree, &req, &res);
-    if(route(path, "/game/join")) game_join(gametree, &req, &res);
+    if(route(path, "/game/create")) game_create(clnt_addr, gametree, playertree, &req, &res);
+    if(route(path, "/game/join")) game_join(clnt_addr, gametree, playertree, &req, &res);
     if(route(path, "/game/quit")) game_quit(gametree, &req, &res);
   }
 
