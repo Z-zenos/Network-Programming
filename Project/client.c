@@ -3,11 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "config.h"
 #include "http.h"
 #include "utils.h"
-
 
 int clnt_sock;
 
@@ -51,13 +51,12 @@ void signalHandler(int signo) {
   exit_safely();
 }
 
-bool str_is_empty(char *str) {
-  int length = (int)strlen(str);
-  for(int i = 0; i < length; i++) {
-    if(str[i] != 32)
-      return FAILURE;
-  }
-  return SUCCESS;
+void interrupt() {
+  signal(SIGINT, signalHandler);
+  signal(SIGQUIT, signalHandler);
+  signal(SIGHUP, signalHandler);
+  signal(SIGTERM, signalHandler);
+  signal(SIGUSR1, signalHandler);
 }
 
 void make_req(Request *req, char *input) {
@@ -65,21 +64,8 @@ void make_req(Request *req, char *input) {
   req->header.content_l = strlen(req->body.content);
 }
 
-int main(int argc, char *argv[]) {
-  printf("\n\tTEST API\n");
-  printf("\t=======================\n");
-
-  clnt_sock = connect2server(argv[1], argv[2]);
-  if(clnt_sock < 0) {
-    exit_safely();
-  }
-
-  signal(SIGINT, signalHandler);
-  signal(SIGQUIT, signalHandler);
-  signal(SIGHUP, signalHandler);
-  signal(SIGTERM, signalHandler);
-  signal(SIGUSR1, signalHandler);
-
+_Noreturn void send_handler() {
+  interrupt();
   char input[CONTENT_L];
   Request reqObj;
   Response resObj;
@@ -97,7 +83,44 @@ int main(int argc, char *argv[]) {
 
     make_req(&reqObj, input);
     send_req(clnt_sock, reqObj);
-    get_res(clnt_sock, &resObj);
-    printf("[S]: \n\t%d\n\t%s\n\t%s\n", resObj.code, resObj.data, resObj.message);
   } while(1);
+}
+
+void recv_handler() {
+  Request reqObj;
+  Response resObj;
+  int receiver[MAX_SPECTATOR + 2];
+  int numBytesRcvd;
+  while (1) {
+    cleanup(&reqObj, &resObj, receiver);
+    numBytesRcvd = get_res(clnt_sock, &resObj);
+    if(numBytesRcvd > 0)
+      printf("\n[S]: \n\t%d\n\t%s\n\t%s\n[C]: ", resObj.code, resObj.data, resObj.message);
+    else break;
+  }
+}
+
+int main(__attribute__((unused)) int argc, char *argv[]) {
+  printf("\n\tTEST API\n");
+  printf("\t=======================\n");
+
+  clnt_sock = connect2server(argv[1], argv[2]);
+  if(clnt_sock < 0) {
+    exit_safely();
+  }
+
+  interrupt();
+
+  pthread_t send_thread;
+  if(pthread_create(&send_thread, NULL, (void *)send_handler, NULL) != 0) {
+    logger(L_ERROR, "Create send thread failed");
+    exit_safely();
+  }
+
+  pthread_t recv_thread;
+  if(pthread_create(&recv_thread, NULL, (void *)recv_handler, NULL) != 0) {
+    logger(L_ERROR, "Create receive thread failed");
+    exit_safely();
+  }
+  while(1);
 }

@@ -5,7 +5,7 @@ LIBS = -lm
 build: clean | client server
 
 client: client.o http.o utils.o
-	${CC} client.o http.o utils.o -o client
+	${CC} client.o http.o utils.o -pthread -o client
 
 server: server.o auth.o http.o utils.o game.o algo.o player.o rbtree.o chat.o
 	${CC} server.o auth.o http.o utils.o game.o algo.o player.o rbtree.o chat.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
