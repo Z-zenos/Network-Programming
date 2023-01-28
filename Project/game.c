@@ -131,7 +131,7 @@ void game_info(GameTree *gametree) {
  Params: game_id=1&player_id=1&turn=X\r\n
  \r\n
  * */
-void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
+void game_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int game_id, player_id, col, row, opponent_id;
   char turn;
 
@@ -147,11 +147,8 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
 
-  // TODO: Check state game
+  // TODO: Check state game chưa ghi vào db này
   if(checkWinning(game->board, turn, game->col, game->row)) {
-    sprintf(dataStr, "win=%d", player_id);
-    responsify(res, 200, dataStr, "Player id win", SEND_JOINER);
-
     Player *winner = player_find(playertree, player_id);
     opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
     Player *losser = player_find(playertree, opponent_id);
@@ -161,6 +158,16 @@ void game_handler(GameTree *gametree, PlayerTree *playertree, Request *req, Resp
 
     losser->achievement.loss++;
     losser->achievement.points -= 1;
+
+    // TODO: Update data in database
+    char query[QUERY_L];
+    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", winner->achievement.win, winner->achievement.points, winner->id);
+    mysql_query(conn, query);
+    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", losser->achievement.win, losser->achievement.points, losser->id);
+    mysql_query(conn, query);
+
+    sprintf(dataStr, "win=%d", player_id);
+    responsify(res, 200, dataStr, "Player id win", SEND_JOINER);
     return;
   }
 
