@@ -47,7 +47,7 @@ int player_add(PlayerTree *playertree, Player new_player) {
 
   ret = rbinsert(playertree, (void *)player);
   if (ret == 0) {
-    logger(L_ERROR, 1, "Can't insert new player for players");
+    logger(L_ERROR, "Can't insert new player for players");
     free(player);
     return -1;
   }
@@ -63,8 +63,7 @@ PlayerTree *player_build(MYSQL *conn) {
   char query[QUERY_L] = "SELECT * FROM players";
 
   if (mysql_query(conn, query)) {
-    logger("error", 1, "Query to database failed");
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, mysql_error(conn));
     return NULL;
   }
 
@@ -91,7 +90,7 @@ PlayerTree *player_build(MYSQL *conn) {
   }
 
   mysql_free_result(qres);
-  logger(L_SUCCESS, 1, "Build playertree successfully...");
+  logger(L_SUCCESS, "Build playertree successfully...");
   return rbtree;
 }
 
@@ -141,8 +140,8 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
     "order by points desc";
 
   if (mysql_query(conn, query)) {
-    logger("error", 1, "Query to database failed");
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, "Query to database failed");
+    logger(L_ERROR, mysql_error(conn));
     return -1;
   }
 
@@ -184,8 +183,8 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   char query[QUERY_L] = "SELECT username, win, draw, loss, points FROM players ORDER BY points DESC LIMIT 10";
 
   if (mysql_query(conn, query)) {
-    logger("error", 1, "Query to database failed");
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, "Query to database failed");
+    logger(L_ERROR, mysql_error(conn));
     return;
   }
 
@@ -259,8 +258,8 @@ void profile(MYSQL *conn, Request *req, Response *res) {
   }
 
   if (mysql_query(conn, query)) {
-    logger("error", 1, "Query to database failed");
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, "Query to database failed");
+    logger(L_ERROR, mysql_error(conn));
     return;
   }
 

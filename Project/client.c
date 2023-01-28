@@ -31,19 +31,19 @@ void exit_safely() {
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      logger(L_WARN, 1, "Caught signal Ctrl + C, coming out...\n");
+      logger(L_WARN, "Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      logger(L_WARN, 1, "Caught signal Ctrl + \\, coming out...\n");
+      logger(L_WARN, "Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      logger(L_WARN, 1, "The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      logger(L_WARN, "The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
     case SIGTERM:
-      logger(L_WARN, 1, "The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      logger(L_WARN, "The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      logger(L_WARN, 1, "Killing the program, coming out...\n");
+      logger(L_WARN, "Killing the program, coming out...\n");
       break;
     default: break;
   }

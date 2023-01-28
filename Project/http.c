@@ -166,7 +166,7 @@ int server_init(char *service) {
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
         exit(FAILURE);
       }
-      logger(L_SUCCESS, 1, "Server listening at: ");
+      logger(L_SUCCESS, "Server listening at: ");
       print_socket_addr((struct sockaddr *) &localAddr, stdout);
       fputc('\n', stdout);
       break;
@@ -190,7 +190,7 @@ int connect2server(char *server, char *port) {
 
   struct addrinfo *servAddr;
   if (getaddrinfo(server, port, &addrConfig, &servAddr) != 0) {
-    logger(L_ERROR, 1, "Can't find server address...");
+    logger(L_ERROR, "Can't find server address...");
     exit(FAILURE);
   }
 

@@ -35,7 +35,7 @@ static void game_rel(void *p) { free(p); }
 GameTree *game_new() {
   rbtree_t *rbtree;
   rbtree = rbnew(game_cmp, game_dup, game_rel);
-  logger(L_SUCCESS, 1, "Build game tree successfully...");
+  logger(L_SUCCESS, "Build game tree successfully...");
   return rbtree;
 }
 
@@ -65,7 +65,7 @@ int game_add(GameTree *gametree, Game new_game) {
 
   ret = rbinsert(gametree, (void *)game);
   if (ret == 0) {
-    logger(L_ERROR, 1, "Can't insert new game for players");
+    logger(L_ERROR, "Can't insert new game for players");
     free(game);
     return -1;
   }
@@ -82,7 +82,7 @@ int game_delete(GameTree *gametree, int id) {
 
   ret = rberase(gametree, (void *)game);
   if (ret == 0) {
-    logger(L_ERROR, 1, "Can't delete game id: ", itoa(id, 10));
+    logger(L_ERROR, "Can't delete game id: %d", id);
     free(game);
     return -1;
   }

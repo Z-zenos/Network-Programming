@@ -290,9 +290,8 @@ char *itoa(int value, int base) {
   return result;
 }
 
-void logger(char *type, int argc, ...) {
-  va_list ptr;
-  va_start(ptr, argc);
+void logger(char *type, const char *format, ...) {
+  va_list args;
 
   printf("\n");
   if(strcmp(type, L_ERROR) == 0)   printf("\x1b[1;38;5;196m[x]  ");
@@ -300,11 +299,11 @@ void logger(char *type, int argc, ...) {
   if(strcmp(type, L_WARN) == 0)    printf("\x1b[1;38;5;226m[!]  ");
   if(strcmp(type, L_INFO) == 0)    printf("\x1b[1;38;5;202m[i]  ");
 
-  for (int i = 0; i < argc; i++)
-    printf("%s", va_arg(ptr, char*));
-
+  va_start(args, format);
+  vprintf(format, args);
+  va_end(args);
   printf("\x1b[0m");
-  va_end(ptr);
+  fflush(stdout);
 }
 
 void time_print(char *addr, char *cmd, char *path, char *params, int nbytes) {

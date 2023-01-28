@@ -23,19 +23,19 @@ int send_type;
 void signalHandler(int signo) {
   switch (signo) {
     case SIGINT:
-      logger(L_WARN, 1, "Caught signal Ctrl + C, coming out...\n");
+      logger(L_WARN, "Caught signal Ctrl + C, coming out...\n");
       break;
     case SIGQUIT:
-      logger(L_WARN, 1, "Caught signal Ctrl + \\, coming out...\n");
+      logger(L_WARN, "Caught signal Ctrl + \\, coming out...\n");
       break;
     case SIGHUP:
-      logger(L_WARN, 1, "The terminal with the program (or some other parent if relevant) dies, coming out...\n");
+      logger(L_WARN, "The terminal with the program (or some other parent if relevant) dies, coming out...\n");
       break;
     case SIGTERM:
-      logger(L_WARN, 1, "The termination request (sent by the kill program by default and other similar tools), coming out...\n");
+      logger(L_WARN, "The termination request (sent by the kill program by default and other similar tools), coming out...\n");
       break;
     case SIGUSR1:
-      logger(L_WARN, 1, "Killing the program, coming out...\n");
+      logger(L_WARN, "Killing the program, coming out...\n");
       break;
   }
 
@@ -67,11 +67,11 @@ void disconnect(ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Resp
 
 void connect_database(MYSQL *conn) {
   if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
-    logger(L_ERROR, 1, "Connect to database failed !");
+    logger(L_ERROR, "Connect to database failed !");
     mysql_close(conn);
     exit(FAILURE);
   }
-  logger(L_SUCCESS, 1, "Connect database successfully...");
+  logger(L_SUCCESS, "Connect database successfully...");
 }
 
 int route(char *path, char *route_name) { return str_start_with(path, route_name); }
@@ -203,7 +203,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
     if(threadArgs == NULL) {
-      logger(L_ERROR, 1, "malloc() failed");
+      logger(L_ERROR, "malloc() failed");
       close(server_fd);
       exit(FAILURE);
     }
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
   PlayerTree *playertree;
 
   if(conn == NULL) {
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, mysql_error(conn));
     exit(FAILURE);
   }
 

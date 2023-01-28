@@ -84,7 +84,7 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   );
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
@@ -110,7 +110,7 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   );
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, mysql_error(conn));
     responsify(res, 400, NULL, "Create new account failed", SEND_ME);
     return FAILURE;
   }
@@ -147,7 +147,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Request *r
   );
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
@@ -207,7 +207,7 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   );
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
@@ -236,8 +236,8 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   );
 
   if (mysql_query(conn, query)) {
-    logger("error", 1, "Query to database failed");
-    logger(L_ERROR, 1, mysql_error(conn));
+    logger(L_ERROR, "Query to database failed");
+    logger(L_ERROR, mysql_error(conn));
     responsify(res, 400, NULL, "Internal server error", SEND_ME);
     return FAILURE;
   }
