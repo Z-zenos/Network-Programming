@@ -1,6 +1,3 @@
-- Tạo mật khẩu dài hơn 10 hay mấy kí tự ý bị lỗi không hash được
-- Chưa gửi dữ liệu cho tất cả những người đang tham gia(cả người chơi và người xem) 1 ván cờ trong game_handler
-- Chưa làm chat
-- Phần rank thiếu rank của người đang gửi request
 - Chưa mutex req, res object
 - Chưa test nhiều client
+- Chưa test kết nối với java 
