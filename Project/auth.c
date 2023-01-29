@@ -38,7 +38,7 @@ char *encrypt(char *password) {
   SHA256_Init(&context);
   SHA256_Update(&context, (unsigned char*)password, strlen(password));
   SHA256_Final(md, &context);
-  char *converter = (char*)malloc(63);
+  char *converter = (char*)malloc(64);
   int i, k = 0;
   for(i = 0; i < sizeof(md); i++) {
     k += sprintf(converter + k, "%x", md[i]);

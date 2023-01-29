@@ -293,7 +293,6 @@ char *itoa(int value, int base) {
 void logger(char *type, const char *format, ...) {
   va_list args;
 
-  printf("\n");
   if(strcmp(type, L_ERROR) == 0)   printf("\x1b[1;38;5;196m[x]  ");
   if(strcmp(type, L_SUCCESS) == 0) printf("\x1b[1;38;5;47m[\xE2\x9C\x93]  ");
   if(strcmp(type, L_WARN) == 0)    printf("\x1b[1;38;5;226m[!]  ");
@@ -302,7 +301,7 @@ void logger(char *type, const char *format, ...) {
   va_start(args, format);
   vprintf(format, args);
   va_end(args);
-  printf("\x1b[0m");
+  printf("\x1b[0m\n");
   fflush(stdout);
 }
 

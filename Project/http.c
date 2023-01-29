@@ -166,8 +166,7 @@ int server_init(char *service) {
       if(getsockname(server_fd, (struct sockaddr *) &localAddr, &addrSize) < 0) {
         exit(FAILURE);
       }
-      logger(L_SUCCESS, "Server listening at: ");
-      print_socket_addr((struct sockaddr *) &localAddr, stdout);
+      logger(L_SUCCESS, "Server listening at: %s", socket_addr((struct sockaddr *) &localAddr));
       fputc('\n', stdout);
       break;
     }
