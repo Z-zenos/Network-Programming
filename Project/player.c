@@ -42,6 +42,8 @@ int player_add(PlayerTree *playertree, Player new_player) {
   player->id = new_player.id;
   strcpy(player->username, new_player.username);
   strcpy(player->password, new_player.password);
+  strcpy(player->avatar, new_player.avatar);
+  player->game = new_player.game;
   player->sock = 0;
   player->achievement = new_player.achievement;
 
@@ -80,11 +82,13 @@ PlayerTree *player_build(MYSQL *conn) {
     player.id = atoi(row[0]);
     strcpy(player.username, row[1]);
     strcpy(player.password, row[2]);
-    player.achievement.win = atoi(row[3]);
-    player.achievement.loss = atoi(row[4]);
-    player.achievement.draw = atoi(row[5]);
-    player.achievement.streak = atoi(row[6]);
-    player.achievement.points = atoi(row[7]);
+    strcpy(player.avatar, row[3]);
+    player.game = atoi(row[4]);
+    player.achievement.win = atoi(row[5]);
+    player.achievement.loss = atoi(row[6]);
+    player.achievement.draw = atoi(row[7]);
+    player.achievement.streak = atoi(row[8]);
+    player.achievement.points = atoi(row[9]);
     player.sock = 0;
     player_add(rbtree, player);
   }
@@ -106,7 +110,11 @@ Player *player_find(PlayerTree *playertree, int player_id) {
 }
 
 void player_print(Player *player) {
-  printf("id %d - username: %s - password: %s - won: %d - draw: %d - loss: %d - streak: %d - points: %d\n", player->id, player->username, player->password, player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points);
+  printf(
+    "id %d - username: %s - password: %s - avatar: %s - game: %d - win: %d - draw: %d - loss: %d - streak: %d - points: %d\n",
+    player->id, player->username, player->password, player->avatar, player->game,
+    player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points
+    );
 }
 
 void player_info(PlayerTree *playertree) {
@@ -135,7 +143,7 @@ char *player_username(PlayerTree *playertree, int player_id) {
 int my_rank(MYSQL *conn, int player_id, char *dataStr) {
   // TODO: QUERY find rank of specified player id
   char query[QUERY_L] = ""
-    "select er.id, er.username, er.win, er.draw, er.loss, er.points, (@rank := if(@points = points, @rank, if(@points := points, @rank + 1, @rank + 1))) as ranking "
+    "select er.id, er.username, er.avatar, er.game, er.win, er.draw, er.loss, er.points, (@rank := if(@points = points, @rank, if(@points := points, @rank + 1, @rank + 1))) as ranking "
     "from players er cross join (select @rank := 0, @points := -1) params "
     "order by points desc";
 
@@ -159,10 +167,10 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
 
   while ((row = mysql_fetch_row(qres))) {
     if(strcmp(row[0], idStr) == 0) {
-      sprintf(line, "username=%s&win=%d&draw=%d&loss=%d&points=%d", row[1], atoi(row[2]), atoi(row[3]), atoi(row[4]), atoi(row[5]));
+      sprintf(line, "username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d", row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]));
       strcat(dataStr, line);
       mysql_free_result(qres);
-      return atoi(row[6]);
+      return atoi(row[8]);
     }
   }
 
@@ -180,7 +188,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   }
 
   // TODO: QUERY follow points from database
-  char query[QUERY_L] = "SELECT username, win, draw, loss, points FROM players ORDER BY points DESC LIMIT 10";
+  char query[QUERY_L] = "SELECT username, avatar, game, win, draw, loss, points FROM players ORDER BY points DESC LIMIT 10";
 
   if (mysql_query(conn, query)) {
     logger(L_ERROR, "Query to database failed");
@@ -203,12 +211,19 @@ void rank(MYSQL *conn, Request *req, Response *res) {
 
   while ((row = mysql_fetch_row(qres))) {
     strcpy(player[i].username, row[0]);
-    player[i].achievement.win = atoi(row[1]);
-    player[i].achievement.draw = atoi(row[2]);
-    player[i].achievement.loss = atoi(row[3]);
-    player[i].achievement.points = atoi(row[4]);
-    char line[100];
-    sprintf(line, "username=%s&win=%d&draw=%d&loss=%d&points=%d;", player[i].username, player[i].achievement.win, player[i].achievement.draw, player[i].achievement.loss, player[i].achievement.points);
+    strcpy(player[i].avatar, row[1]);
+    player[i].game = atoi(row[2]);
+    player[i].achievement.win = atoi(row[3]);
+    player[i].achievement.draw = atoi(row[4]);
+    player[i].achievement.loss = atoi(row[5]);
+    player[i].achievement.points = atoi(row[6]);
+    char line[1000];
+    sprintf(
+      line,
+      "username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d;",
+      player[i].username, player[i].avatar, player[i].game, player[i].achievement.win,
+      player[i].achievement.draw, player[i].achievement.loss, player[i].achievement.points
+    );
     strcat(dataStr, line);
     i++;
   }
@@ -246,12 +261,12 @@ void profile(MYSQL *conn, Request *req, Response *res) {
   switch (type) {
     // if key = 0 -> info is player id
     case 0:
-      sprintf(query, "SELECT id, username, win, draw, loss, points FROM players WHERE id = %d", atoi(key));
+      sprintf(query, "SELECT id, username, avatar, game, win, draw, loss, points FROM players WHERE id = %d", atoi(key));
       break;
 
     // if key = 1 -> info is username
     case 1:
-      sprintf(query, "SELECT id, username, win, draw, loss, points FROM players WHERE username = '%s'", key);
+      sprintf(query, "SELECT id, username, avatar, game, win, draw, loss, points FROM players WHERE username = '%s'", key);
       break;
 
     default: break;
@@ -275,8 +290,8 @@ void profile(MYSQL *conn, Request *req, Response *res) {
   while ((row = mysql_fetch_row(qres))) {
     sprintf(
       dataStr,
-      "username=%s&win=%d&draw=%d&loss=%d&streak=%d&points=%d&rank=%d",
-      row[1], atoi(row[2]), atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), my_rank(conn, type ? atoi(row[0]) : atoi(key), tmp)
+      "username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&streak=%d&points=%d&rank=%d",
+      row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]), atoi(row[8]), my_rank(conn, type ? atoi(row[0]) : atoi(key), tmp)
     );
   }
 

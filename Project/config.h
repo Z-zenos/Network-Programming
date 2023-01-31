@@ -4,6 +4,7 @@
 #define INPUT_L 1000
 #define PASSWORD_L 50
 #define USERNAME_L 50
+#define AVATAR_L 255
 
 #define CMD_L 10
 #define PATH_L 32

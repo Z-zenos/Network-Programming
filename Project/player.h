@@ -18,6 +18,8 @@ typedef struct Achievement {
 typedef struct User {
   int id;
   int sock;
+  int game;
+  char avatar[AVATAR_L];
   char username[USERNAME_L];
   char password[PASSWORD_L];
   Achievement achievement;
@@ -32,6 +34,7 @@ Player *player_find(PlayerTree *, int);
 void player_info(PlayerTree *);
 int player_fd(PlayerTree *, int);
 char *player_username(PlayerTree *, int);
+int my_rank(MYSQL *, int, char *);
 void rank(MYSQL *, Request *, Response *);
 void profile(MYSQL *, Request *, Response *);
 

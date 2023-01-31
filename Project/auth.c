@@ -64,10 +64,13 @@ bool compare_password(char *password_input, unsigned char *password_db) {
 }
 
 int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
-  char username[USERNAME_L], password[PASSWORD_L];
+  char username[USERNAME_L], password[PASSWORD_L], avatar[AVATAR_L];
 
   // TODO: Get username, password from client
-  sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password);
+  if(sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]&avatar=%[A-Za-z0-9/.]", username, password, avatar) != 3) {
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: AUTH /account/register username=...&password=...&avatar=...", SEND_ME);
+    return FAILURE;
+  }
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
@@ -105,8 +108,8 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   str_clear(query);
   sprintf(
     query,
-    "INSERT INTO players(username, password) VALUES('%s', '%s')",
-    username, pwd_encrypted
+    "INSERT INTO players(username, password, avatar) VALUES('%s', '%s', '%s')",
+    username, pwd_encrypted, avatar
   );
 
   if (mysql_query(conn, query)) {
@@ -116,7 +119,17 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   }
 
   playertree = player_build(conn);
-  responsify(res, 201, "register_success", NULL, "Create new account successfully", SEND_ME);
+
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  sprintf(
+    dataStr,
+    "id=%d&username=%s&password=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d&rank=%d",
+    (int)mysql_insert_id(conn), username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
+  );
+
+  responsify(res, 201, "register_success", dataStr, "Create new account successfully", SEND_ME);
   return SUCCESS;
 }
 
@@ -125,8 +138,8 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
   char username[USERNAME_L], password[PASSWORD_L];
 
   // TODO: Get username, password from client
-  if(sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password) != 3) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: AUTH /account/signin sock=...&username=...&password=...", SEND_ME);
+  if(sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password) != 2) {
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: AUTH /account/signin username=...&password=...", SEND_ME);
     return FAILURE;
   }
 
@@ -140,9 +153,10 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
 
   // TODO: Authen account
   char query[QUERY_L];
+  memset(query, '\0', QUERY_L);
   sprintf(
     query,
-    "SELECT id, username, password FROM players WHERE username = '%s' AND password = '%s'",
+    "SELECT * FROM players WHERE username = '%s' AND password = '%s'",
     username, pwd_encrypted
   );
 
@@ -171,11 +185,20 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
     return FAILURE;
   }
 
-  mysql_free_result(qres);
   char dataStr[DATA_L];
+  int rank = my_rank(conn, player_id, dataStr);
   memset(dataStr, '\0', DATA_L);
-  sprintf(dataStr, "username=%s&password=%s", username, pwd_encrypted);
-  responsify(res, 200, "log_success", dataStr, "Login successfully", SEND_ME);
+
+  sprintf(
+    dataStr,
+    "id=%d&username=%s&password=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d&rank=%d",
+    player_found->id, username, pwd_encrypted, player_found->avatar, player_found->game, player_found->achievement.win,
+    player_found->achievement.draw, player_found->achievement.loss, player_found->achievement.points, rank
+  );
+
+  mysql_free_result(qres);
+
+  responsify(res, 200, "login_success", dataStr, "Login successfully", SEND_ME);
   return SUCCESS;
 }
 

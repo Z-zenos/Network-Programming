@@ -243,7 +243,7 @@ int get_res(int server_fd, Response *res) {
 
 int send_res(int *receiver, Response res) {
   char resStr[RES_L];
-  sprintf(resStr, "code: %d\r\nstate: %s\r\ndata: %s\r\nmessage: %s\n", res.code, res.state, res.data, res.message);
+  sprintf(resStr, "code: %d,state: %s,data: %s,message: %s\n", res.code, res.state, res.data, res.message);
   size_t res_l = strlen(resStr);
   for(int i = 0; i < MAX_SPECTATOR + 2; i++)
     if(receiver[i] > 0) send(receiver[i], resStr, res_l, 0);
