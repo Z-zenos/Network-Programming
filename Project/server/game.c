@@ -56,6 +56,7 @@ int game_add(GameTree *gametree, Game new_game) {
   game->num_move = new_game.num_move;
   game->col = new_game.col;
   game->row = new_game.row;
+  strcpy(game->password, new_game.password);
   for ( int i = 0; i < BOARD_S; ++i ){
     memcpy(game->board[i], new_game.board[i], sizeof new_game.board[i]);
   }
@@ -178,9 +179,14 @@ void game_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Reque
 
 void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int player_id;
+  char game_pwd[PASSWORD_L];
+  memset(game_pwd, '\0', PASSWORD_L);
 
   // TODO: Get player id
-  sscanf(req->header.params, "player_id=%d", &player_id);
+  if(sscanf(req->header.params, "player_id=%d&password=%s", &player_id, game_pwd) != 2) {
+    responsify(res, 400, NULL, NULL, "Bad request: Usage: PLAY /game/create player_id=...&password=...", SEND_ME);
+    return;
+  }
 
   // TODO: random first turn for game board
   int r = rand() % 2;
@@ -202,6 +208,8 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
     .row = 0,
   };
 
+  strcpy(new_game.password, game_pwd);
+
   for ( int i = 0; i < BOARD_S; ++i ){
     memset(new_game.board[i], '_', sizeof new_game.board[i]);
   }
@@ -215,7 +223,7 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
-  sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
+  sprintf(dataStr, "game_id=%d&password=%s&turn=%c", new_game.id, game_pwd, new_game.turn);
   responsify(res, 200, "game_created", dataStr, "Create new game successfully", SEND_ME);
   return;
 }

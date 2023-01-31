@@ -247,6 +247,7 @@ int main(int argc, char *argv[]) {
     } ,
     .col = 1,
     .row = 0,
+    .password = "123"
   };
   memset(g.joiner, 0, sizeof g.joiner);
 

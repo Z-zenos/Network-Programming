@@ -188,7 +188,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   }
 
   // TODO: QUERY follow points from database
-  char query[QUERY_L] = "SELECT username, avatar, game, win, draw, loss, points FROM players ORDER BY points DESC LIMIT 10";
+  char query[QUERY_L] = "SELECT id, username, avatar, win, loss, points FROM players ORDER BY points DESC LIMIT 10";
 
   if (mysql_query(conn, query)) {
     logger(L_ERROR, "Query to database failed");
@@ -210,19 +210,18 @@ void rank(MYSQL *conn, Request *req, Response *res) {
   memset(dataStr, '\0', sizeof dataStr);
 
   while ((row = mysql_fetch_row(qres))) {
-    strcpy(player[i].username, row[0]);
-    strcpy(player[i].avatar, row[1]);
-    player[i].game = atoi(row[2]);
+    player[i].id = atoi(row[0]);
+    strcpy(player[i].username, row[1]);
+    strcpy(player[i].avatar, row[2]);
     player[i].achievement.win = atoi(row[3]);
-    player[i].achievement.draw = atoi(row[4]);
-    player[i].achievement.loss = atoi(row[5]);
-    player[i].achievement.points = atoi(row[6]);
+    player[i].achievement.loss = atoi(row[4]);
+    player[i].achievement.points = atoi(row[5]);
     char line[1000];
     sprintf(
       line,
-      "username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d;",
-      player[i].username, player[i].avatar, player[i].game, player[i].achievement.win,
-      player[i].achievement.draw, player[i].achievement.loss, player[i].achievement.points
+      "id=%d&username=%s&avatar=%s&win=%d&loss=%d&points=%d;",
+      player[i].id, player[i].username, player[i].avatar, player[i].achievement.win,
+      player[i].achievement.loss, player[i].achievement.points
     );
     strcat(dataStr, line);
     i++;
@@ -230,7 +229,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
 
   mysql_free_result(qres);
   my_rank(conn, player_id, dataStr);
-  responsify(res, 200, NULL, dataStr, "Get rank successfully", SEND_ME);
+  responsify(res, 200, "rank", dataStr, "Get rank successfully", SEND_ME);
 }
 
 void profile(MYSQL *conn, Request *req, Response *res) {

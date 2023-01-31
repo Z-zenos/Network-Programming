@@ -16,6 +16,7 @@ typedef struct Game {
   int chat_id;
 
   char board[BOARD_S][BOARD_S];
+  char password[PASSWORD_L];
 
   int views;
 
