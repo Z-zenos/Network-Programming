@@ -167,12 +167,12 @@ void game_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Reque
     mysql_query(conn, query);
 
     sprintf(dataStr, "win=%d", player_id);
-    responsify(res, 200, dataStr, "Player id win", SEND_JOINER);
+    responsify(res, 200, NULL, dataStr, "Player id win", SEND_JOINER);
     return;
   }
 
   sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
-  responsify(res, 200, dataStr, NULL, SEND_JOINER);
+  responsify(res, 200, NULL, dataStr, NULL, SEND_JOINER);
   return;
 }
 
@@ -216,7 +216,7 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
   sprintf(dataStr, "game_id=%d&turn=%c", new_game.id, new_game.turn);
-  responsify(res, 200, dataStr, "Create new game successfully", SEND_ME);
+  responsify(res, 200, "game_created", dataStr, "Create new game successfully", SEND_ME);
   return;
 }
 
@@ -237,7 +237,7 @@ void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
 
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
-    responsify(res, 400, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]", SEND_ME);
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]", SEND_ME);
     return;
   }
 
@@ -246,13 +246,13 @@ void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
 
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, msgStr, SEND_ME);
+    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
     return;
   }
 
   ++game_found->views;
   if(game_found->views > MAX_SPECTATOR) {
-    responsify(res, 403, NULL, "Max spectators reached", SEND_ME);
+    responsify(res, 403, NULL, NULL, "Max spectators reached", SEND_ME);
     return;
   }
 
@@ -272,7 +272,7 @@ void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
   );
 
   sprintf(msgStr, "You have become a spectator of the game [%d]", game_id);
-  responsify(res, 200, dataStr, msgStr, SEND_JOINER);
+  responsify(res, 200, NULL, dataStr, msgStr, SEND_JOINER);
   return;
 }
 
@@ -285,7 +285,7 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
 
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...", SEND_ME);
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...", SEND_ME);
     return;
   }
 
@@ -296,7 +296,7 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
 
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, msgStr, SEND_ME);
+    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
     return;
   }
 
@@ -317,7 +317,7 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
     game_board2string(game_found->board), game_found->col, game_found->row
   );
 
-  responsify(res, 200, dataStr, "Join game successfully", SEND_JOINER);
+  responsify(res, 200, "game_joined", dataStr, "Join game successfully", SEND_JOINER);
   return;
 }
 
@@ -329,7 +329,7 @@ void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
 
   // TODO: Get player id if exists and game id from user
   if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, "Bad request. Usage: PLAY /game/quit game_id=...&player_id=...", SEND_ME);
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/quit game_id=...&player_id=...", SEND_ME);
     return;
   }
 
@@ -338,7 +338,7 @@ void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
 
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, msgStr, SEND_ME);
+    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
     return;
   }
 
@@ -367,7 +367,7 @@ void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
   );
 
   // TODO: Send response to quited player
-  responsify(res, 200, dataStr, "Quit game successfully", SEND_JOINER);
+  responsify(res, 200, "game_exited", dataStr, "Quit game successfully", SEND_JOINER);
   return;
 }
 

@@ -55,7 +55,7 @@ void disconnect(ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Resp
   int player_id, client_fd;
 
   if(sscanf(req->header.params, "sock=%d&player_id=%d", &client_fd, &player_id) != 2) {
-    responsify(res, 400, NULL, "Bad request. Usage: EXIT /exit sock=...&player_id=...", SEND_ME);
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: EXIT /exit sock=...&player_id=...", SEND_ME);
     return;
   }
 
@@ -121,7 +121,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   }
 
   else if (strcmp(cmd, "AUTH") == 0) {
-    if(route(path, "/account/login")) signin(conn, playertree, &req, &res);
+    if(route(path, "/account/login")) signin(clnt_addr, conn, playertree, &req, &res);
     if(route(path, "/account/register")) signup(conn, playertree, &req, &res);
 //    if(route(path, "/account/logout")) signout(conn, playertree, &req, &res);
   }
@@ -144,7 +144,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     if(route(path, "/exit")) disconnect(clnt_addr, playertree, &req, &res);
   }
   else {
-    responsify(&res, 404, NULL, "Resource does not exist", SEND_ME);
+    responsify(&res, 404, NULL, NULL, "Resource does not exist", SEND_ME);
   }
 }
 

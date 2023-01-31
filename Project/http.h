@@ -49,6 +49,7 @@ typedef struct Response {
   int code;
   char data[DATA_L];
   char message[MESSAGE_L];
+  char state[STATE_L];
   int send_type;
 } Response;
 
@@ -68,7 +69,7 @@ void req_parse(Request *, char *);
 /* Parse string to response object */
 void res_parse(Response *, char *);
 void requestify(Request *, char *, char *, int, char *, char *);
-void responsify(Response *, int, char *, char *, int);
+void responsify(Response *, int, char *, char *, char *,  int);
 
 void print_socket_addr(const struct sockaddr *, FILE *);
 char *socket_addr(const struct sockaddr *);

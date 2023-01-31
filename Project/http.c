@@ -18,6 +18,7 @@ void cleanup(Request *req, Response *res, int *receiver) {
   memset(req->header.params, '\0', PARAM_L);
   memset(req->body.content, '\0', CONTENT_L);
   memset(res->data, '\0', DATA_L);
+  memset(res->state, '\0', STATE_L);
   memset(res->message, '\0', MESSAGE_L);
   memset(receiver, 0, MAX_SPECTATOR + 2);
 }
@@ -48,8 +49,9 @@ void res_print(Response res) {
   printf("\n========\n");
 }
 
-void responsify(Response *res, int code, char *data, char *msg, int send_type) {
+void responsify(Response *res, int code, char *state, char *data, char *msg, int send_type) {
   res->code = code;
+  strcpy(res->state, state ? state : "null");
   strcpy(res->data, data ? data : "null");
   strcpy(res->message, msg ? msg : "null");
   res->send_type = send_type;
@@ -241,7 +243,7 @@ int get_res(int server_fd, Response *res) {
 
 int send_res(int *receiver, Response res) {
   char resStr[RES_L];
-  sprintf(resStr, "code: %d\r\ndata: %s\r\nmessage: %s", res.code, res.data, res.message);
+  sprintf(resStr, "code: %d\r\nstate: %s\r\ndata: %s\r\nmessage: %s\n", res.code, res.state, res.data, res.message);
   size_t res_l = strlen(resStr);
   for(int i = 0; i < MAX_SPECTATOR + 2; i++)
     if(receiver[i] > 0) send(receiver[i], resStr, res_l, 0);
