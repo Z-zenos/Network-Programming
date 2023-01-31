@@ -46,10 +46,10 @@
       <Layout>
         <DimensionLayout dim="0">
           <Group type="103" groupAlignment="0" attributes="0">
-              <Component id="jLabel1" alignment="0" max="32767" attributes="0"/>
+              <Component id="jLabel1" alignment="0" pref="654" max="32767" attributes="0"/>
               <Group type="102" alignment="1" attributes="0">
-                  <EmptySpace max="32767" attributes="0"/>
-                  <Component id="jScrollPane1" min="-2" pref="363" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jScrollPane1" max="32767" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
           </Group>
@@ -108,7 +108,7 @@
               </Events>
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new javax.swing.JTable()"/>
-                <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="Object[][] rows = {&#xa;};&#xa;String[] columns = {&quot;Nickname&quot;,&quot;&#x110;i&#x1ec3;m&quot;,&quot;Rank&quot;};&#xa;DefaultTableModel model = new DefaultTableModel(rows, columns){&#xa;    @Override&#xa;    public Class&lt;?&gt; getColumnClass(int column){&#xa;        switch(column){&#xa;            case 0: return String.class;&#xa;            case 1: return String.class;&#xa;            case 2: return ImageIcon.class;&#xa;            default: return Object.class;&#xa;        }&#xa;    }&#xa;};"/>
+                <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="Object[][] rows = {&#xa;};&#xa;String[] columns = {&quot;Th&#x1ee9; t&#x1ef1;&quot;, &quot;Username&quot;, &quot;Avatar&quot;, &quot;win&quot;, &quot;loss&quot;, &quot;points&quot;, &quot;rank&quot;};&#xa;DefaultTableModel model = new DefaultTableModel(rows, columns){&#xa;    @Override&#xa;    public Class&lt;?&gt; getColumnClass(int column){&#xa;        switch(column){&#xa;            case 0: return String.class;&#xa;            case 1: return String.class;&#xa;            case 2: return ImageIcon.class;&#xa;            case 3: return String.class;&#xa;            case 4: return String.class;&#xa;            case 5: return String.class;&#xa;            case 6: return ImageIcon.class;&#xa;            default: return Object.class;&#xa;        }&#xa;    }&#xa;};"/>
               </AuxValues>
             </Component>
           </SubComponents>

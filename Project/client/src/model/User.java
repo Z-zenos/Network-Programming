@@ -35,6 +35,15 @@ public class User {
     this.points = points;
     this.rank = rank;
   }
+  
+  public User(int ID, String username, String avatar, int numberOfWin, int numberOfLoss, int points) {
+    this.ID = ID;
+    this.username = username;
+    this.avatar = avatar;
+    this.numberOfWin = numberOfWin;
+    this.numberOfLoss = numberOfLoss;
+    this.points = points;
+  }
 
   public int getRank() {
     return rank;

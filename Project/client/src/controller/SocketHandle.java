@@ -40,30 +40,24 @@ public class SocketHandle implements Runnable {
   
   public List<User> getListRank(String data){
     String[] splitter = data.split(";");
-    List<User> friend = new ArrayList<>();
-    Pattern pattern = Pattern.compile(
-        "id=(\\d+)&username=([a-zA-Z0-9]+)&password=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)&"
-          + "game=(\\d+)&win=(\\d+)&draw=(\\d+)&loss=(\\d+)&points=(\\d+)&rank=(\\d+)"
-      );
+    List<User> player = new ArrayList<>();
+    Pattern pattern = Pattern.compile("id=(\\d+)&username=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)&win=(\\d+)&loss=(\\d+)&points=(-?\\d+)");
     Matcher m;
     for(int i = 0; i < splitter.length; i++){
       m = pattern.matcher(splitter[i]);
-      m.find();
-      friend.add(new User(
-          Integer.parseInt(m.group(1)), 
-          m.group(2), 
-          m.group(3), 
-          m.group(4), 
-          Integer.parseInt(m.group(5)), 
-          Integer.parseInt(m.group(6)), 
-          Integer.parseInt(m.group(7)), 
-          Integer.parseInt(m.group(8)), 
-          Integer.parseInt(m.group(9)), 
-          Integer.parseInt(m.group(10))
-        )
-      );
+      if(m.find()) {
+        player.add(new User(
+            Integer.parseInt(m.group(1)), 
+            m.group(2), 
+            m.group(3), 
+            Integer.parseInt(m.group(4)), 
+            Integer.parseInt(m.group(5)), 
+            Integer.parseInt(m.group(6))
+          )
+        );
+      }
     }
-    return friend;
+    return player;
   }
   
   // data: id=...&username=...&password=...&avatar=...&game=...&win=...&draw=...&loss=...&points=...&rank=...
@@ -196,12 +190,12 @@ public class SocketHandle implements Runnable {
 //          JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");
 //        }
 //        
-//        // Xử lý xem rank
-//        if(messageSplit[0].equals("return-get-rank-charts")){
-//          if(Client.rankFrm != null){
-//            Client.rankFrm.setDataToTable(getListRank(messageSplit));
-//          }
-//        }
+        // Xử lý xem rank
+        if(res.getState().equals("rank")){
+          if(Client.rankFrm != null){
+            Client.rankFrm.setDataToTable(getListRank(res.getData()));
+          }
+        }
 //        
 //        // Xử lý lấy danh sách phòng
 //        if(messageSplit[0].equals("room-list")){
@@ -252,14 +246,15 @@ public class SocketHandle implements Runnable {
 //          Client.gameClientFrm.newgame();
 //        }
 //        
-//        // Tạo phòng và server trả về tên phòng
-//        if(messageSplit[0].equals("your-created-room")){
-//          Client.closeAllViews();
-//          Client.openView(Client.View.WAITINGROOM);
-//          Client.waitingRoomFrm.setRoomName(messageSplit[1]);
+        // Tạo phòng và server trả về tên phòng
+        if(res.getState().equals("game_created")){
+          Client.closeAllViews();
+          Client.openView(Client.View.WAITINGROOM);
+          String[] data = res.parseData("game_id=(\\d+)&password=([a-zA-Z0-9]+)");
+          Client.waitingRoomFrm.setRoomName(data[0]);
 //          if(messageSplit.length == 3)
-//            Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + messageSplit[2]);
-//        }
+          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + data[1]);
+        }
 //        
 //        // Xử lý yêu cầu kết bạn tới
 //        if(messageSplit[0].equals("make-friend-request")){

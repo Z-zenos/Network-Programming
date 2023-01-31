@@ -19,7 +19,7 @@ public class Response {
 
   public Response(String response) {
     Pattern pattern = Pattern.compile(
-      "code: (\\d+),state: ([a-zA-Z0-9_]+),data: ([a-zA-Z0-9&=/\\.]+),message: (.+)"
+      "code: (\\d+),state: ([a-zA-Z0-9_]+),data: ([a-zA-Z0-9&=/\\.;-]+),message: (.+)"
     );
     Matcher m = pattern.matcher(response);
     m.find();
@@ -45,4 +45,15 @@ public class Response {
     return message;
   }
 
+  public String[] parseData(String format) {
+    Pattern pattern = Pattern.compile(format);
+    Matcher m = pattern.matcher(this.getData());
+    int i = 1;
+    String[] splitter = {};
+    while(m.find()) {
+      splitter[i - 1] = m.group(i);
+      i++;
+    }
+    return splitter;
+  }
 }
