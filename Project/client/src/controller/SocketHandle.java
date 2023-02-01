@@ -183,13 +183,13 @@ public class SocketHandle implements Runnable {
 //          JOptionPane.showMessageDialog(Client.homePageFrm, "Không tìm thấy phòng");
 //        }
 //        
-//        // Xử lý phòng có mật khẩu sai
-//        if(messageSplit[0].equals("room-wrong-password")){
-//          Client.closeAllViews();
-//          Client.openView(Client.View.HOMEPAGE);
-//          JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");
-//        }
-//        
+        // Xử lý phòng có mật khẩu sai
+        if(messageSplit[0].equals("room-wrong-password")){
+          Client.closeAllViews();
+          Client.openView(Client.View.HOMEPAGE);
+          JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");
+        }
+        
         // Xử lý xem rank
         if(res.getState().equals("rank")){
           if(Client.rankFrm != null){
@@ -204,11 +204,12 @@ public class SocketHandle implements Runnable {
           String[] splitter = res.getData().split(";");
           Pattern p = Pattern.compile("game_id=(\\d+)&password=([a-zA-Z0-9]+)&views=(\\d+)&num_move=(\\d+)&player1_id=(\\d+)&player2_id=(\\d+)");
           Matcher m;
-          for(int i = 1; i < splitter.length; i++){
+          for(int i = 0; i < splitter.length; i++){
             m = p.matcher(splitter[i]);
             if(m.find()) {
               rooms.add("Phòng " + m.group(1));
               passwords.add(m.group(2));
+              System.out.println("Room: " + m.group(1) + " - Password: " + m.group(2));
             }
             
           }

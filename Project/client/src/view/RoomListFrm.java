@@ -47,8 +47,8 @@ public class RoomListFrm extends javax.swing.JFrame {
           try {
             Client.socketHandle.write("GET /game/list\r\nContent-Length: 0\r\nParams: \r\n\r\n");
             
-            // Sau 4s reload list phòng 1 lần 
-            Thread.sleep(4000);
+            // Sau 5s reload list phòng 1 lần 
+            Thread.sleep(5000);
           } catch (IOException ex) {
             JOptionPane.showMessageDialog(rootPane, ex.getMessage());
           } catch (InterruptedException ex) {
