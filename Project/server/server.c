@@ -128,7 +128,8 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   if (strcmp(cmd, "PLAY") == 0) {
     if(route(path, "/game/play")) game_handler(conn, gametree, playertree, &req, &res);
     if(route(path, "/game/create")) game_create(clnt_addr, gametree, playertree, &req, &res);
-    if(route(path, "/game/join")) game_join(clnt_addr, gametree, playertree, &req, &res);
+    if(route(path, "/game/cancel")) game_cancel(gametree, &req, &res);
+    if(route(path, "/game/join")) game_join(conn, clnt_addr, gametree, playertree, &req, &res);
     if(route(path, "/game/quit")) game_quit(clnt_addr, gametree, &req, &res);
   }
 

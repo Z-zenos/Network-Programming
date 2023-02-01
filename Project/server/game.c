@@ -207,8 +207,8 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
     .col = 0,
     .row = 0,
   };
-
-  strcpy(new_game.password, game_pwd);
+  if(strlen(game_pwd) > 0) strcpy(new_game.password, game_pwd);
+  else memset(new_game.password, '\0', PASSWORD_L);
 
   for ( int i = 0; i < BOARD_S; ++i ){
     memset(new_game.board[i], '_', sizeof new_game.board[i]);
@@ -223,10 +223,26 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
-  sprintf(dataStr, "game_id=%d&password=%s&turn=%c", new_game.id, game_pwd, new_game.turn);
+  sprintf(dataStr, "game_id=%d&password=%s", new_game.id, game_pwd);
   responsify(res, 200, "game_created", dataStr, "Create new game successfully", SEND_ME);
   return;
 }
+
+void game_cancel(GameTree *gametree, Request *req, Response *res) {
+  int player_id, game_id;
+
+  // TODO: Get player id
+  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
+    responsify(res, 400, NULL, NULL, "Bad request: Usage: PLAY /game/cancel game_id=...&player_id=...", SEND_ME);
+    return;
+  }
+
+  game_delete(gametree, game_id);
+
+  responsify(res, 200, NULL, NULL, "Cancel game successfully", SEND_ME);
+  return;
+}
+
 
 char *game_board2string(char board[BOARD_S][BOARD_S]) {
   char *boardStr = (char*)calloc('\0', BOARD_S * BOARD_S);
@@ -284,21 +300,18 @@ void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
   return;
 }
 
-void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
+void game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L], game_pwd[PASSWORD_L];
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
   memset(game_pwd, '\0', PASSWORD_L);
 
-
-  // TODO: Get player id if exists and game id from user
+  // TODO: Get game id, player id and password if exists
   if(sscanf(req->header.params, "game_id=%d&player_id=%d&password=%s", &game_id, &player_id, game_pwd) != 3) {
     responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...&password=...", SEND_ME);
     return;
   }
-
-  // TODO: AUTH player: If player haven't registered yet
 
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);
@@ -323,15 +336,19 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
   Player *player_found = player_find(playertree, player_id);
   player_found->sock = clnt_addr.sock;
 
+  Player *opponent = player_find(playertree, (game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id));
+  char tmp[DATA_L];
+  memset(tmp, '\0', DATA_L);
+
   sprintf(
     dataStr,
-    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
-    game_found->id, game_found->turn, game_found->views, game_found->num_move,
-    game_found->player1_id, game_found->player2_id,
-    game_board2string(game_found->board), game_found->col, game_found->row
+    "game_id=%d&is_start=1&ip=127.0.0.1&id=%d&username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d&rank=%d",
+    game_found->id, opponent->id, opponent->username, opponent->avatar, opponent->game,
+    opponent->achievement.win, opponent->achievement.draw, opponent->achievement.loss, opponent->achievement.points,
+    my_rank(conn, opponent->id, tmp)
   );
 
-  responsify(res, 200, "game_joined", dataStr, "Join game successfully", SEND_JOINER);
+  responsify(res, 200, "game_join", dataStr, "Join game successfully", SEND_JOINER);
   return;
 }
 

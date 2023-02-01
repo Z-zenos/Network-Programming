@@ -424,22 +424,29 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jLabel1AncestorMoved
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-      try {
-        Client.socketHandle.write("PLAY /game/create\r\nContent-Length: 0\r\nParams: \r\n\r\n");
+      int res = JOptionPane.showConfirmDialog(rootPane, "Bạn có muốn đặt mật khẩu cho phòng không?", "Tạo phòng", JOptionPane.YES_NO_OPTION);
+      if(res == JOptionPane.YES_OPTION){
         Client.closeView(Client.View.HOMEPAGE);
-      } catch (IOException ex) {
-        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+        Client.openView(Client.View.CREATEROOMPASSWORD);
       }
+      else if(res == JOptionPane.NO_OPTION){
+        try {
+          Client.socketHandle.write(Client.socketHandle.requestify("PLAY", "game/create", 0, "player_id=" + Client.user.getID() + "password=", ""));
+          Client.closeView(Client.View.HOMEPAGE);
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+        }
+      } 
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        try {
-            Client.closeView(Client.View.HOMEPAGE);
-            Client.openView(Client.View.ROOMLIST);
-            Client.socketHandle.write("GET /game/list\r\nContent-Length: 0\r\nParams: \r\n\r\n");
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-        }
+      try {
+        Client.closeView(Client.View.HOMEPAGE);
+        Client.openView(Client.View.ROOMLIST);
+        Client.socketHandle.write("GET /game/list\r\nContent-Length: 0\r\nParams: \r\n\r\n");
+      } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+      }
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed

@@ -213,13 +213,16 @@ public class SocketHandle implements Runnable {
           Client.roomListFrm.updateRoomList(rooms, passwords);
         }
                 
-        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
-        if(res.getState().equals("friend_check")){
-          if(Client.competitorInfoFrm != null){
-            String isFriend = res.parseData("is_friend=(\\d+)")[0];
-            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
-          }
-        }
+//        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
+//        if(res.getState().equals("friend_check")){
+//          if(Client.competitorInfoFrm != null){
+//              Pattern p = Pattern.compile("is_friend=(\\d+)");
+//              Matcher m = p.matcher(res.getData());
+//              m.find();
+//            String isFriend = m.group(1);
+//            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
+//          }
+//        }
         
         // Xử lý danh sách bạn bè 
         if(res.getState().equals("friend_list")){
@@ -236,44 +239,66 @@ public class SocketHandle implements Runnable {
 //          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
 //        }
 //        
-//        // Xử lý vào phòng 
-//        if(messageSplit[0].equals("go-to-room")){
-//          System.out.println("Vào phòng");
-//          int roomID = Integer.parseInt(messageSplit[1]);
-//          String competitorIP = messageSplit[2];
-//          int isStart = Integer.parseInt(messageSplit[3]);
-//
-//          User competitor = getUserFromString(4, messageSplit);
-//          if(Client.findRoomFrm != null){
-//            Client.findRoomFrm.showFindedRoom();
-//            try {
-//              Thread.sleep(3000);
-//            } catch (InterruptedException ex) {
-//              JOptionPane.showMessageDialog(Client.findRoomFrm, "Lỗi khi sleep thread");
-//            }
-//          } 
-//          else if(Client.waitingRoomFrm != null){
-//            Client.waitingRoomFrm.showFindedCompetitor();
-//            try {
-//              Thread.sleep(3000);
-//            } catch (InterruptedException ex) {
-//              JOptionPane.showMessageDialog(Client.waitingRoomFrm, "Lỗi khi sleep thread");
-//            }
-//          }
-//          Client.closeAllViews();
-//          System.out.println("Đã vào phòng: "+roomID);
-//          
-//          Client.openView(Client.View.GAMECLIENT, competitor, roomID, isStart, competitorIP);
-//          Client.gameClientFrm.newgame();
-//        }
-//        
+        // Xử lý vào phòng. data: game_id=...&is_start=...&ip=...&id=...&username=...&password=...&avatar=...&game=...&win=...&draw=...&loss=...&points=...&rank=...
+        if(res.getState().equals("game_join")){
+          System.out.println("Vào phòng");
+          Pattern p = Pattern.compile(
+            "game_id=(\\d+)&is_start=(\\d+)&ip=([\\.\\d]+)&"
+            + "id=(\\d+)&username=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)&game=(\\d+)&"
+            + "win=(\\d+)&draw=(\\d+)&loss=(\\d+)&points=(\\d+)&rank=(\\d+)"
+          );
+          Matcher m = p.matcher(res.getData());
+          m.find();
+          int roomID = Integer.parseInt(m.group(1));
+          int isStart = Integer.parseInt(m.group(2));
+          String competitorIP = m.group(3);
+
+          User competitor = new User(
+            Integer.parseInt(m.group(4)), 
+            m.group(5), 
+            "", 
+            m.group(6),
+            Integer.parseInt(m.group(7)),
+            Integer.parseInt(m.group(8)),
+            Integer.parseInt(m.group(9)),
+            Integer.parseInt(m.group(10)),
+            Integer.parseInt(m.group(11)),
+            Integer.parseInt(m.group(12))
+          );
+          
+          if(Client.findRoomFrm != null){
+            Client.findRoomFrm.showFindedRoom();
+            try {
+              Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+              JOptionPane.showMessageDialog(Client.findRoomFrm, "Lỗi khi sleep thread");
+            }
+          } 
+          else if(Client.waitingRoomFrm != null){
+            Client.waitingRoomFrm.showFindedCompetitor();
+            try {
+              Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+              JOptionPane.showMessageDialog(Client.waitingRoomFrm, "Lỗi khi sleep thread");
+            }
+          }
+          Client.closeAllViews();
+          System.out.println("Đã vào phòng: " + roomID);
+          
+          Client.openView(Client.View.GAMECLIENT, competitor, roomID, isStart, competitorIP);
+          Client.gameClientFrm.newgame();
+        }
+        
         // Tạo phòng và server trả về tên phòng
         if(res.getState().equals("game_created")){
           Client.closeAllViews();
           Client.openView(Client.View.WAITINGROOM);
-          String[] data = res.parseData("game_id=(\\d+)&password=([a-zA-Z0-9]+)");
-          Client.waitingRoomFrm.setRoomName(data[0]);
-          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + data[1]);
+          Pattern pattern = Pattern.compile("game_id=(\\d+)&password=([a-zA-Z0-9]+)");
+          Matcher m = pattern.matcher(res.getData());
+          m.find();
+          Client.waitingRoomFrm.game_id = Integer.parseInt(m.group(1));
+          Client.waitingRoomFrm.setRoomName(m.group(1));
+          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + m.group(2));
         }
 //        
 //        // Xử lý khi nhận được yêu cầu thách đấu

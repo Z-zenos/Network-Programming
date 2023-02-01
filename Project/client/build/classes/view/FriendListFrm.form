@@ -133,6 +133,7 @@
               </Events>
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="Object[][] rows = {&#xa;};&#xa;String[] columns = {&quot;ID&quot;,&quot;Username&quot;,&quot;Avatar&quot;, &quot;&quot;};&#xa;DefaultTableModel model = new DefaultTableModel(rows, columns){&#xa;    @Override&#xa;    public Class&lt;?&gt; getColumnClass(int column){&#xa;        switch(column){&#xa;            case 0: return String.class;&#xa;            case 1: return String.class;&#xa;            case 2: return ImageIcon.class;&#xa;            case 3: return ImageIcon.class;&#xa;            default: return Object.class;&#xa;        }&#xa;    }&#xa;};"/>
+                <AuxValue name="JavaCodeGenerator_SerializeTo" type="java.lang.String" value="FriendListFrm_jTable1"/>
               </AuxValues>
             </Component>
           </SubComponents>

@@ -4,6 +4,7 @@
  */
 package model;
 
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,14 +47,10 @@ public class Response {
   }
 
   public String[] parseData(String format) {
-    Pattern pattern = Pattern.compile(format);
-    Matcher m = pattern.matcher(this.getData());
-    int i = 1;
-    String[] splitter = {};
-    while(m.find()) {
-      splitter[i - 1] = m.group(i);
-      i++;
-    }
-    return splitter;
+    return Pattern.compile(format)
+      .matcher(this.getData())
+      .results()
+      .map(MatchResult::group)
+      .toArray(String[]::new);
   }
 }
