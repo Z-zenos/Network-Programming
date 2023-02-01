@@ -154,13 +154,13 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.REGISTER);
           JOptionPane.showMessageDialog(Client.registerFrm, "Tên tài khoản đã được người khác sử dụng");
         }
-//        
-//        // Xử lý nhận thông tin, chat từ toàn server
-//        if(messageSplit[0].equals("chat-server")){
-//          if(Client.homePageFrm != null){
-//            Client.homePageFrm.addMessage(messageSplit[1]);
-//          }
-//        }
+ 
+        // Xử lý nhận thông tin, chat từ toàn server
+        if(res.getState().equals("chat_global")){
+          if(Client.homePageFrm != null){
+            Client.homePageFrm.addMessage(res.getData());
+          }
+        }
 //        
 //        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
 //        if(messageSplit[0].equals("check-friend-response")){
@@ -184,7 +184,7 @@ public class SocketHandle implements Runnable {
 //        }
 //        
         // Xử lý phòng có mật khẩu sai
-        if(messageSplit[0].equals("room-wrong-password")){
+        if(res.getState().equals("game_password_incorrect")){
           Client.closeAllViews();
           Client.openView(Client.View.HOMEPAGE);
           JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");

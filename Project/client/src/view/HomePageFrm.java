@@ -7,6 +7,8 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
@@ -498,7 +500,12 @@ public class HomePageFrm extends javax.swing.JFrame {
       String temp = jTextArea1.getText();
       temp += "Tôi: " + jTextField1.getText() + "\n";
       jTextArea1.setText(temp);
-      Client.socketHandle.write("chat-server," + jTextField1.getText());
+      Client.socketHandle.write(
+        "CHAT /chat\r\nContent-Length: " + jTextField1.getText().length() + 
+        "\r\nParams: game_id=0&player_id=" + Client.user.getID() + 
+        "\r\n\r\n" + jTextField1.getText()
+      );
+      
       jTextField1.setText("");
       jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
     } catch (IOException ex) {
@@ -508,11 +515,14 @@ public class HomePageFrm extends javax.swing.JFrame {
     }
   }
   /**
-   * @param args the command line arguments
+   * @param message Message contains username and content
    */
   public void addMessage(String message){
     String temp = jTextArea1.getText();
-    temp += message + "\n";
+    Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+)&content=(.+)");
+    Matcher m = pattern.matcher(message);
+    m.find();
+    temp += "@" + m.group(1) + ": " + m.group(2) + "\n";
     jTextArea1.setText(temp);
     jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
   }
