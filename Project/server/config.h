@@ -20,6 +20,7 @@
 #define MESSAGE_L 128
 #define MAX_SPECTATOR 20
 #define MAX_CLIENT 22
+#define FRIEND_L 10
 
 #define QUERY_L 1000
 #define ADDR_L 50

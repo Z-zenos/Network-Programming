@@ -381,7 +381,7 @@ void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
   );
 
   // TODO: Send response to quited player
-  responsify(res, 200, "game_exited", dataStr, "Quit game successfully", SEND_JOINER);
+  responsify(res, 200, "game_quit", dataStr, "Quit game successfully", SEND_JOINER);
   return;
 }
 

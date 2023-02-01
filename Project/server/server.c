@@ -132,6 +132,12 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     if(route(path, "/game/quit")) game_quit(clnt_addr, gametree, &req, &res);
   }
 
+  else if(strcmp(cmd, "FRIEND") == 0) {
+//    if(route(path, "/friend/add")) friend_add(playertree, &req, &res);
+    if(route(path, "/friend/check")) friend_check(conn, &req, &res);
+    if(route(path, "/friend/list")) friend_list(conn, &req, &res);
+  }
+
   else if (strcmp(cmd, "AUTH") == 0) {
     if(route(path, "/account/login")) signin(clnt_addr, conn, playertree, &req, &res);
     if(route(path, "/account/register")) signup(conn, playertree, &req, &res);

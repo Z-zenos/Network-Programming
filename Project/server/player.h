@@ -22,6 +22,7 @@ typedef struct User {
   char avatar[AVATAR_L];
   char username[USERNAME_L];
   char password[PASSWORD_L];
+  int friends[FRIEND_L];
   Achievement achievement;
 } Player;
 
@@ -37,5 +38,9 @@ char *player_username(PlayerTree *, int);
 int my_rank(MYSQL *, int, char *);
 void rank(MYSQL *, Request *, Response *);
 void profile(MYSQL *, Request *, Response *);
+void friend_check(MYSQL *, Request *, Response *);
+void friend_list(MYSQL *, Request *, Response *);
+void friend_request(PlayerTree *, Request *, Response *);
+void friend_accept(MYSQL *, PlayerTree *, Request *, Response *);
 
 #endif

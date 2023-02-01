@@ -47,11 +47,11 @@
                   <Component id="jButton1" min="-2" max="-2" attributes="0"/>
                   <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
               </Group>
-              <Component id="jLabel1" alignment="0" max="32767" attributes="0"/>
+              <Component id="jLabel1" alignment="0" pref="650" max="32767" attributes="0"/>
               <Group type="102" alignment="0" attributes="0">
                   <EmptySpace max="-2" attributes="0"/>
-                  <Component id="jScrollPane3" min="-2" pref="423" max="-2" attributes="0"/>
-                  <EmptySpace max="32767" attributes="0"/>
+                  <Component id="jScrollPane3" max="32767" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -132,7 +132,7 @@
                 <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="jTable1MouseClicked"/>
               </Events>
               <AuxValues>
-                <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="Object[][] rows = {&#xa;};&#xa;String[] columns = {&quot;ID&quot;,&quot;Nickname&quot;,&quot;&quot;};&#xa;DefaultTableModel model = new DefaultTableModel(rows, columns){&#xa;    @Override&#xa;    public Class&lt;?&gt; getColumnClass(int column){&#xa;        switch(column){&#xa;            case 0: return String.class;&#xa;            case 1: return String.class;&#xa;            case 2: return ImageIcon.class;&#xa;            default: return Object.class;&#xa;        }&#xa;    }&#xa;};"/>
+                <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="Object[][] rows = {&#xa;};&#xa;String[] columns = {&quot;ID&quot;,&quot;Username&quot;,&quot;Avatar&quot;, &quot;&quot;};&#xa;DefaultTableModel model = new DefaultTableModel(rows, columns){&#xa;    @Override&#xa;    public Class&lt;?&gt; getColumnClass(int column){&#xa;        switch(column){&#xa;            case 0: return String.class;&#xa;            case 1: return String.class;&#xa;            case 2: return ImageIcon.class;&#xa;            case 3: return ImageIcon.class;&#xa;            default: return Object.class;&#xa;        }&#xa;    }&#xa;};"/>
               </AuxValues>
             </Component>
           </SubComponents>

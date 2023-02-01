@@ -46,183 +46,183 @@ import model.User;
  */
 public class GameClientFrm extends javax.swing.JFrame{
 
-    private User competitor;
-    private JButton[][] button;
-    private int[][] competitorMatrix;
-    private int[][] matrix;
-    private int[][] userMatrix;
-    
-    //if you change size you will need to redesign icon
-    private final int size = 15;
-    // Server Socket
-    private Timer timer;
-    private Integer second, minute;
-    
-    private int numberOfMatch;
-    private String normalItem[];
-    private String winItem[];
-    private String iconItem[];
-    private String preItem[];
-    
-    private JButton preButton;
-    private int userWin;
-    private int competitorWin;
-    private Thread sendThread;
-    private boolean isSending;
-    private Thread listenThread;
-    private boolean isListening;
-    private String competitorIP;
+  private User competitor;
+  private JButton[][] button;
+  private int[][] competitorMatrix;
+  private int[][] matrix;
+  private int[][] userMatrix;
 
-    public GameClientFrm(User competitor, int room_ID, int isStart, String competitorIP) {
-        initComponents();
-        numberOfMatch = isStart;
-        this.competitor = competitor;
-        this.competitorIP = competitorIP;
-        //
-        isSending = false;
-        isListening = false;
-        jButton5.setIcon(new ImageIcon("assets/game/mute.png"));
-        jButton4.setIcon(new ImageIcon("assets/game/mutespeaker.png"));
-        //init score
-        userWin = 0;
-        competitorWin = 0;
-        //
-        this.setTitle("Caro Master");
-        this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        this.setResizable(false);
-        this.setLocationRelativeTo(null);
-        this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
-        this.setResizable(false);
-        this.getContentPane().setLayout(null);
-        //Set layout dạng lưới cho panel chứa button
-        jPanel1.setLayout(new GridLayout(size, size));
-        //Setup play button
-        button = new JButton[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                button[i][j] = new JButton("");
-                button[i][j].setBackground(Color.white);
-                button[i][j].setDisabledIcon(new ImageIcon("assets/image/border.jpg"));
-                jPanel1.add(button[i][j]);
-            }
-        }
-        //SetUp play Matrix
-        competitorMatrix = new int[size][size];
-        matrix = new int[size][size];
-        userMatrix = new int[size][size];
-        //Setup UI
-        jLabel1.setFont(new Font("Arial", Font.BOLD, 15));
-        jLabel6.setFont(new Font("Arial", Font.BOLD, 15));
-        jLabel18.setFont(new Font("Arial", Font.BOLD, 15));
-        jLabel18.setAlignmentX(JLabel.CENTER);
-        jButton1.setBackground(Color.white);
-        jButton1.setIcon(new ImageIcon("assets/image/send2.png"));
-        jLabel12.setText(competitor.getUsername());
-        jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
-        jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
-        jLabel19.setIcon(new ImageIcon("assets/game/"+Client.user.getAvatar()+".jpg"));
-        jLabel18.setText("Phòng: " + room_ID);
-        jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
-        jLabel15.setText(competitor.getUsername());
-        jLabel16.setText(Integer.toString(competitor.getNumberOfGame()));
-        jLabel17.setText(Integer.toString(competitor.getnumberOfWin()));
-        jButton3.setIcon(new ImageIcon("assets/game/"+competitor.getAvatar()+".jpg"));
-        jButton3.setToolTipText("Xem thông tin đối thủ");
-        jLabel3.setVisible(false);
-        jLabel5.setVisible(false);
-        jButton2.setVisible(false);
-        yourTurnJLabel3.setVisible(false);
-        compretitorTurnJLabel.setVisible(false);
-        timerjLabel19.setVisible(false);
-        jTextArea1.setEditable(false);
-        jLabel20.setText("Tỉ số: 0-0");
-        //Setup timer
-        second = 60;
-        minute = 0;
-        timer = new Timer(1000, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String temp = minute.toString();
-                String temp1 = second.toString();
-                if (temp.length() == 1) {
-                    temp = "0" + temp;
-                }
-                if (temp1.length() == 1) {
-                    temp1 = "0" + temp1;
-                }
-                if (second == 0) {
-                    timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
-                    second = 60;
-                    minute = 0;
-                    try {
-                        Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
-                        increaseWinMatchToCompetitor();
-                        Client.socketHandle.write("lose,");
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-                    }
-                    
-                } else {
-                    timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
-                    second--;
-                }
+  //if you change size you will need to redesign icon
+  private final int size = 15;
+  // Server Socket
+  private Timer timer;
+  private Integer second, minute;
 
-            }
+  private int numberOfMatch;
+  private String normalItem[];
+  private String winItem[];
+  private String iconItem[];
+  private String preItem[];
 
-        });
-       
-        //Setup icon
-        normalItem = new String[2];
-        normalItem[1] = "assets/image/o2.jpg";
-        normalItem[0] = "assets/image/x2.jpg";
-        winItem = new String[2];
-        winItem[1] = "assets/image/owin.jpg";
-        winItem[0] = "assets/image/xwin.jpg";
-        iconItem = new String[2];
-        iconItem[1] = "assets/image/o3.jpg";
-        iconItem[0] = "assets/image/x3.jpg";
-        preItem = new String[2];
-        preItem[1] = "assets/image/o2_pre.jpg";
-        preItem[0] = "assets/image/x2_pre.jpg";
-        setupButton();
+  private JButton preButton;
+  private int userWin;
+  private int competitorWin;
+  private Thread sendThread;
+  private boolean isSending;
+  private Thread listenThread;
+  private boolean isListening;
+  private String competitorIP;
 
-        setEnableButton(true);
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                exitGame();
-            }
-        });
-        
+  public GameClientFrm(User competitor, int room_ID, int isStart, String competitorIP) {
+      initComponents();
+      numberOfMatch = isStart;
+      this.competitor = competitor;
+      this.competitorIP = competitorIP;
+      //
+      isSending = false;
+      isListening = false;
+      jButton5.setIcon(new ImageIcon("assets/game/mute.png"));
+      jButton4.setIcon(new ImageIcon("assets/game/mutespeaker.png"));
+      //init score
+      userWin = 0;
+      competitorWin = 0;
+      //
+      this.setTitle("Caro Master");
+      this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+      this.setResizable(false);
+      this.setLocationRelativeTo(null);
+      this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
+      this.setResizable(false);
+      this.getContentPane().setLayout(null);
+      //Set layout dạng lưới cho panel chứa button
+      jPanel1.setLayout(new GridLayout(size, size));
+      //Setup play button
+      button = new JButton[size][size];
+      for (int i = 0; i < size; i++) {
+          for (int j = 0; j < size; j++) {
+              button[i][j] = new JButton("");
+              button[i][j].setBackground(Color.white);
+              button[i][j].setDisabledIcon(new ImageIcon("assets/image/border.jpg"));
+              jPanel1.add(button[i][j]);
+          }
+      }
+      //SetUp play Matrix
+      competitorMatrix = new int[size][size];
+      matrix = new int[size][size];
+      userMatrix = new int[size][size];
+      //Setup UI
+      jLabel1.setFont(new Font("Arial", Font.BOLD, 15));
+      jLabel6.setFont(new Font("Arial", Font.BOLD, 15));
+      jLabel18.setFont(new Font("Arial", Font.BOLD, 15));
+      jLabel18.setAlignmentX(JLabel.CENTER);
+      jButton1.setBackground(Color.white);
+      jButton1.setIcon(new ImageIcon("assets/image/send2.png"));
+      jLabel12.setText(competitor.getUsername());
+      jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
+      jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
+      jLabel19.setIcon(new ImageIcon("assets/game/"+Client.user.getAvatar()+".jpg"));
+      jLabel18.setText("Phòng: " + room_ID);
+      jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
+      jLabel15.setText(competitor.getUsername());
+      jLabel16.setText(Integer.toString(competitor.getNumberOfGame()));
+      jLabel17.setText(Integer.toString(competitor.getnumberOfWin()));
+      jButton3.setIcon(new ImageIcon("assets/game/"+competitor.getAvatar()+".jpg"));
+      jButton3.setToolTipText("Xem thông tin đối thủ");
+      jLabel3.setVisible(false);
+      jLabel5.setVisible(false);
+      jButton2.setVisible(false);
+      yourTurnJLabel3.setVisible(false);
+      compretitorTurnJLabel.setVisible(false);
+      timerjLabel19.setVisible(false);
+      jTextArea1.setEditable(false);
+      jLabel20.setText("Tỉ số: 0-0");
+      //Setup timer
+      second = 60;
+      minute = 0;
+      timer = new Timer(1000, new ActionListener() {
+          @Override
+          public void actionPerformed(ActionEvent e) {
+              String temp = minute.toString();
+              String temp1 = second.toString();
+              if (temp.length() == 1) {
+                  temp = "0" + temp;
+              }
+              if (temp1.length() == 1) {
+                  temp1 = "0" + temp1;
+              }
+              if (second == 0) {
+                  timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
+                  second = 60;
+                  minute = 0;
+                  try {
+                      Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
+                      increaseWinMatchToCompetitor();
+                      Client.socketHandle.write("lose,");
+                  } catch (IOException ex) {
+                      JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+                  }
+
+              } else {
+                  timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
+                  second--;
+              }
+
+          }
+
+      });
+
+      //Setup icon
+      normalItem = new String[2];
+      normalItem[1] = "assets/image/o2.jpg";
+      normalItem[0] = "assets/image/x2.jpg";
+      winItem = new String[2];
+      winItem[1] = "assets/image/owin.jpg";
+      winItem[0] = "assets/image/xwin.jpg";
+      iconItem = new String[2];
+      iconItem[1] = "assets/image/o3.jpg";
+      iconItem[0] = "assets/image/x3.jpg";
+      preItem = new String[2];
+      preItem[1] = "assets/image/o2_pre.jpg";
+      preItem[0] = "assets/image/x2_pre.jpg";
+      setupButton();
+
+      setEnableButton(true);
+      this.addWindowListener(new WindowAdapter() {
+          @Override
+          public void windowClosing(WindowEvent e) {
+              exitGame();
+          }
+      });
+
+  }
+
+  public void exitGame() {
+    try {
+      timer.stop();
+      voiceCloseMic();
+      voiceStopListening();
+      Client.socketHandle.write("PLAY /game/quit\r\nContent-Length: 0\r\nParams: ");
+      Client.closeAllViews();
+      Client.openView(Client.View.HOMEPAGE);
+    } catch (IOException ex) {
+      JOptionPane.showMessageDialog(rootPane, ex.getMessage());
     }
+    Client.closeAllViews();
+    Client.openView(Client.View.HOMEPAGE);
+  }
 
-    public void exitGame() {
-        try {
-            timer.stop();
-            voiceCloseMic();
-            voiceStopListening();
-            Client.socketHandle.write("left-room,");
-            Client.closeAllViews();
-            Client.openView(Client.View.HOMEPAGE);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-        }
-        Client.closeAllViews();
-        Client.openView(Client.View.HOMEPAGE);
-    }
-    
-    public void stopAllThread(){
-        timer.stop();
-        voiceCloseMic();
-        voiceStopListening();
-    }
-    
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
+  public void stopAllThread(){
+      timer.stop();
+      voiceCloseMic();
+      voiceStopListening();
+  }
+
+  /**
+   * This method is called from within the constructor to initialize the form.
+   * WARNING: Do NOT modify this code. The content of this method is always
+   * regenerated by the Form Editor.
+   */
+  @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -728,235 +728,233 @@ public class GameClientFrm extends javax.swing.JFrame{
     }// </editor-fold>//GEN-END:initComponents
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        JOptionPane.showMessageDialog(rootPane, "Thông báo", "Tính năng đang được phát triển", JOptionPane.INFORMATION_MESSAGE);
+      JOptionPane.showMessageDialog(rootPane, "Thông báo", "Tính năng đang được phát triển", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        exitGame();
+      exitGame();
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        try {
-            if (jTextField1.getText().isEmpty()) {
-                throw new Exception("Vui lòng nhập nội dung tin nhắn");
-            }
-            String temp = jTextArea1.getText();
-            temp += "Tôi: " + jTextField1.getText() + "\n";
-            jTextArea1.setText(temp);
-            Client.socketHandle.write("chat," + jTextField1.getText());
-            jTextField1.setText("");
-            jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+      try {
+        if (jTextField1.getText().isEmpty()) {
+          throw new Exception("Vui lòng nhập nội dung tin nhắn");
         }
+        String temp = jTextArea1.getText();
+        temp += "Tôi: " + jTextField1.getText() + "\n";
+        jTextArea1.setText(temp);
+        Client.socketHandle.write("chat," + jTextField1.getText());
+        jTextField1.setText("");
+        jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
+      } catch (IOException ex) {
+        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+      } catch (Exception ex) {
+        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+      }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        
-        try {
-            int res = JOptionPane.showConfirmDialog(rootPane, "Bạn có thực sự muốn cầu hòa ván chơi này", "Yêu cầu cầu hòa", JOptionPane.YES_NO_OPTION);
-            if (res == JOptionPane.YES_OPTION) {
-                Client.socketHandle.write("draw-request,");
-                timer.stop();
-                setEnableButton(false);
-                Client.openView(Client.View.GAMENOTICE, "Yêu cầu hòa", "Đang chờ phản hồi từ đối thủ");
-            }
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+
+      try {
+        int res = JOptionPane.showConfirmDialog(rootPane, "Bạn có thực sự muốn cầu hòa ván chơi này", "Yêu cầu cầu hòa", JOptionPane.YES_NO_OPTION);
+        if (res == JOptionPane.YES_OPTION) {
+          Client.socketHandle.write("draw-request,");
+          timer.stop();
+          setEnableButton(false);
+          Client.openView(Client.View.GAMENOTICE, "Yêu cầu hòa", "Đang chờ phản hồi từ đối thủ");
         }
+      } catch (IOException ex) {
+        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+      }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        // TODO add your handling code here:
-        JOptionPane.showMessageDialog(rootPane, "Luật chơi: luật quốc tế 5 nước chặn 2 đầu\n"
-                + "Hai người chơi luân phiên nhau chơi trước\n"
-                + "Người chơi trước đánh X, người chơi sau đánh O\n"
-                + "Bạn có 20 giây cho mỗi lượt đánh, quá 20 giây bạn sẽ thua\n"
-                + "Khi cầu hòa, nếu đối thủ đồng ý thì ván hiện tại được hủy kết quả\n"
-                + "Với mỗi ván chơi bạn có thêm 1 điểm, nếu hòa bạn được thêm 5 điểm,\n"
-                + "nếu thắng bạn được thêm 10 điểm\n"
-                + "Chúc bạn chơi game vui vẻ");
+      // TODO add your handling code here:
+      JOptionPane.showMessageDialog(rootPane, "Luật chơi: luật quốc tế 5 nước chặn 2 đầu\n"
+              + "Hai người chơi luân phiên nhau chơi trước\n"
+              + "Người chơi trước đánh X, người chơi sau đánh O\n"
+              + "Bạn có 20 giây cho mỗi lượt đánh, quá 20 giây bạn sẽ thua\n"
+              + "Khi cầu hòa, nếu đối thủ đồng ý thì ván hiện tại được hủy kết quả\n"
+              + "Với mỗi ván chơi bạn có thêm 1 điểm, nếu hòa bạn được thêm 5 điểm,\n"
+              + "nếu thắng bạn được thêm 10 điểm\n"
+              + "Chúc bạn chơi game vui vẻ");
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
 
-         Client.openView(Client.View.COMPETITORINFO, competitor);
+      Client.openView(Client.View.COMPETITORINFO, competitor);
             
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        if(isSending){
-            try {
-                Client.socketHandle.write("voice-message,close-mic");
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
-            }
-            jButton5.setIcon(new ImageIcon("assets/game/mute.png"));
-            voiceCloseMic();
-            jButton5.setToolTipText("Mic đang tắt");
-
+      if(isSending){
+        try {
+          Client.socketHandle.write("voice-message,close-mic");
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
         }
-        else{
-            try {
-                Client.socketHandle.write("voice-message,open-mic");
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
-            }
-            jButton5.setIcon(new ImageIcon("assets/game/88634.png"));
-            voiceOpenMic();
-            jButton5.setToolTipText("Mic đang bật");
+        jButton5.setIcon(new ImageIcon("assets/game/mute.png"));
+        voiceCloseMic();
+        jButton5.setToolTipText("Mic đang tắt");
+      }
+      else{
+        try {
+          Client.socketHandle.write("voice-message,open-mic");
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
         }
+        jButton5.setIcon(new ImageIcon("assets/game/88634.png"));
+        voiceOpenMic();
+        jButton5.setToolTipText("Mic đang bật");
+      }
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        if (isListening) {
-            try {
-                Client.socketHandle.write("voice-message,close-speaker");
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
-            }
-            jButton4.setIcon(new ImageIcon("assets/game/mutespeaker.png"));
-            voiceStopListening();
-            jButton4.setToolTipText("Âm thanh trò chuyện đang tắt");
-        } else {
-            try {
-                Client.socketHandle.write("voice-message,open-speaker");
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
-            }
-            voiceListening();
-            jButton4.setIcon(new ImageIcon("assets/game/speaker.png"));
-            jButton4.setToolTipText("Âm thanh trò chuyện đang bật");
+      if (isListening) {
+        try {
+          Client.socketHandle.write("voice-message,close-speaker");
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
         }
+        jButton4.setIcon(new ImageIcon("assets/game/mutespeaker.png"));
+        voiceStopListening();
+        jButton4.setToolTipText("Âm thanh trò chuyện đang tắt");
+      } else {
+        try {
+          Client.socketHandle.write("voice-message,open-speaker");
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
+        }
+        voiceListening();
+        jButton4.setIcon(new ImageIcon("assets/game/speaker.png"));
+        jButton4.setToolTipText("Âm thanh trò chuyện đang bật");
+      }
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jTextField1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyPressed
-        if (evt.getKeyCode() == 10) {
-            try {
-                if (jTextField1.getText().isEmpty()) {
-                    return;
-                }
-                String temp = jTextArea1.getText();
-                temp += "Tôi: " + jTextField1.getText() + "\n";
-                jTextArea1.setText(temp);
-                Client.socketHandle.write("chat," + jTextField1.getText());
-                jTextField1.setText("");
-                jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-            }
+      if (evt.getKeyCode() == 10) {
+        try {
+          if (jTextField1.getText().isEmpty()) {
+            return;
+          }
+          String temp = jTextArea1.getText();
+          temp += "Tôi: " + jTextField1.getText() + "\n";
+          jTextArea1.setText(temp);
+          Client.socketHandle.write("chat," + jTextField1.getText());
+          jTextField1.setText("");
+          jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, ex.getMessage());
         }
+      }
     }//GEN-LAST:event_jTextField1KeyPressed
 
     public void showMessage(String message){
-        JOptionPane.showMessageDialog(rootPane, message);
+      JOptionPane.showMessageDialog(rootPane, message);
     }
     public void playSound() {
-        try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/click.wav").getAbsoluteFile());
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioInputStream);
-            clip.start();
-        } catch (Exception ex) {
-            System.out.println("Error with playing sound.");
-            ex.printStackTrace();
-        }
+      try {
+        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/click.wav").getAbsoluteFile());
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+        clip.start();
+      } catch (Exception ex) {
+        System.out.println("Error with playing sound.");
+        ex.printStackTrace();
+      }
     }
 
     public void playSound1() {
-        try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/1click.wav").getAbsoluteFile());
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioInputStream);
-            clip.start();
-        } catch (Exception ex) {
-            System.out.println("Error with playing sound.");
-            ex.printStackTrace();
-        }
+      try {
+        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/1click.wav").getAbsoluteFile());
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+        clip.start();
+      } catch (Exception ex) {
+        System.out.println("Error with playing sound.");
+        ex.printStackTrace();
+      }
     }
 
     public void playSound2() {
-        try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/win.wav").getAbsoluteFile());
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioInputStream);
-            clip.start();
-        } catch (Exception ex) {
-            System.out.println("Error with playing sound.");
-            ex.printStackTrace();
-        }
+      try {
+        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/win.wav").getAbsoluteFile());
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+        clip.start();
+      } catch (Exception ex) {
+        System.out.println("Error with playing sound.");
+        ex.printStackTrace();
+      }
     }
     public void stopTimer(){
-        timer.stop();
+      timer.stop();
     }
     int not(int i) {
-        if (i == 1) {
-            return 0;
-        }
-        if (i == 0) {
-            return 1;
-        }
+      if (i == 1) {
         return 0;
+      }
+      if (i == 0) {
+        return 1;
+      }
+      return 0;
     }
 
     void setupButton() {
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                final int a = i, b = j;
+      for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+          final int a = i, b = j;
 
-                button[a][b].addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        try {
-                            button[a][b].setDisabledIcon(new ImageIcon(normalItem[not(numberOfMatch % 2)]));
-                            button[a][b].setEnabled(false);
-                            playSound();
-                            second = 60;
-                            minute = 0;
-                            matrix[a][b] = 1;
-                            userMatrix[a][b] = 1;
-                            button[a][b].setEnabled(false);
-                            try {
-                                if (checkRowWin() == 1 || checkColumnWin() == 1 || checkRightCrossWin() == 1 || checkLeftCrossWin() == 1) {
-                                    //Xử lý khi người chơi này thắng
-                                    setEnableButton(false);
-                                    increaseWinMatchToUser();
-                                    Client.openView(Client.View.GAMENOTICE,"Bạn đã thắng","Đang thiết lập ván chơi mới");
-                                    Client.socketHandle.write("win,"+a+","+b);
-                                }
-                                else{
-                                    Client.socketHandle.write("caro," + a + "," + b);
-                                    displayCompetitorTurn();
-                                    
-                                }
-                                setEnableButton(false);
-                                timer.stop();
-                            } catch (Exception ie) {
-                                ie.printStackTrace();
-                            }
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-                        }
-                    }
-                });
-                button[a][b].addMouseListener(new java.awt.event.MouseAdapter() {
-                    public void mouseEntered(java.awt.event.MouseEvent evt) {
-                        if(button[a][b].isEnabled()) {
-                            button[a][b].setBackground(Color.GREEN);
-                            button[a][b].setIcon(new ImageIcon(normalItem[not(numberOfMatch % 2)]));
-                        }
-                    }
-                    public void mouseExited(java.awt.event.MouseEvent evt) {
-                        if(button[a][b].isEnabled()){
-                            button[a][b].setBackground(null);
-                            button[a][b].setIcon(new ImageIcon("assets/image/blank.jpg"));
-                        }
-                    }
-                });
+          button[a][b].addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+              try {
+                button[a][b].setDisabledIcon(new ImageIcon(normalItem[not(numberOfMatch % 2)]));
+                button[a][b].setEnabled(false);
+                playSound();
+                second = 60;
+                minute = 0;
+                matrix[a][b] = 1;
+                userMatrix[a][b] = 1;
+                button[a][b].setEnabled(false);
+                try {
+                  if (checkRowWin() == 1 || checkColumnWin() == 1 || checkRightCrossWin() == 1 || checkLeftCrossWin() == 1) {
+                    //Xử lý khi người chơi này thắng
+                    setEnableButton(false);
+                    increaseWinMatchToUser();
+                    Client.openView(Client.View.GAMENOTICE,"Bạn đã thắng","Đang thiết lập ván chơi mới");
+                    Client.socketHandle.write("win,"+a+","+b);
+                  }
+                  else{
+                    Client.socketHandle.write("caro," + a + "," + b);
+                    displayCompetitorTurn();
+                  }
+                  setEnableButton(false);
+                  timer.stop();
+                } catch (Exception ie) {
+                  ie.printStackTrace();
+                }
+              } catch (Exception ex) {
+                JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+              }
             }
+          });
+          button[a][b].addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+              if(button[a][b].isEnabled()) {
+                button[a][b].setBackground(Color.GREEN);
+                button[a][b].setIcon(new ImageIcon(normalItem[not(numberOfMatch % 2)]));
+              }
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+              if(button[a][b].isEnabled()){
+                button[a][b].setBackground(null);
+                button[a][b].setIcon(new ImageIcon("assets/image/blank.jpg"));
+              }
+            }
+          });
         }
+      }
     }
 
     public void displayDrawRefuse(){

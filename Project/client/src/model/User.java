@@ -44,6 +44,12 @@ public class User {
     this.numberOfLoss = numberOfLoss;
     this.points = points;
   }
+  
+    public User(int ID, String username, String avatar) {
+    this.ID = ID;
+    this.username = username;
+    this.avatar = avatar;
+  }
 
   public int getRank() {
     return rank;

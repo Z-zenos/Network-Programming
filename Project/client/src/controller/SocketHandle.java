@@ -31,9 +31,13 @@ public class SocketHandle implements Runnable {
   private int ID_Server;
   
   public List<User> getListUser(String[] message){
+    Pattern p = Pattern.compile("id=(\\d+)&username=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)");
+    Matcher m;
     List<User> friend = new ArrayList<>();
-    for(int i = 1; i < message.length; i = i + 4){
-      friend.add(new User(Integer.parseInt(message[i]), message[i + 1], message[i + 2].equals("1"), message[i + 3].equals("1")));
+    for(int i = 0; i < message.length; i++){
+      m = p.matcher(message[i]);
+      if(m.find())
+        friend.add(new User(Integer.parseInt(m.group(1)), m.group(2), m.group(3)));
     }
     return friend;
   }
@@ -162,13 +166,6 @@ public class SocketHandle implements Runnable {
           }
         }
 //        
-//        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
-//        if(messageSplit[0].equals("check-friend-response")){
-//          if(Client.competitorInfoFrm != null){
-//            Client.competitorInfoFrm.checkFriend((messageSplit[1].equals("1")));
-//          }
-//        }
-//        
 //        // Xử lý kết quả tìm phòng từ server
 //        if(messageSplit[0].equals("room-fully")){
 //          Client.closeAllViews();
@@ -215,12 +212,28 @@ public class SocketHandle implements Runnable {
           }
           Client.roomListFrm.updateRoomList(rooms, passwords);
         }
-//        
-//        // Xử lý danh sách bạn bè 
-//        if(messageSplit[0].equals("return-friend-list")){
-//          if(Client.friendListFrm != null){
-//            Client.friendListFrm.updateFriendList(getListUser(messageSplit));
-//          }
+                
+        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
+        if(res.getState().equals("friend_check")){
+          if(Client.competitorInfoFrm != null){
+            String isFriend = res.parseData("is_friend=(\\d+)")[0];
+            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
+          }
+        }
+        
+        // Xử lý danh sách bạn bè 
+        if(res.getState().equals("friend_list")){
+          if(Client.friendListFrm != null){
+            String[] splitter = res.getData().split(";");
+            Client.friendListFrm.updateFriendList(getListUser(splitter));
+          }
+        }
+                
+//         Xử lý yêu cầu kết bạn tới
+//        if(res.getState().equals("friend_accept")){
+//          int ID = Integer.parseInt(messageSplit[1]);
+//          String username = messageSplit[2];
+//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
 //        }
 //        
 //        // Xử lý vào phòng 
@@ -260,16 +273,8 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.WAITINGROOM);
           String[] data = res.parseData("game_id=(\\d+)&password=([a-zA-Z0-9]+)");
           Client.waitingRoomFrm.setRoomName(data[0]);
-//          if(messageSplit.length == 3)
           Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + data[1]);
         }
-//        
-//        // Xử lý yêu cầu kết bạn tới
-//        if(messageSplit[0].equals("make-friend-request")){
-//          int ID = Integer.parseInt(messageSplit[1]);
-//          String nickname = messageSplit[2];
-//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
-//        }
 //        
 //        // Xử lý khi nhận được yêu cầu thách đấu
 //        if(messageSplit[0].equals("duel-notice")){
@@ -338,15 +343,15 @@ public class SocketHandle implements Runnable {
 //          Client.gameClientFrm.newgame();
 //        }
 //        
-//        // Xử lý rời phòng
-//        if(messageSplit[0].equals("left-room")){
-//          Client.gameClientFrm.stopTimer();
-//          Client.closeAllViews();
-//          Client.openView(Client.View.GAMENOTICE, "Đối thủ đã thoát khỏi phòng", "Đang trở về trang chủ");
-//          Thread.sleep(3000);       
-//          Client.closeAllViews();
-//          Client.openView(Client.View.HOMEPAGE);
-//        }
+        // Xử lý rời phòng
+        if(res.getState().equals("game_quit")){
+          Client.gameClientFrm.stopTimer();
+          Client.closeAllViews();
+          Client.openView(Client.View.GAMENOTICE, "Đối thủ đã thoát khỏi phòng", "Đang trở về trang chủ");
+          Thread.sleep(3000);       
+          Client.closeAllViews();
+          Client.openView(Client.View.HOMEPAGE);
+        }
 //        
 //        //Xử lý bị banned
 //        if(messageSplit[0].equals("banned-notice")){
@@ -365,16 +370,19 @@ public class SocketHandle implements Runnable {
       e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
-    } 
-//    catch (InterruptedException ex) {
-//      ex.printStackTrace();
-//    }
+    } catch (InterruptedException ex) {
+      ex.printStackTrace();
+    }
   }
 
   public void write(String message) throws IOException{
     os.write(message);
     os.newLine();
     os.flush();
+  }
+  
+  public String requestify(String command, String path, int content_l, String params, String content) {
+    return command + " /" + path + "\r\nContent-Length: " + content_l + "\r\nParams: " + params + "\r\n\r\n" + content;
   }
 
   public Socket getSocketOfClient() {
