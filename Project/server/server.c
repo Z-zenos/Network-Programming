@@ -18,6 +18,8 @@ int server_fd;
 Request req;
 Response res;
 int receiver[MAX_SPECTATOR + 2];
+int client_fds[MAX_CLIENT];
+int number_clients = 0;
 int send_type;
 
 void signalHandler(int signo) {
@@ -62,6 +64,9 @@ void disconnect(ClientAddr clnt_addr, PlayerTree *playertree, Request *req, Resp
   Player *player_found = player_find(playertree, player_id);
   player_found->sock = 0;
   time_print(clnt_addr.address, "OFFLINE", "", "", 0);
+  for(int i = 0; i < MAX_CLIENT; i++)
+    if(client_fds[i] == client_fd)
+      client_fds[i] = 0;
   close(client_fd);
 }
 
@@ -104,6 +109,13 @@ void receiver_build(GameTree *gametree, int curr_fd) {
     }
 
     case SEND_ALL:
+      for(i = 0; i < MAX_CLIENT; i++) {
+        if(client_fds[i]) {
+          receiver[k] = client_fds[i];
+          if(client_fds[i] == curr_fd) receiver[k] = 0;
+          k++;
+        }
+      }
       break;
   }
 }
@@ -191,6 +203,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   for(;;) {
     ClientAddr client_addr = accept_conn(server_fd);
     time_print(client_addr.address, "ONLINE", "", "", 0);
+    client_fds[number_clients++] = client_addr.sock;
 
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));

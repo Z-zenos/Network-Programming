@@ -136,6 +136,8 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
 int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
   int player_id;
   char username[USERNAME_L], password[PASSWORD_L];
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
 
   // TODO: Get username, password from client
   if(sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password) != 2) {
@@ -145,7 +147,8 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
 
   // TODO: Validate username & password
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    responsify(res, 400, "account_incorrect", NULL, "Username / Password incorrect", SEND_ME);
+    sprintf(dataStr, "username=%s&password=%s", username, password);
+    responsify(res, 400, "account_incorrect", dataStr, "Username / Password incorrect", SEND_ME);
     return FAILURE;
   }
 
@@ -180,12 +183,12 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
   Player *player_found = player_find(playertree, player_id);
   if(!player_found->sock) player_found->sock = clnt_addr.sock;
   else {
-    responsify(res, 400, "login_duplicate", NULL, "The account is already logged in somewhere else", SEND_ME);
+    sprintf(dataStr, "username=%s&password=%s", username, password);
+    responsify(res, 400, "login_duplicate", dataStr, "The account is already logged in somewhere else", SEND_ME);
     mysql_free_result(qres);
     return FAILURE;
   }
 
-  char dataStr[DATA_L];
   int rank = my_rank(conn, player_id, dataStr);
   memset(dataStr, '\0', DATA_L);
 

@@ -6,15 +6,34 @@
 #include "player.h"
 
 void chat(GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
-  int player_id, game_id, client_fd;
+  int player_id, game_id;
   char msgStr[MESSAGE_L], dataStr[DATA_L], content[CONTENT_L];
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
   memset(content, '\0', CONTENT_L);
 
   // TODO: Get player id and game id from user
-  if(sscanf(req->header.params, "sock=%d&game_id=%d&player_id=%d", &client_fd, &game_id, &player_id) != 3) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: CHAT /chat sock=...&game_id=...&player_id=...", SEND_ME);
+  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: CHAT /chat game_id=...&player_id=...", SEND_ME);
+    return;
+  }
+
+  // TODO: Get message content and validate
+  sscanf(req->body.content, "%[^\n]", content);
+  if(req->header.content_l == 0 || strlen(req->body.content) == 0) {
+    responsify(res, 400, "chat_fail", NULL, "Message empty", SEND_ME);
+    return;
+  }
+
+  if(req->header.content_l > CONTENT_L || strlen(req->body.content) > CONTENT_L) {
+    responsify(res, 400, "chat_fail", NULL, "Message too long", SEND_ME);
+    return;
+  }
+
+  // TODO: Chat global
+  if(game_id == 0) {
+    sprintf(dataStr, "username=%s&content=%s", player_username(playertree, player_id), content);
+    responsify(res, 200, "chat_global", dataStr, "Chat successfully", SEND_ALL);
     return;
   }
 
@@ -33,18 +52,6 @@ void chat(GameTree *gametree, PlayerTree *playertree, Request *req, Response *re
     return;
   }
 
-  // TODO: Get message content and validate
-  sscanf(req->body.content, "%[^\n]", content);
-  if(req->header.content_l == 0 || strlen(req->body.content) == 0) {
-    responsify(res, 400, "chat_fail", NULL, "Message empty", SEND_ME);
-    return;
-  }
-
-  if(req->header.content_l > CONTENT_L || strlen(req->body.content) > CONTENT_L) {
-    responsify(res, 400, "chat_fail", NULL, "Message too long", SEND_ME);
-    return;
-  }
-
   sprintf(dataStr, "username=%s&content=%s", player_username(playertree, player_id), content);
-  responsify(res, 200, "chat_success", dataStr, "Chat successfully", SEND_JOINER);
+  responsify(res, 200, "chat_local", dataStr, "Chat successfully", SEND_JOINER);
 }

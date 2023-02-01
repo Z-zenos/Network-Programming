@@ -286,14 +286,15 @@ void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
 
 void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
   int player_id, game_id;
-  char msgStr[MESSAGE_L], dataStr[DATA_L];
+  char msgStr[MESSAGE_L], dataStr[DATA_L], game_pwd[PASSWORD_L];
   memset(msgStr, '\0', MESSAGE_L);
   memset(dataStr, '\0', DATA_L);
+  memset(game_pwd, '\0', PASSWORD_L);
 
 
   // TODO: Get player id if exists and game id from user
-  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...", SEND_ME);
+  if(sscanf(req->header.params, "game_id=%d&player_id=%d&password=%s", &game_id, &player_id, game_pwd) != 3) {
+    responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...&password=...", SEND_ME);
     return;
   }
 
@@ -305,6 +306,11 @@ void game_join(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree,
   if(!game_found) {
     sprintf(msgStr, "Game [%d] does not exist", game_id);
     responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
+    return;
+  }
+
+  if(strcmp(game_found->password, game_pwd) != 0) {
+    responsify(res, 400, "game_password_incorrect", NULL, "Password for game incorrect", SEND_ME);
     return;
   }
 

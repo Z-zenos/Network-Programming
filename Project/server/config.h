@@ -19,6 +19,7 @@
 #define DATA_L 3000
 #define MESSAGE_L 128
 #define MAX_SPECTATOR 20
+#define MAX_CLIENT 22
 
 #define QUERY_L 1000
 #define ADDR_L 50
