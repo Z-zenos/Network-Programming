@@ -379,6 +379,35 @@ void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
   return;
 }
 
+void game_list(GameTree *gametree, Request *req, Response *res) {
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  Game *game;
+
+  rbtrav_t *rbtrav;
+  rbtrav = rbtnew();
+  game = rbtfirst(rbtrav, gametree);
+  char line[1000];
+  memset(line, '\0', 100);
+
+  do {
+    sprintf(
+      line,
+      "game_id=%d&password=%s&views=%d&num_move=%d&player1_id=%d&player2_id=%d;",
+      game->id, game->password, game->views, game->num_move,
+      game->player1_id, game->player2_id
+    );
+    strcat(dataStr, line);
+  } while ((game = rbtnext(rbtrav)) != NULL);
+
+  // TODO: Remove ; at last data
+  dataStr[strlen(dataStr) - 1] = '\0';
+
+  responsify(res, 200, "game_list", dataStr, "Get list of game successfully", SEND_ME);
+  return;
+}
+
 /*
 int main() {
   GameTree *gametree;

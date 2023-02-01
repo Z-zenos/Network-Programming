@@ -130,6 +130,7 @@ void route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     if(route(path, "/rank")) rank(conn, &req, &res);
     if(route(path, "/profile")) profile(conn, &req, &res);
     if(route(path, "/game/view")) game_view(clnt_addr, gametree, &req, &res);
+    if(route(path, "/game/list")) game_list(gametree, &req, &res);
   }
 
   else if(strcmp(cmd, "CHAT") == 0) {
