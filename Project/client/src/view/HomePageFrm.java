@@ -434,7 +434,7 @@ public class HomePageFrm extends javax.swing.JFrame {
         try {
             Client.closeView(Client.View.HOMEPAGE);
             Client.openView(Client.View.ROOMLIST);
-            Client.socketHandle.write("view-room-list,");
+            Client.socketHandle.write("GET /game/list\r\nContent-Length: 0\r\nParams: \r\n\r\n");
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(rootPane, ex.getMessage());
         }

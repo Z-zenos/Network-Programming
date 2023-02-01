@@ -19,7 +19,7 @@ public class Response {
 
   public Response(String response) {
     Pattern pattern = Pattern.compile(
-      "code: (\\d+),state: ([a-zA-Z0-9_]+),data: ([a-zA-Z0-9&=/\\.;-]+),message: (.+)"
+      "code: (\\d+),state: ([a-zA-Z0-9_]+),data: ([a-zA-Z0-9&=/\\.;-_]+),message: (.+)"
     );
     Matcher m = pattern.matcher(response);
     m.find();

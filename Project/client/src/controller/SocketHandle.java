@@ -196,17 +196,24 @@ public class SocketHandle implements Runnable {
             Client.rankFrm.setDataToTable(getListRank(res.getData()));
           }
         }
-//        
-//        // Xử lý lấy danh sách phòng
-//        if(messageSplit[0].equals("room-list")){
-//          Vector<String> rooms = new Vector<>();
-//          Vector<String> passwords = new Vector<>();
-//          for(int i = 1; i < messageSplit.length; i = i + 2){
-//            rooms.add("Phòng " + messageSplit[i]);
-//            passwords.add(messageSplit[i + 1]);
-//          }
-//          Client.roomListFrm.updateRoomList(rooms,passwords);
-//        }
+
+        // Xử lý lấy danh sách phòng
+        if(res.getState().equals("game_list")){
+          Vector<String> rooms = new Vector<>();
+          Vector<String> passwords = new Vector<>();
+          String[] splitter = res.getData().split(";");
+          Pattern p = Pattern.compile("game_id=(\\d+)&password=([a-zA-Z0-9]+)&views=(\\d+)&num_move=(\\d+)&player1_id=(\\d+)&player2_id=(\\d+)");
+          Matcher m;
+          for(int i = 1; i < splitter.length; i++){
+            m = p.matcher(splitter[i]);
+            if(m.find()) {
+              rooms.add("Phòng " + m.group(1));
+              passwords.add(m.group(2));
+            }
+            
+          }
+          Client.roomListFrm.updateRoomList(rooms, passwords);
+        }
 //        
 //        // Xử lý danh sách bạn bè 
 //        if(messageSplit[0].equals("return-friend-list")){
