@@ -5,6 +5,7 @@
 #include <ctype.h>
 
 #include "player.h"
+#include "game.h"
 #include "http.h"
 #include "config.h"
 #include "rbtree.h"
@@ -125,7 +126,7 @@ void player_print(Player *player) {
     "id %d - username: %s - password: %s - avatar: %s - game: %d - win: %d - draw: %d - loss: %d - streak: %d - points: %d\n",
     player->id, player->username, player->password, player->avatar, player->game,
     player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points
-    );
+  );
 }
 
 void player_info(PlayerTree *playertree) {
@@ -178,7 +179,7 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
 
   while ((row = mysql_fetch_row(qres))) {
     if(strcmp(row[0], idStr) == 0) {
-      sprintf(line, "username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d", row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]));
+      sprintf(line, "username=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d", row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]));
       strcat(dataStr, line);
       mysql_free_result(qres);
       return atoi(row[8]);
@@ -189,28 +190,21 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
   return -1;
 }
 
-void rank(MYSQL *conn, Request *req, Response *res) {
-  int player_id;
-
-  // TODO: Get player id from request
-  if(sscanf(req->header.params, "player_id=%d", &player_id) <= 0) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: GET /rank player_id=...", SEND_ME);
-    return;
-  }
+int rank(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
 
   // TODO: QUERY follow points from database
   char query[QUERY_L] = "SELECT id, username, avatar, win, loss, points FROM players ORDER BY points DESC LIMIT 10";
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, "Query to database failed");
-    logger(L_ERROR, mysql_error(conn));
-    return;
+    server_error(msg);
+    return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
-    return;
+    return FAILURE;
   }
 
   // TODO: Count number of records in db
@@ -230,7 +224,7 @@ void rank(MYSQL *conn, Request *req, Response *res) {
     char line[1000];
     sprintf(
       line,
-      "id=%d&username=%s&avatar=%s&win=%d&loss=%d&points=%d;",
+      "id=%d;username=%s;avatar=%s;win=%d;loss=%d;points=%d,",
       player[i].id, player[i].username, player[i].avatar, player[i].achievement.win,
       player[i].achievement.loss, player[i].achievement.points
     );
@@ -240,20 +234,15 @@ void rank(MYSQL *conn, Request *req, Response *res) {
 
   mysql_free_result(qres);
   my_rank(conn, player_id, dataStr);
-  responsify(res, 200, "rank", dataStr, "Get rank successfully", SEND_ME);
+  responsify(msg, "rank", dataStr);
+  return SUCCESS;
 }
 
-void profile(MYSQL *conn, Request *req, Response *res) {
+int profile(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   char key[USERNAME_L];
-  char msgStr[MESSAGE_L], dataStr[DATA_L], tmp[DATA_L];
-  memset(msgStr, '\0', MESSAGE_L);
+  char dataStr[DATA_L], tmp[DATA_L];
   memset(dataStr, '\0', DATA_L);
-
-  // TODO: Get key from request
-  if(sscanf(req->header.params, "key=%s", key) <= 0) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: GET /profile key=[player_id | username]", SEND_ME);
-    return;
-  }
+  strcpy(key, map_val(msg->params, "key"));
 
   // TODO:
   int i, key_l = strlen(key), type = 0;
@@ -278,46 +267,37 @@ void profile(MYSQL *conn, Request *req, Response *res) {
     case 1:
       sprintf(query, "SELECT id, username, avatar, game, win, draw, loss, points FROM players WHERE username = '%s'", key);
       break;
-
-    default: break;
   }
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, "Query to database failed");
-    logger(L_ERROR, mysql_error(conn));
-    return;
+    server_error(msg);
+    return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
-    sprintf(msgStr, "Player [%s] does not exist", key);
-    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
+    responsify(msg, "player_null", NULL);
     mysql_free_result(qres);
-    return;
+    return FAILURE;
   }
 
   MYSQL_ROW row;
   while ((row = mysql_fetch_row(qres))) {
     sprintf(
       dataStr,
-      "username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&streak=%d&points=%d&rank=%d",
+      "username=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;streak=%d;points=%d;rank=%d",
       row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]), atoi(row[8]), my_rank(conn, type ? atoi(row[0]) : atoi(key), tmp)
     );
   }
 
   mysql_free_result(qres);
-  sprintf(msgStr, "Get info of player [%s] successfully", key);
-  responsify(res, 200, NULL, dataStr, msgStr, SEND_ME);
+  responsify(msg, "profile", dataStr);
+  return SUCCESS;
 }
 
-void friend_check(MYSQL *conn, Request *req, Response *res) {
-  int player_id, friend_id;
-
-  // TODO: Get player id and friend id from request
-  if(sscanf(req->header.params, "player_id=%d&friend_id=%d", &player_id, &friend_id) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: FRIEND /friend/check player_id=...&friend_id=...", SEND_ME);
-    return;
-  }
+int friend_check(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int friend_id = atoi(map_val(msg->params, "friend_id"));
 
   // TODO: QUERY check friend in database
   char query[QUERY_L];
@@ -325,29 +305,24 @@ void friend_check(MYSQL *conn, Request *req, Response *res) {
   sprintf(query, "SELECT * FROM friends WHERE player_id = %d AND friend_id = %d", player_id, friend_id);
 
   if (mysql_query(conn, query)) {
-    responsify(res, 400, "friend_check", "is_friend=0", "The two are not friends yet", SEND_ME);
-    return;
+    responsify(msg, "friend_check", "is_friend=0");
+    return SUCCESS;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
-    responsify(res, 400, "friend_check", "is_friend=0", "The two are not friends yet", SEND_ME);
     mysql_free_result(qres);
-    return;
+    responsify(msg, "friend_check", "is_friend=0");
+    return SUCCESS;
   }
 
   mysql_free_result(qres);
-  responsify(res, 200, "friend_check", "is_friend=1", "The two were already friends", SEND_ME);
+  responsify(msg, "friend_check", "is_friend=1");
+  return SUCCESS;
 }
 
-void friend_list(MYSQL *conn, Request *req, Response *res) {
-  int player_id;
-
-  // TODO: Get player id and friend id from request
-  if(sscanf(req->header.params, "player_id=%d", &player_id) != 1) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: FRIEND /friend/list player_id=...", SEND_ME);
-    return;
-  }
+int friend_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
 
   // TODO: QUERY check friend in database
   char query[QUERY_L];
@@ -359,15 +334,15 @@ void friend_list(MYSQL *conn, Request *req, Response *res) {
   );
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, "Query to database failed");
-    return;
+    server_error(msg);
+    return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
-    responsify(res, 400, "friend_list", "", "Friend list is empty", SEND_ME);
     mysql_free_result(qres);
-    return;
+    responsify(msg, "friend_list_null", NULL);
+    return SUCCESS;
   }
 
   MYSQL_ROW row;
@@ -376,68 +351,71 @@ void friend_list(MYSQL *conn, Request *req, Response *res) {
   memset(dataStr, '\0', DATA_L);
 
   while ((row = mysql_fetch_row(qres))) {
-    sprintf(line, "id=%d&username=%s&avatar=%s;", atoi(row[0]), row[1], row[2]);
+    sprintf(line, "id=%d;username=%s;avatar=%s,", atoi(row[0]), row[1], row[2]);
     strcat(dataStr, line);
   }
   dataStr[strlen(dataStr) - 1] = '\0';
 
   mysql_free_result(qres);
-  responsify(res, 200, "friend_list", dataStr, "Get friend list successfully", SEND_ME);
+  responsify(msg, "friend_list", dataStr);
+  return SUCCESS;
 }
 
-void friend_request(PlayerTree *playertree, Request *req, Response *res) {
-  int player_id, friend_id;
-
-  // TODO: Get player id from request
-  if(sscanf(req->header.params, "player_id=%d&friend_id=%d", &player_id, &friend_id) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: FRIEND /friend/add player_id=...&friend_id=...", SEND_ME);
-    return;
-  }
-
-  Player *friend = player_find(playertree, friend_id);
-  if(!friend) {
-    responsify(res, 400, NULL, NULL, "Friend not found", SEND_ME);
-    return;
-  }
-//  int friend_fd = friend->sock;
-
-  responsify(res, 200, "friend_add", "is_friend=1", "Add new friend successfully", SEND_ME);
+int friend_request(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+//  int player_id, friend_id;
+//
+//  // TODO: Get player id from request
+//  if(sscanf(req->header.params, "player_id=%d;friend_id=%d", ;player_id, &friend_id) != 2) {
+//    responsify(res, 400, NULL, NULL, "Bad request. Usage: FRIEND /friend/add player_id=...&friend_id=...", SEND_ME);
+//    return;
+//  }
+//
+//  Player *friend = player_find(playertree, friend_id);
+//  if(!friend) {
+//    responsify(res, 400, NULL, NULL, "Friend not found", SEND_ME);
+//    return;
+//  }
+////  int friend_fd = friend->sock;
+//
+//  responsify(res, 200, "friend_add", "is_friend=1", "Add new friend successfully", SEND_ME);
+  return SUCCESS;
 }
 
-void friend_accept(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
-  int player_id, friend_id, i, accept;
-  // TODO: Get player id from request
-  if(sscanf(req->header.params, "player_id=%d&friend_id=%d&accept=%d", &player_id, &friend_id, &accept) != 3) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: FRIEND /friend/accept player_id=...&friend_id=...", SEND_ME);
-    return;
-  }
-
-  // TODO: QUERY follow points from database
-  char query[QUERY_L];
-  memset(query, '\0', QUERY_L);
-  sprintf(query, "INSERT INTO friends (player_id, friend_id) VALUES (%d, %d)", player_id, friend_id);
-
-  if (mysql_query(conn, query)) {
-    responsify(res, 400, NULL, NULL, "Add friend failed", SEND_ME);
-    return;
-  }
-
-  char dataStr[DATA_L];
-  memset(dataStr, '\0', DATA_L);
-
-  if(!accept) {
-    responsify(res, 400, "friend_accept", "accept=0", "Deny friend", SEND_ME);
-    return;
-  }
-
-  Player *me = player_find(playertree, player_id);
-  Player *friend = player_find(playertree, friend_id);
-  for(i = 0; i < FRIEND_L; i++)
-    if(me->friends[i] == 0) me->friends[i] = friend_id;
-  for(i = 0; i < FRIEND_L; i++)
-    if(friend->friends[i] == 0) friend->friends[i] = player_id;
-
-  memset(dataStr, '\0', DATA_L);
-  sprintf(dataStr, "friend_id=%d&username=%s", friend_id, player_username(playertree, friend_id));
-  responsify(res, 200, "friend_accept", dataStr, "Add new friend successfully", SEND_ME);
+int friend_accept(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+//  int player_id, friend_id, i, accept;
+//  // TODO: Get player id from request
+//  if(sscanf(req->header.params, "player_id=%d&friend_id=%d&accept=%d", &player_id, &friend_id, &accept) != 3) {
+//    responsify(res, 400, NULL, NULL, "Bad request. Usage: FRIEND /friend/accept player_id=...&friend_id=...", SEND_ME);
+//    return;
+//  }
+//
+//  // TODO: QUERY follow points from database
+//  char query[QUERY_L];
+//  memset(query, '\0', QUERY_L);
+//  sprintf(query, "INSERT INTO friends (player_id, friend_id) VALUES (%d, %d)", player_id, friend_id);
+//
+//  if (mysql_query(conn, query)) {
+//    responsify(res, 400, NULL, NULL, "Add friend failed", SEND_ME);
+//    return;
+//  }
+//
+//  char dataStr[DATA_L];
+//  memset(dataStr, '\0', DATA_L);
+//
+//  if(!accept) {
+//    responsify(res, 400, "friend_accept", "accept=0", "Deny friend", SEND_ME);
+//    return;
+//  }
+//
+//  Player *me = player_find(playertree, player_id);
+//  Player *friend = player_find(playertree, friend_id);
+//  for(i = 0; i < FRIEND_L; i++)
+//    if(me->friends[i] == 0) me->friends[i] = friend_id;
+//  for(i = 0; i < FRIEND_L; i++)
+//    if(friend->friends[i] == 0) friend->friends[i] = player_id;
+//
+//  memset(dataStr, '\0', DATA_L);
+//  sprintf(dataStr, "friend_id=%d&username=%s", friend_id, player_username(playertree, friend_id));
+//  responsify(res, 200, "friend_accept", dataStr, "Add new friend successfully", SEND_ME);
+  return SUCCESS;
 }

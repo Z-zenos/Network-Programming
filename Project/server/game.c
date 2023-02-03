@@ -3,10 +3,9 @@
 #include <stdlib.h>
 
 #include "http.h"
-
+#include "player.h"
 #include "game.h"
 #include "algo.h"
-#include "player.h"
 #include "utils.h"
 #include "rbtree.h"
 
@@ -126,67 +125,55 @@ void game_info(GameTree *gametree) {
   }
 }
 
-/*
- PLAY /game\r\n
- Content-Type: 0\r\n
- Params: game_id=1&player_id=1&turn=X\r\n
- \r\n
- * */
-void game_handler(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
-  int game_id, player_id, col, row, opponent_id;
-  char turn;
-
-  // TODO: Get id
-  sscanf(req->header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
-
-  // TODO: Find game -> Update game board
-  Game *game = game_find(gametree, game_id);
-  game->turn = turn;
-  game->num_move++;
-  game->col = col;
-  game->row = row;
-  char dataStr[DATA_L];
-  memset(dataStr, '\0', sizeof dataStr);
-
-  // TODO: Check state game chưa ghi vào db này
-  if(checkWinning(game->board, turn, game->col, game->row)) {
-    Player *winner = player_find(playertree, player_id);
-    opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
-    Player *losser = player_find(playertree, opponent_id);
-
-    winner->achievement.win++;
-    winner->achievement.points += 3;
-
-    losser->achievement.loss++;
-    losser->achievement.points -= 1;
-
-    // TODO: Update data in database
-    char query[QUERY_L];
-    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", winner->achievement.win, winner->achievement.points, winner->id);
-    mysql_query(conn, query);
-    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", losser->achievement.win, losser->achievement.points, losser->id);
-    mysql_query(conn, query);
-
-    sprintf(dataStr, "win=%d", player_id);
-    responsify(res, 200, NULL, dataStr, "Player id win", SEND_JOINER);
-    return;
-  }
-
-  sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
-  responsify(res, 200, NULL, dataStr, NULL, SEND_JOINER);
-  return;
+int game_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+//  int game_id, player_id, col, row, opponent_id;
+//  char turn;
+//
+//  // TODO: Get id
+//  sscanf(req->header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
+//
+//  // TODO: Find game -> Update game board
+//  Game *game = game_find(gametree, game_id);
+//  game->turn = turn;
+//  game->num_move++;
+//  game->col = col;
+//  game->row = row;
+//  char dataStr[DATA_L];
+//  memset(dataStr, '\0', sizeof dataStr);
+//
+//  // TODO: Check state game chưa ghi vào db này
+//  if(checkWinning(game->board, turn, game->col, game->row)) {
+//    Player *winner = player_find(playertree, player_id);
+//    opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
+//    Player *losser = player_find(playertree, opponent_id);
+//
+//    winner->achievement.win++;
+//    winner->achievement.points += 3;
+//
+//    losser->achievement.loss++;
+//    losser->achievement.points -= 1;
+//
+//    // TODO: Update data in database
+//    char query[QUERY_L];
+//    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", winner->achievement.win, winner->achievement.points, winner->id);
+//    mysql_query(conn, query);
+//    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", losser->achievement.win, losser->achievement.points, losser->id);
+//    mysql_query(conn, query);
+//
+//    sprintf(dataStr, "win=%d", player_id);
+//    responsify(res, 200, NULL, dataStr, "Player id win", SEND_JOINER);
+//    return;
+//  }
+//
+//  sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
+//  responsify(res, 200, NULL, dataStr, NULL, SEND_JOINER);
+  return SUCCESS;
 }
 
-void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
-  int player_id;
+int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
   char game_pwd[PASSWORD_L];
-  memset(game_pwd, '\0', PASSWORD_L);
-
-  // TODO: Get player id
-  if(sscanf(req->header.params, "player_id=%d&password=%s", &player_id, game_pwd) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request: Usage: PLAY /game/create player_id=...&password=...", SEND_ME);
-    return;
-  }
+  strcpy(game_pwd, map_val(msg->params, "password"));
 
   // TODO: random first turn for game board
   int r = rand() % 2;
@@ -223,24 +210,16 @@ void game_create(ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertre
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
-  sprintf(dataStr, "game_id=%d&password=%s", new_game.id, game_pwd);
-  responsify(res, 200, "game_created", dataStr, "Create new game successfully", SEND_ME);
-  return;
+  sprintf(dataStr, "game_id=%d;password=%s", new_game.id, game_pwd);
+  responsify(msg, "game_created", dataStr);
+  return SUCCESS;
 }
 
-void game_cancel(GameTree *gametree, Request *req, Response *res) {
-  int player_id, game_id;
-
-  // TODO: Get player id
-  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request: Usage: PLAY /game/cancel game_id=...&player_id=...", SEND_ME);
-    return;
-  }
-
+int game_cancel(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int game_id = atoi(map_val(msg->params, "game_id"));
   game_delete(gametree, game_id);
-
-  responsify(res, 200, NULL, NULL, "Cancel game successfully", SEND_ME);
-  return;
+  responsify(msg, "game_cancel", NULL);
+  return SUCCESS;
 }
 
 
@@ -253,78 +232,72 @@ char *game_board2string(char board[BOARD_S][BOARD_S]) {
   return boardStr;
 }
 
-void game_view(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response *res) {
-  int player_id = 0, game_id;
-  char msgStr[MESSAGE_L], dataStr[DATA_L];
-  memset(msgStr, '\0', MESSAGE_L);
-  memset(dataStr, '\0', DATA_L);
-
-  // TODO: Get player id if exists and game id from user
-  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]", SEND_ME);
-    return;
-  }
-
-  // TODO: Find game room for player
-  Game *game_found = game_find(gametree, game_id);
-
-  if(!game_found) {
-    sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
-    return;
-  }
-
-  ++game_found->views;
-  if(game_found->views > MAX_SPECTATOR) {
-    responsify(res, 403, NULL, NULL, "Max spectators reached", SEND_ME);
-    return;
-  }
-
-  for(int i = 2; i < MAX_SPECTATOR + 2; i++) {
-    if (game_found->joiner[i] == 0) {
-      game_found->joiner[i] = clnt_addr.sock;
-      break;
-    }
-  }
-
-  sprintf(
-    dataStr,
-    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
-    game_found->id, game_found->turn, game_found->views, game_found->num_move,
-    game_found->player1_id, game_found->player2_id,
-    game_board2string(game_found->board), game_found->col, game_found->row
-  );
-
-  sprintf(msgStr, "You have become a spectator of the game [%d]", game_id);
-  responsify(res, 200, NULL, dataStr, msgStr, SEND_JOINER);
-  return;
+int game_view(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+//  int player_id = 0, game_id;
+//  char msgStr[MESSAGE_L], dataStr[DATA_L];
+//  memset(msgStr, '\0', MESSAGE_L);
+//  memset(dataStr, '\0', DATA_L);
+//
+//  // TODO: Get player id if exists and game id from user
+//  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
+//    responsify(res, 400, NULL, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]", SEND_ME);
+//    return;
+//  }
+//
+//  // TODO: Find game room for player
+//  Game *game_found = game_find(gametree, game_id);
+//
+//  if(!game_found) {
+//    sprintf(msgStr, "Game [%d] does not exist", game_id);
+//    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
+//    return;
+//  }
+//
+//  ++game_found->views;
+//  if(game_found->views > MAX_SPECTATOR) {
+//    responsify(res, 403, NULL, NULL, "Max spectators reached", SEND_ME);
+//    return;
+//  }
+//
+//  for(int i = 2; i < MAX_SPECTATOR + 2; i++) {
+//    if (game_found->joiner[i] == 0) {
+//      game_found->joiner[i] = clnt_addr.sock;
+//      break;
+//    }
+//  }
+//
+//  sprintf(
+//    dataStr,
+//    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
+//    game_found->id, game_found->turn, game_found->views, game_found->num_move,
+//    game_found->player1_id, game_found->player2_id,
+//    game_board2string(game_found->board), game_found->col, game_found->row
+//  );
+//
+//  sprintf(msgStr, "You have become a spectator of the game [%d]", game_id);
+//  responsify(res, 200, NULL, dataStr, msgStr, SEND_JOINER);
+//  return;
+  return SUCCESS;
 }
 
-void game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Request *req, Response *res) {
-  int player_id, game_id;
-  char msgStr[MESSAGE_L], dataStr[DATA_L], game_pwd[PASSWORD_L];
-  memset(msgStr, '\0', MESSAGE_L);
+int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int game_id = atoi(map_val(msg->params, "game_id"));
+  char dataStr[DATA_L], game_pwd[PASSWORD_L];
   memset(dataStr, '\0', DATA_L);
-  memset(game_pwd, '\0', PASSWORD_L);
-
-  // TODO: Get game id, player id and password if exists
-  if(sscanf(req->header.params, "game_id=%d&player_id=%d&password=%s", &game_id, &player_id, game_pwd) != 3) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/join game_id=...&player_id=...&password=...", SEND_ME);
-    return;
-  }
+  strcpy(game_pwd, map_val(msg->params, "password"));
 
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);
 
   if(!game_found) {
-    sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
-    return;
+    responsify(msg, "game_null", NULL);
+    return FAILURE;
   }
 
   if(strcmp(game_found->password, game_pwd) != 0) {
-    responsify(res, 400, "game_password_incorrect", NULL, "Password for game incorrect", SEND_ME);
-    return;
+    responsify(msg, "game_password_incorrect", NULL);
+    return FAILURE;
   }
 
   if(game_found->player1_id) game_found->player2_id = player_id;
@@ -342,35 +315,27 @@ void game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
 
   sprintf(
     dataStr,
-    "game_id=%d&is_start=1&ip=127.0.0.1&id=%d&username=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d&rank=%d",
+    "game_id=%d;is_start=1;ip=127.0.0.1;id=%d;username=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d;rank=%d",
     game_found->id, opponent->id, opponent->username, opponent->avatar, opponent->game,
     opponent->achievement.win, opponent->achievement.draw, opponent->achievement.loss, opponent->achievement.points,
     my_rank(conn, opponent->id, tmp)
   );
 
-  responsify(res, 200, "game_join", dataStr, "Join game successfully", SEND_JOINER);
-  return;
+  receiver[1] = opponent->sock;
+  responsify(msg, "game_join", dataStr);
+  return SUCCESS;
 }
 
-void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response *res) {
-  int player_id, game_id;
-  char msgStr[MESSAGE_L], dataStr[DATA_L];
-  memset(msgStr, '\0', MESSAGE_L);
-  memset(dataStr, '\0', DATA_L);
-
-  // TODO: Get player id if exists and game id from user
-  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: PLAY /game/quit game_id=...&player_id=...", SEND_ME);
-    return;
-  }
+int game_quit(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int game_id = atoi(map_val(msg->params, "game_id"));
 
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);
 
   if(!game_found) {
-    sprintf(msgStr, "Game [%d] does not exist", game_id);
-    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
-    return;
+    responsify(msg, "game_null", NULL);
+    return FAILURE;
   }
 
   // TODO: Update game state: Unset socket of player or spectator
@@ -389,20 +354,12 @@ void game_quit(ClientAddr clnt_addr, GameTree *gametree, Request *req, Response 
     }
   }
 
-  sprintf(
-    dataStr,
-    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
-    game_found->id, game_found->turn, game_found->views, game_found->num_move,
-    game_found->player1_id, game_found->player2_id,
-    game_board2string(game_found->board), game_found->col, game_found->row
-  );
-
   // TODO: Send response to quited player
-  responsify(res, 200, "game_quit", dataStr, "Quit game successfully", SEND_JOINER);
-  return;
+  responsify(msg, "game_quit", NULL);
+  return SUCCESS;
 }
 
-void game_list(GameTree *gametree, Request *req, Response *res) {
+int game_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   char dataStr[DATA_L];
   memset(dataStr, '\0', DATA_L);
 
@@ -417,7 +374,7 @@ void game_list(GameTree *gametree, Request *req, Response *res) {
   do {
     sprintf(
       line,
-      "game_id=%d&password=%s&views=%d&num_move=%d&player1_id=%d&player2_id=%d;",
+      "game_id=%d;password=%s;views=%d;num_move=%d;player1_id=%d;player2_id=%d;",
       game->id, game->password, game->views, game->num_move,
       game->player1_id, game->player2_id
     );
@@ -427,24 +384,6 @@ void game_list(GameTree *gametree, Request *req, Response *res) {
   // TODO: Remove ; at last data
   dataStr[strlen(dataStr) - 1] = '\0';
 
-  responsify(res, 200, "game_list", dataStr, "Get list of game successfully", SEND_ME);
-  return;
+  responsify(msg, "game_list", dataStr);
+  return SUCCESS;
 }
-
-/*
-int main() {
-  GameTree *gametree;
-  gametree = game_new();
-  Game g1 = { .id = 1, .views = 34, .num_move = 12, .result = 0, .turn = 'X', .board = {{'_', '_'}, {'X', '_'}} };
-  Game g2 = { .id = 5, .views = 4, .num_move = 3, .result = 0, .turn = 'O', .board = {{'_', 'O'}, {'X', '_'}} };
-  Game g3 = { .id = 3, .views = 199, .num_move = 48, .result = 0, .turn = 'X', .board = {{'_', '_'}, {'X', '_'}} };
-  game_add(gametree, g1);
-  game_add(gametree, g2);
-  game_add(gametree, g3);
-
-  game_info(gametree);
-  game_drop(gametree);
-  return 0;
-}
-
-*/

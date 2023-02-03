@@ -10,7 +10,6 @@
 #include "utils.h"
 #include "config.h"
 #include "player.h"
-
 #include "http.h"
 
 bool is_valid_username(char *username) {
@@ -63,39 +62,32 @@ bool compare_password(char *password_input, unsigned char *password_db) {
   return SUCCESS;
 }
 
-int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
+int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   char username[USERNAME_L], password[PASSWORD_L], avatar[AVATAR_L];
+  strcpy(username, map_val(msg->params, "username"));
+  strcpy(password, map_val(msg->params, "password"));
+  strcpy(username, map_val(msg->params, "username"));
 
-  // TODO: Get username, password from client
-  if(sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]&avatar=%[A-Za-z0-9/.]", username, password, avatar) != 3) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: AUTH /account/register username=...&password=...&avatar=...", SEND_ME);
-    return FAILURE;
-  }
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    responsify(res, 400, "register_fail", NULL, "Username / Password incorrect", SEND_ME);
+    responsify(msg, "register_fail", NULL);
     return FAILURE;
   }
 
   // TODO: Check unique username
   char query[QUERY_L];
-  sprintf(
-    query,
-    "SELECT username FROM players WHERE username = '%s'",
-    username
-  );
+  sprintf(query, "SELECT username FROM players WHERE username = '%s'", username);
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, mysql_error(conn));
-    responsify(res, 400, NULL, NULL, "Internal server error", SEND_ME);
+    server_error(msg);
     return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(qres->row_count) {
     mysql_free_result(qres);
-    responsify(res, 400, "username_duplicate", NULL, "Username already exists", SEND_ME);
+    responsify(msg, "username_duplicate", NULL);
     return FAILURE;
   }
 
@@ -106,49 +98,39 @@ int signup(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
 
   // TODO: Insert data
   str_clear(query);
-  sprintf(
-    query,
-    "INSERT INTO players(username, password, avatar) VALUES('%s', '%s', '%s')",
-    username, pwd_encrypted, avatar
-  );
+  sprintf(query, "INSERT INTO players(username, password, avatar) VALUES('%s', '%s', '%s')", username, pwd_encrypted, avatar);
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, mysql_error(conn));
-    responsify(res, 400, "register_fail", NULL, "Create new account failed", SEND_ME);
+    responsify(msg, "register_fail", NULL);
     return FAILURE;
   }
 
   playertree = player_build(conn);
-
   char dataStr[DATA_L];
   memset(dataStr, '\0', DATA_L);
 
   sprintf(
     dataStr,
-    "id=%d&username=%s&password=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d&rank=%d",
+    "id=%d;username=%s;password=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d;rank=%d",
     (int)mysql_insert_id(conn), username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
   );
 
-  responsify(res, 201, "register_success", dataStr, "Create new account successfully", SEND_ME);
+  responsify(msg, "register_success", dataStr);
   return SUCCESS;
 }
 
-int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
+int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id;
   char username[USERNAME_L], password[PASSWORD_L];
   char dataStr[DATA_L];
   memset(dataStr, '\0', DATA_L);
-
-  // TODO: Get username, password from client
-  if(sscanf(req->header.params, "username=%[A-Za-z0-9]&password=%[A-Za-z0-9]", username, password) != 2) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: AUTH /account/signin username=...&password=...", SEND_ME);
-    return FAILURE;
-  }
+  strcpy(username, map_val(msg->params, "username"));
+  strcpy(password, map_val(msg->params, "password"));
 
   // TODO: Validate username & password
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    sprintf(dataStr, "username=%s&password=%s", username, password);
-    responsify(res, 400, "account_incorrect", dataStr, "Username / Password incorrect", SEND_ME);
+    sprintf(dataStr, "username=%s;password=%s", username, password);
+    responsify(msg, "account_incorrect", dataStr);
     return FAILURE;
   }
 
@@ -157,22 +139,17 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
   // TODO: Authen account
   char query[QUERY_L];
   memset(query, '\0', QUERY_L);
-  sprintf(
-    query,
-    "SELECT * FROM players WHERE username = '%s' AND password = '%s'",
-    username, pwd_encrypted
-  );
+  sprintf(query, "SELECT * FROM players WHERE username = '%s' AND password = '%s'", username, pwd_encrypted);
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, mysql_error(conn));
-    responsify(res, 400, NULL, NULL, "Internal server error", SEND_ME);
+    server_error(msg);
     return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
-    responsify(res, 400, "account_incorrect", NULL, "Account does not exist", SEND_ME);
+    responsify(msg, "account_incorrect", NULL);
     return FAILURE;
   }
 
@@ -183,9 +160,9 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
   Player *player_found = player_find(playertree, player_id);
   if(!player_found->sock) player_found->sock = clnt_addr.sock;
   else {
-    sprintf(dataStr, "username=%s&password=%s", username, password);
-    responsify(res, 400, "login_duplicate", dataStr, "The account is already logged in somewhere else", SEND_ME);
+    sprintf(dataStr, "username=%s;password=%s", username, password);
     mysql_free_result(qres);
+    responsify(msg, "login_duplicate", dataStr);
     return FAILURE;
   }
 
@@ -194,31 +171,24 @@ int signin(ClientAddr clnt_addr, MYSQL *conn, PlayerTree *playertree, Request *r
 
   sprintf(
     dataStr,
-    "id=%d&username=%s&password=%s&avatar=%s&game=%d&win=%d&draw=%d&loss=%d&points=%d&rank=%d",
+    "id=%d;username=%s;password=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d;rank=%d",
     player_found->id, username, pwd_encrypted, player_found->avatar, player_found->game, player_found->achievement.win,
     player_found->achievement.draw, player_found->achievement.loss, player_found->achievement.points, rank
   );
 
   mysql_free_result(qres);
-
-  responsify(res, 200, "login_success", dataStr, "Login successfully", SEND_ME);
+  responsify(msg, "login_success", dataStr);
   return SUCCESS;
 }
 
-int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response *res) {
-  int player_id;
+int change_password(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
   char old_password[PASSWORD_L], new_password[PASSWORD_L];
-  char dataStr[DATA_L], msgStr[MESSAGE_L];
-  memset(old_password, '\0', PASSWORD_L);
-  memset(new_password, '\0', PASSWORD_L);
-  memset(msgStr, '\0', MESSAGE_L);
-  memset(dataStr, '\0', DATA_L);
+  strcpy(old_password, map_val(msg->params, "old_password"));
+  strcpy(new_password, map_val(msg->params, "new_password"));
 
-  // TODO: Get player id, old password and new password
-  if(sscanf(req->header.params, "player_id=%d&old_password=%[A-Za-z0-9]&new_password=%[A-Za-z0-9]", &player_id, old_password, new_password) != 3) {
-    responsify(res, 400, NULL, NULL, "Bad request. Usage: UPDATE /account/updatePassword player_id=...&old_password=...&new_password=...", SEND_ME);
-    return FAILURE;
-  }
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
 
   // TODO: Encrypt password
   char *old_pwd_encrypted = encrypt(old_password);
@@ -226,53 +196,43 @@ int change_password(MYSQL *conn, PlayerTree *playertree, Request *req, Response 
   // TODO: Validate old password
   char query[QUERY_L];
   memset(query, '\0', QUERY_L);
-  sprintf(
-    query,
-    "SELECT * FROM players WHERE id = %d AND password = '%s'",
-    player_id, old_pwd_encrypted
-  );
+  sprintf(query, "SELECT * FROM players WHERE id = %d AND password = '%s'", player_id, old_pwd_encrypted);
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, mysql_error(conn));
-    responsify(res, 400, NULL, NULL, "Internal server error", SEND_ME);
+    server_error(msg);
     return FAILURE;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
-    responsify(res, 400, "account_incorrect", NULL, "Current password incorrect", SEND_ME);
+    responsify(msg, "account_incorrect", NULL);
     return FAILURE;
   }
 
   // TODO: Validate new password
   if(!is_valid_password(new_password)) {
-    sprintf(msgStr, "New password invalid. Password must include alpha, digit and have 4 < length < %d", PASSWORD_L);
-    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
+    responsify(msg, "password_invalid", NULL);
     return FAILURE;
   }
 
   // TODO: Encrypt new password and update database
   char *new_pwd_encrypted = encrypt(new_password);
   memset(query, '\0', QUERY_L);
-  sprintf(
-    query,
-    "UPDATE players SET password = '%s' WHERE id = %d",
-    new_pwd_encrypted, player_id
-  );
+  sprintf(query, "UPDATE players SET password = '%s' WHERE id = %d", new_pwd_encrypted, player_id);
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, "Query to database failed");
-    logger(L_ERROR, mysql_error(conn));
-    responsify(res, 400, NULL, NULL, "Internal server error", SEND_ME);
+    server_error(msg);
     return FAILURE;
   }
 
   playertree = player_build(conn);
   mysql_free_result(qres);
   sprintf(dataStr, "password=%s", new_pwd_encrypted);
-  responsify(res, 200, "password_updated", dataStr, "Update new password successfully", SEND_ME);
+  responsify(msg, "password_updated", NULL);
   return SUCCESS;
 }
 
-int forgot_password();
+int forgot_password(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree * playertree, Message *msg, int *receiver) {
+  return SUCCESS;
+}

@@ -5,12 +5,12 @@
 
 #include <mysql/mysql.h>
 #include "player.h"
-
+#include "game.h"
 #include "http.h"
 
-int signin(ClientAddr, MYSQL *, PlayerTree *,Request *, Response *);
-int signup(MYSQL *, PlayerTree *, Request *, Response *);
-int change_password(MYSQL *, PlayerTree *, Request *, Response *);
-int forgot_password();
+int signin(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int signup(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int change_password(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int forgot_password(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
 #endif

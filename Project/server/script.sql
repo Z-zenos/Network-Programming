@@ -7,7 +7,7 @@ CREATE TABLE players (
   id int primary key auto_increment,
   username varchar(50) not null,
   password varchar(64) not null,
-  avatar varchar(255) not null,
+  avatar varchar(50) not null,
   game int not null default 0,
   win int not null default 0,
   draw int not null default 0,
@@ -19,6 +19,7 @@ CREATE TABLE players (
 CREATE TABLE friends (
  player_id int not null,
  friend_id int not null,
+ status tinyint not null,
  primary key (player_id, friend_id),
  CONSTRAINT `FK_FRIENDS_1` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE ON DELETE CASCADE,
  CONSTRAINT `FK_FRIENDS_2` FOREIGN KEY (`friend_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE ON DELETE CASCADE

@@ -5,53 +5,30 @@
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netdb.h>
-
-#include "config.h"
-
-/*
- Request Design:
- GET /accounts\r\n
- Content-Length: 4\r\n
- Params: id=1&lang=vn\r\n
- \r\n
- body
- * */
-
-
-/*
- Response Design:
- code: 200\r\n
- data: id=1&name=abc;id=2&name=xyz\r\n
- message: cookout
- * */
-
 #include <stdio.h>
 #include <stdbool.h>
+#include <netdb.h>
 
-typedef struct Header {
+#include "map.h"
+#include "config.h"
+#include "rbtree.h"
+
+/*
+ Message Design:
+ PLAY#4#id=1&lang=vn#
+ Hello anh em
+ * */
+
+typedef struct Message {
+  /* Header */
   char command[CMD_L];
-  char path[PATH_L];
   int content_l;
-  char params[PARAM_L];
-} Header;
+  Map *params;
+  char __params__[PARAM_L];
 
-typedef struct Body {
+  /* Body */
   char content[CONTENT_L];
-} Body;
-
-typedef struct Request {
-  Header header;
-  Body body;
-} Request;
-
-typedef struct Response {
-  int code;
-  char data[DATA_L];
-  char message[MESSAGE_L];
-  char state[STATE_L];
-  int send_type;
-} Response;
+} Message;
 
 typedef struct ClientAddr {
   int sock;
@@ -59,28 +36,19 @@ typedef struct ClientAddr {
   char address[ADDR_L];
 } ClientAddr;
 
-void cleanup(Request *, Response *, int *);
-void req_print(Request);
-void res_print(Response);
-
-/* Parse request to string */
-void req_parse(Request *, char *);
-
-/* Parse string to response object */
-void res_parse(Response *, char *);
-void requestify(Request *, char *, char *, int, char *, char *);
-void responsify(Response *, int, char *, char *, char *,  int);
-
-void print_socket_addr(const struct sockaddr *, FILE *);
-char *socket_addr(const struct sockaddr *);
-int server_init(char *);
-int connect2server(char *, char *);
-ClientAddr accept_conn(int);
-int get_req(int, Request *);
-int get_res(int, Response *);
-int send_req(int, Request);
-int send_res(int *, Response);
-
+void cleanup(Message *, int *);
+void msg_print(Message);
+void msg_parse(Message *, char *);
+void server_error(Message *);
 bool is_port(char *);
 bool is_ip(const char *);
+void messagify(Message *, char *, char *, char *, char *);
+void responsify(Message *, char *, char *);
+void parse_params(Message *);
+char *socket_addr(const struct sockaddr *);
+int server_init(char *);
+ClientAddr accept_conn(int);
+int get_msg(int, Message *);
+int send_msg(int *, Message);
+
 #endif

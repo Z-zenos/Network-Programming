@@ -1,13 +1,12 @@
-#pragma once
 
 #ifndef _GAME_H_
 #define _GAME_H_
 
 #include <time.h>
 #include <mysql/mysql.h>
+
 #include "http.h"
 #include "config.h"
-#include "player.h"
 
 typedef struct Game {
   int id;
@@ -40,7 +39,11 @@ typedef struct Game {
   int result;
 } Game;
 
+#pragma once
 typedef struct rbtree GameTree;
+
+#include "player.h"
+
 
 GameTree *game_new();
 void game_drop(GameTree *);
@@ -48,12 +51,13 @@ int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 void game_info(GameTree *);
-void game_handler(MYSQL *, GameTree *, PlayerTree *, Request *, Response *);
-void game_create(ClientAddr, GameTree *, PlayerTree *, Request *, Response *);
-void game_cancel(GameTree *, Request *, Response *);
-void game_view(ClientAddr, GameTree *, Request *, Response *);
-void game_list(GameTree *, Request *, Response *);
+int game_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_cancel(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_view(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 char *game_board2string(char [BOARD_S][BOARD_S]);
-void game_join(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Request *, Response *);
-void game_quit(ClientAddr, GameTree *, Request *, Response *);
+int game_join(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_quit(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+
 #endif

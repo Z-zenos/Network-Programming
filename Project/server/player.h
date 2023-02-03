@@ -1,4 +1,3 @@
-#pragma once
 
 #ifndef _PLAYER_H_
 #define _PLAYER_H_
@@ -26,7 +25,12 @@ typedef struct User {
   Achievement achievement;
 } Player;
 
+#pragma once
 typedef struct rbtree PlayerTree;
+
+#include "game.h"
+
+
 PlayerTree *player_build(MYSQL *);
 //void drop_playertree(PlayerTree *);
 int player_add(PlayerTree *, Player);
@@ -36,11 +40,11 @@ void player_info(PlayerTree *);
 int player_fd(PlayerTree *, int);
 char *player_username(PlayerTree *, int);
 int my_rank(MYSQL *, int, char *);
-void rank(MYSQL *, Request *, Response *);
-void profile(MYSQL *, Request *, Response *);
-void friend_check(MYSQL *, Request *, Response *);
-void friend_list(MYSQL *, Request *, Response *);
-void friend_request(PlayerTree *, Request *, Response *);
-void friend_accept(MYSQL *, PlayerTree *, Request *, Response *);
+int rank(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int profile(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int friend_check(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int friend_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int friend_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int friend_accept(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
 #endif

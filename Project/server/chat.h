@@ -4,8 +4,9 @@
 
 #include "game.h"
 #include "config.h"
+#include "http.h"
 #include "player.h"
 
-void chat(GameTree *, PlayerTree *, Request *, Response *);
+int chat(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
 #endif
