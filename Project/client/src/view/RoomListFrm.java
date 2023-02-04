@@ -45,7 +45,9 @@ public class RoomListFrm extends javax.swing.JFrame {
       public void run(){
         while (Client.roomListFrm.isDisplayable() && isPlayThread && !isFiltered) {                    
           try {
-            Client.socketHandle.write("GET /game/list\r\nContent-Length: 0\r\nParams: \r\n\r\n");
+            Client.socketHandle.write(
+              Client.socketHandle.requestify("GAME_LIST", 0, "player_id=" + Client.user.getID(), "")
+            );
             
             // Sau 5s reload list phòng 1 lần 
             Thread.sleep(5000);
@@ -193,7 +195,9 @@ public class RoomListFrm extends javax.swing.JFrame {
           int room = Integer.parseInt(listRoom.get(index).split(" ")[1]);
           String password = listPassword.get(index);
           if(password.equals(" ")){
-            Client.socketHandle.write("PLAY /game/join\r\nContent-Length: 0\r\nParams: game_id=" + room + "\r\n\r\n");
+            Client.socketHandle.write(
+              Client.socketHandle.requestify("GAME_JOIN", 0, "game_id=" + room, "")
+            );
             Client.closeView(Client.View.ROOMLIST);
           }
           else{

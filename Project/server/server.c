@@ -168,7 +168,6 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
     if(threadArgs == NULL) {
-      logger(L_ERROR, "malloc() failed");
       close(server_fd);
       exit(FAILURE);
     }

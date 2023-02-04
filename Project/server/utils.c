@@ -212,7 +212,7 @@ int input(char *type, char *str, int max_length) {
     return FAILURE;
   }
 
-  sscanf(input_console, "%[^\n]s", str);
+  sscanf(input_console, "%[^\n]", str);
   return SUCCESS;
 }
 

@@ -25,7 +25,7 @@ int chat(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
 
   // TODO: Chat global
   if(game_id == 0) {
-    sprintf(dataStr, "username=%s;content=%s", player_username(playertree, player_id), content);
+    sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), content);
     receiver[0] = -1;
     responsify(msg, "chat_global", dataStr);
     return SUCCESS;
@@ -46,7 +46,7 @@ int chat(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
   }
 
   receiver[0] = player_fd(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id);
-  sprintf(dataStr, "username=%s;content=%s", player_username(playertree, player_id), content);
+  sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), content);
   responsify(msg, "chat_local", dataStr);
   return SUCCESS;
 }

@@ -133,7 +133,7 @@ public class CreateRoomPasswordFrm extends javax.swing.JFrame {
         String password = jTextField1.getText();
         if(password.isEmpty())
           throw new Exception("Vui lòng nhập mật khẩu bạn muốn đặt cho phòng");
-        Client.socketHandle.write(Client.socketHandle.requestify("PLAY", "game/create", 0, "player_id=" + Client.user.getID() + "&password=" + password, ""));
+        Client.socketHandle.write(Client.socketHandle.requestify("GAME_CREATE", 0, "player_id=" + Client.user.getID() + "&password=" + password, ""));
         Client.closeView(Client.View.CREATEROOMPASSWORD);
       } catch (IOException ex) {
         JOptionPane.showMessageDialog(rootPane, ex.getMessage());

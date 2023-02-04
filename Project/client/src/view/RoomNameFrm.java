@@ -162,7 +162,7 @@ public class RoomNameFrm extends javax.swing.JFrame {
         if(jTextField2.getText().length()>0){
           password = jTextField2.getText();
         }
-        Client.socketHandle.write(Client.socketHandle.requestify("PLAY", "game/join", 0, "game_id=" + roomName + "&player_id=" + Client.user.getID() + "&password=" + password, ""));
+        Client.socketHandle.write(Client.socketHandle.requestify("GAME_JOIN", 0, "game_id=" + roomName + "&player_id=" + Client.user.getID() + "&password=" + password, ""));
       } catch (IOException ex) {
         JOptionPane.showMessageDialog(rootPane, ex.getMessage());
       }

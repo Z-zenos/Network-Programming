@@ -179,7 +179,7 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
 
   while ((row = mysql_fetch_row(qres))) {
     if(strcmp(row[0], idStr) == 0) {
-      sprintf(line, "username=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d", row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]));
+      sprintf(line, "username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d", row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]));
       strcat(dataStr, line);
       mysql_free_result(qres);
       return atoi(row[8]);
@@ -224,7 +224,7 @@ int rank(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
     char line[1000];
     sprintf(
       line,
-      "id=%d;username=%s;avatar=%s;win=%d;loss=%d;points=%d,",
+      "id=%d,username=%s,avatar=%s,win=%d,loss=%d,points=%d;",
       player[i].id, player[i].username, player[i].avatar, player[i].achievement.win,
       player[i].achievement.loss, player[i].achievement.points
     );
@@ -285,7 +285,7 @@ int profile(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *p
   while ((row = mysql_fetch_row(qres))) {
     sprintf(
       dataStr,
-      "username=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;streak=%d;points=%d;rank=%d",
+      "username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,streak=%d,points=%d,rank=%d",
       row[1], row[2], atoi(row[3]), atoi(row[4]), atoi(row[5]), atoi(row[6]), atoi(row[7]), atoi(row[8]), my_rank(conn, type ? atoi(row[0]) : atoi(key), tmp)
     );
   }
@@ -351,7 +351,7 @@ int friend_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   memset(dataStr, '\0', DATA_L);
 
   while ((row = mysql_fetch_row(qres))) {
-    sprintf(line, "id=%d;username=%s;avatar=%s,", atoi(row[0]), row[1], row[2]);
+    sprintf(line, "id=%d,username=%s,avatar=%s;", atoi(row[0]), row[1], row[2]);
     strcat(dataStr, line);
   }
   dataStr[strlen(dataStr) - 1] = '\0';

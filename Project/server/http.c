@@ -17,25 +17,27 @@ void cleanup(Message *msg, int *receiver) {
   memset(msg->content, '\0', CONTENT_L);
   memset(msg->__params__, '\0', PARAM_L);
   msg->content_l = 0;
-  map_drop(msg->params);
+  if(msg->params) map_drop(msg->params);
   msg->params = map_new();
   memset(receiver, 0, MAX_CLIENT);
 }
 
-void parse_params(Message *msg) {
-  char **params = str_split(msg->__params__, '&');
+void parse_params(Message *msg, char *params) {
+  char **param_arr = str_split(params, '&');
   Object param;
   int i = 0;
-  while (params[i]) {
-    sscanf(params[i], "%s=%s", param.key, param.value);
+  while (param_arr[i]) {
+    sscanf(param_arr[i], "%[^=]=%s", param.key, param.value);
     map_add(msg->params, param);
     i++;
   }
 }
 
 void msg_parse(Message *msg, char *msg_str) {
-  sscanf(msg_str, "%s#%d#%s#%[^\n]", msg->command, &msg->content_l, msg->__params__, msg->content);
-  parse_params(msg);
+  char params[PARAM_L];
+  sscanf(msg_str, "%[^#]#%d#%[^#]#%[^\n]", msg->command, &msg->content_l, msg->__params__, msg->content);
+  strcpy(params, msg->__params__);
+  parse_params(msg, params);
 }
 
 void msg_print(Message msg) {
@@ -53,7 +55,7 @@ void messagify(Message *msg, char *cmd, char *params, char *state, char *data) {
   strcpy(msg->__params__, params ? params : "0");
   sprintf(msg->content, "state=%s", state);
   if(data) {
-    strcat(msg->content, ";");
+    strcat(msg->content, ",");
     strcat(msg->content, data);
   }
   msg->content_l = strlen(msg->content);
@@ -64,7 +66,7 @@ void responsify(Message *msg, char *state, char *data) {
   strcpy(msg->__params__, "0");
   sprintf(msg->content, "state=%s", state);
   if(data) {
-    strcat(msg->content, ";");
+    strcat(msg->content, ",");
     strcat(msg->content, data);
   }
   msg->content_l = strlen(msg->content);
@@ -177,7 +179,7 @@ ClientAddr accept_conn(int server_fd) {
 int get_msg(int client_fd, Message *msg) {
   char msg_str[MSG_L];
   ssize_t numBytesRcvd = recv(client_fd, msg_str, MSG_L, 0);
-  msg_str[numBytesRcvd] = '\0';
+  msg_str[numBytesRcvd - 1] = '\0';
   if(numBytesRcvd <= 0) {
 
   }

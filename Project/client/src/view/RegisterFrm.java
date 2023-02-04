@@ -181,7 +181,9 @@ public class RegisterFrm extends javax.swing.JFrame {
         }
         Client.closeAllViews();
         Client.openView(Client.View.GAMENOTICE, "Đăng kí tài khoản", "Đang chờ phản hồi");
-        Client.socketHandle.write("AUTH /account/register\r\nContent-Length: 0\r\nParams: username=" + username + "&password=" + password + "&avatar=" + avatar_url + "\r\n\r\n");
+        Client.socketHandle.write(
+          Client.socketHandle.requestify("REGISTER", 0, "username=" + username + "&password=" + password + "&avatar=" + avatar_url, "")
+        );
       } catch (SQLException ex) {
         JOptionPane.showMessageDialog(rootPane, ex.getMessage());
       } catch (Exception ex) {

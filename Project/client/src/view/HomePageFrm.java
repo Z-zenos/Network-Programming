@@ -431,7 +431,7 @@ public class HomePageFrm extends javax.swing.JFrame {
       }
       else if(res == JOptionPane.NO_OPTION){
         try {
-          Client.socketHandle.write(Client.socketHandle.requestify("PLAY", "game/create", 0, "player_id=" + Client.user.getID() + "password=", ""));
+          Client.socketHandle.write(Client.socketHandle.requestify("GAME_CREATE", 0, "player_id=" + Client.user.getID() + "password=", ""));
           Client.closeView(Client.View.HOMEPAGE);
         } catch (IOException ex) {
           JOptionPane.showMessageDialog(rootPane, ex.getMessage());
@@ -443,7 +443,7 @@ public class HomePageFrm extends javax.swing.JFrame {
       try {
         Client.closeView(Client.View.HOMEPAGE);
         Client.openView(Client.View.ROOMLIST);
-        Client.socketHandle.write("GET /game/list\r\nContent-Length: 0\r\nParams: \r\n\r\n");
+        Client.socketHandle.write(Client.socketHandle.requestify("GAME_LIST", 0, "player_id=" + Client.user.getID(), ""));
       } catch (IOException ex) {
           JOptionPane.showMessageDialog(rootPane, ex.getMessage());
       }
@@ -508,9 +508,7 @@ public class HomePageFrm extends javax.swing.JFrame {
       temp += "Tôi: " + jTextField1.getText() + "\n";
       jTextArea1.setText(temp);
       Client.socketHandle.write(
-        "CHAT /chat\r\nContent-Length: " + jTextField1.getText().length() + 
-        "\r\nParams: game_id=0&player_id=" + Client.user.getID() + 
-        "\r\n\r\n" + jTextField1.getText()
+        Client.socketHandle.requestify("CHAT", jTextField1.getText().length(), "game_id=0&player_id=" + Client.user.getID(), jTextField1.getText())
       );
       
       jTextField1.setText("");

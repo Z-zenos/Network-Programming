@@ -159,7 +159,7 @@ public class LoginFrm extends javax.swing.JFrame {
         Client.closeAllViews();
         Client.openView(Client.View.GAMENOTICE, "Đăng nhập", "Đang xác thực thông tin đăng nhập");
         Client.socketHandle.write(
-          "AUTH /account/login\r\nContent-Length: 0\r\nParams: username=" + username + "&password=" + password + "\r\n\r\n"
+          Client.socketHandle.requestify("LOGIN", 0, "username=" + username + "&password=" + password, "")
         );            
       } catch (Exception ex) {
         JOptionPane.showMessageDialog(rootPane, ex.getMessage());

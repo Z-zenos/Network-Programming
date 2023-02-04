@@ -46,7 +46,7 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
         jLabel15.setText(String.format("%.2f", (float)user.getnumberOfWin() / user.getNumberOfGame() * 100) + "%");
       }
       jLabel12.setText("" + (user.getnumberOfWin() * 10 + user.getNumberOfGame()));
-      Client.socketHandle.write(Client.socketHandle.requestify("FRIEND", "friend/check", 0, "player_id=" + Client.user.getID() + "&friend_id=" + user.getID(), ""));
+      Client.socketHandle.write(Client.socketHandle.requestify("FRIEND_CHECK", 0, "player_id=" + Client.user.getID() + "&friend_id=" + user.getID(), ""));
     } catch (IOException ex) {
       JOptionPane.showMessageDialog(rootPane, ex.getMessage());
     }
@@ -203,9 +203,9 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
       .addGroup(layout.createSequentialGroup()
         .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-          .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
-          .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE))
+        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+          .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE)
+          .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 91, javax.swing.GroupLayout.PREFERRED_SIZE))
         .addGap(18, 18, 18)
         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
           .addComponent(jLabel2)
@@ -252,7 +252,7 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
         int res = JOptionPane.showConfirmDialog(rootPane, "Bạn đồng ý gửi lời mời kết bạn tới đối thủ chứ", "Xác nhận yêu cầu kết bạn", JOptionPane.YES_NO_OPTION);
         if(res==JOptionPane.YES_OPTION){
           try {
-            Client.socketHandle.write(Client.socketHandle.requestify("FRIEND", "friend/add", 0, "player_id=" + Client.user.getID() + "&friend_id=" + user.getID(), ""));
+            Client.socketHandle.write(Client.socketHandle.requestify("FRIEND_ADD", 0, "player_id=" + Client.user.getID() + "&friend_id=" + user.getID(), ""));
           } catch (IOException ex) {
             JOptionPane.showMessageDialog(rootPane, ex.getMessage());
           }

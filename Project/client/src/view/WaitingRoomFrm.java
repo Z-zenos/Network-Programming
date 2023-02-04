@@ -149,7 +149,7 @@ public class WaitingRoomFrm extends javax.swing.JFrame {
     try {
       Client.closeView(Client.View.WAITINGROOM);
       Client.openView(Client.View.HOMEPAGE);
-      Client.socketHandle.write(Client.socketHandle.requestify("PLAY", "game/cancel", 0, "game_id=" + this.game_id + "&player_id=" + Client.user.getID(), ""));
+      Client.socketHandle.write(Client.socketHandle.requestify("GAME_CANCEL", 0, "game_id=" + this.game_id + "&player_id=" + Client.user.getID(), ""));
     } catch (IOException ex) {
       JOptionPane.showMessageDialog(rootPane, ex.getMessage());
     }

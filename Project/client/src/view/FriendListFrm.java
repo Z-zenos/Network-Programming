@@ -67,7 +67,7 @@ public class FriendListFrm extends javax.swing.JFrame {
   
   public void requestUpdate(){
     try {
-      Client.socketHandle.write(Client.socketHandle.requestify("FRIEND", "friend/list", 0, "player_id=" + Client.user.getID(), ""));
+      Client.socketHandle.write(Client.socketHandle.requestify("FRIEND_LIST", 0, "player_id=" + Client.user.getID(), ""));
     } catch (IOException ex) {
       JOptionPane.showMessageDialog(rootPane, ex.getMessage());
     }

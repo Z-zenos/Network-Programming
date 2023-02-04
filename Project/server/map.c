@@ -12,8 +12,8 @@ static int object_cmp(const void *p1, const void *p2) {
   object1 = (Object *)p1;
   object2 = (Object *)p2;
 
-  if(strcmp(object1->key, object2->key) == 1) return 1;
-  if(strcmp(object1->key, object2->key) == -1) return -1;
+  if(strcmp(object1->key, object2->key) > 0) return 1;
+  if(strcmp(object1->key, object2->key) < 0) return -1;
   else return 0;
 }
 

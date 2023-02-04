@@ -111,7 +111,7 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
 
   sprintf(
     dataStr,
-    "id=%d;username=%s;password=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d;rank=%d",
+    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
     (int)mysql_insert_id(conn), username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
   );
 
@@ -129,7 +129,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
 
   // TODO: Validate username & password
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    sprintf(dataStr, "username=%s;password=%s", username, password);
+    sprintf(dataStr, "username=%s,password=%s", username, password);
     responsify(msg, "account_incorrect", dataStr);
     return FAILURE;
   }
@@ -160,7 +160,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   Player *player_found = player_find(playertree, player_id);
   if(!player_found->sock) player_found->sock = clnt_addr.sock;
   else {
-    sprintf(dataStr, "username=%s;password=%s", username, password);
+    sprintf(dataStr, "username=%s,password=%s", username, password);
     mysql_free_result(qres);
     responsify(msg, "login_duplicate", dataStr);
     return FAILURE;
@@ -171,7 +171,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
 
   sprintf(
     dataStr,
-    "id=%d;username=%s;password=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d;rank=%d",
+    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
     player_found->id, username, pwd_encrypted, player_found->avatar, player_found->game, player_found->achievement.win,
     player_found->achievement.draw, player_found->achievement.loss, player_found->achievement.points, rank
   );

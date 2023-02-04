@@ -31,7 +31,7 @@ public class SocketHandle implements Runnable {
   private int ID_Server;
   
   public List<User> getListUser(String[] message){
-    Pattern p = Pattern.compile("id=(\\d+)&username=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)");
+    Pattern p = Pattern.compile("id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+)");
     Matcher m;
     List<User> friend = new ArrayList<>();
     for(int i = 0; i < message.length; i++){
@@ -45,7 +45,7 @@ public class SocketHandle implements Runnable {
   public List<User> getListRank(String data){
     String[] splitter = data.split(";");
     List<User> player = new ArrayList<>();
-    Pattern pattern = Pattern.compile("id=(\\d+)&username=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)&win=(\\d+)&loss=(\\d+)&points=(-?\\d+)");
+    Pattern pattern = Pattern.compile("id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),win=(\\d+),loss=(\\d+),points=(-?\\d+)");
     Matcher m;
     for(int i = 0; i < splitter.length; i++){
       m = pattern.matcher(splitter[i]);
@@ -64,11 +64,11 @@ public class SocketHandle implements Runnable {
     return player;
   }
   
-  // data: id=...&username=...&password=...&avatar=...&game=...&win=...&draw=...&loss=...&points=...&rank=...
+  // data: id=...,username=...,password=...,avatar=...,game=...,win=...,draw=...,loss=...,points=...,rank=...
   public User getUserFromString(String data){
     Pattern pattern = Pattern.compile(
-      "id=(\\d+)&username=([a-zA-Z0-9]+)&password=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)&"
-          + "game=(\\d+)&win=(\\d+)&draw=(\\d+)&loss=(\\d+)&points=(\\d+)&rank=(\\d+)"
+      "id=(\\d+),username=([a-zA-Z0-9]+),password=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),"
+          + "game=(\\d+),win=(\\d+),draw=(\\d+),loss=(\\d+),points=(\\d+),rank=(\\d+)"
     );
     Matcher m = pattern.matcher(data);
     m.find();
@@ -127,7 +127,7 @@ public class SocketHandle implements Runnable {
         if(res.getState().equals("account_incorrect")){
           System.out.println("Thông tin sai");
           Client.closeView(Client.View.GAMENOTICE);
-          Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+)&password=([a-zA-Z0-9]+)");
+          Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+),password=([a-zA-Z0-9]+)");
           Matcher m = pattern.matcher(res.getData());
           m.find();
           Client.openView(Client.View.LOGIN, m.group(1), m.group(2));
@@ -138,7 +138,7 @@ public class SocketHandle implements Runnable {
         if(res.getState().equals("login_duplicate")){
           System.out.println("Đã đăng nhập");
           Client.closeView(Client.View.GAMENOTICE);          
-          Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+)&password=([a-zA-Z0-9]+)");
+          Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+),password=([a-zA-Z0-9]+)");
           Matcher m = pattern.matcher(res.getData());
           m.find();
           Client.openView(Client.View.LOGIN, m.group(1), m.group(2));
@@ -165,21 +165,21 @@ public class SocketHandle implements Runnable {
             Client.homePageFrm.addMessage(res.getData());
           }
         }
-//        
-//        // Xử lý kết quả tìm phòng từ server
-//        if(messageSplit[0].equals("room-fully")){
-//          Client.closeAllViews();
-//          Client.openView(Client.View.HOMEPAGE);
-//          JOptionPane.showMessageDialog(Client.homePageFrm, "Phòng chơi đã đủ 2 người chơi");
-//        }
-//        
-//        // Xử lý không tìm thấy phòng trong chức năng vào phòng
-//        if(messageSplit[0].equals("room-not-found")){
-//          Client.closeAllViews();
-//          Client.openView(Client.View.HOMEPAGE);
-//          JOptionPane.showMessageDialog(Client.homePageFrm, "Không tìm thấy phòng");
-//        }
-//        
+        
+        // Xử lý kết quả tìm phòng từ server
+        if(res.getState().equals("game_full")){
+          Client.closeAllViews();
+          Client.openView(Client.View.HOMEPAGE);
+          JOptionPane.showMessageDialog(Client.homePageFrm, "Phòng chơi đã đủ 2 người chơi");
+        }
+        
+        // Xử lý không tìm thấy phòng trong chức năng vào phòng
+        if(res.getState().equals("game_null")){
+          Client.closeAllViews();
+          Client.openView(Client.View.HOMEPAGE);
+          JOptionPane.showMessageDialog(Client.homePageFrm, "Không tìm thấy phòng");
+        }
+    
         // Xử lý phòng có mật khẩu sai
         if(res.getState().equals("game_password_incorrect")){
           Client.closeAllViews();
@@ -199,7 +199,7 @@ public class SocketHandle implements Runnable {
           Vector<String> rooms = new Vector<>();
           Vector<String> passwords = new Vector<>();
           String[] splitter = res.getData().split(";");
-          Pattern p = Pattern.compile("game_id=(\\d+)&password=([a-zA-Z0-9]+)&views=(\\d+)&num_move=(\\d+)&player1_id=(\\d+)&player2_id=(\\d+)");
+          Pattern p = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+),views=(\\d+),num_move=(\\d+),player1_id=(\\d+),player2_id=(\\d+)");
           Matcher m;
           for(int i = 0; i < splitter.length; i++){
             m = p.matcher(splitter[i]);
@@ -239,13 +239,13 @@ public class SocketHandle implements Runnable {
 //          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
 //        }
 //        
-        // Xử lý vào phòng. data: game_id=...&is_start=...&ip=...&id=...&username=...&password=...&avatar=...&game=...&win=...&draw=...&loss=...&points=...&rank=...
+        // Xử lý vào phòng. data: game_id=...,is_start=...,ip=...,id=...,username=...,password=...,avatar=...,game=...,win=...,draw=...,loss=...,points=...,rank=...
         if(res.getState().equals("game_join")){
           System.out.println("Vào phòng");
           Pattern p = Pattern.compile(
-            "game_id=(\\d+)&is_start=(\\d+)&ip=([\\.\\d]+)&"
-            + "id=(\\d+)&username=([a-zA-Z0-9]+)&avatar=([a-zA-Z0-9/\\.]+)&game=(\\d+)&"
-            + "win=(\\d+)&draw=(\\d+)&loss=(\\d+)&points=(\\d+)&rank=(\\d+)"
+            "game_id=(\\d+),is_start=(\\d+),ip=([\\.\\d]+),"
+            + "id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),game=(\\d+),"
+            + "win=(\\d+),draw=(\\d+),loss=(\\d+),points=(\\d+),rank=(\\d+)"
           );
           Matcher m = p.matcher(res.getData());
           m.find();
@@ -293,7 +293,7 @@ public class SocketHandle implements Runnable {
         if(res.getState().equals("game_created")){
           Client.closeAllViews();
           Client.openView(Client.View.WAITINGROOM);
-          Pattern pattern = Pattern.compile("game_id=(\\d+)&password=([a-zA-Z0-9]+)");
+          Pattern pattern = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+)");
           Matcher m = pattern.matcher(res.getData());
           m.find();
           Client.waitingRoomFrm.game_id = Integer.parseInt(m.group(1));
@@ -406,8 +406,8 @@ public class SocketHandle implements Runnable {
     os.flush();
   }
   
-  public String requestify(String command, String path, int content_l, String params, String content) {
-    return command + " /" + path + "\r\nContent-Length: " + content_l + "\r\nParams: " + params + "\r\n\r\n" + content;
+  public String requestify(String command, int content_l, String params, String content) {
+    return command + "#" + content_l + "#" + params + "#" + content;
   }
 
   public Socket getSocketOfClient() {

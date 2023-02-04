@@ -13,37 +13,25 @@ import java.util.regex.Pattern;
  * @author zenos
  */
 public class Response {
-  private int code;
   private String data;
   private String state;
-  private String message;
 
   public Response(String response) {
-    Pattern pattern = Pattern.compile(
-      "code: (\\d+),state: ([a-zA-Z0-9_]+),data: (.+),message: (.+)"
-    );
+    Pattern pattern = Pattern.compile("RESPONSE#0#0#(.+)");
     Matcher m = pattern.matcher(response);
     m.find();
-    this.code = Integer.parseInt(m.group(1)); // code: 200
-    this.state = m.group(2); // state: wrong-user
-    this.data = m.group(3);  // data: username=tuan12&password=absa12xsh
-    this.message = m.group(4); // message: Successfully\n
-  }
-
-  public int getCode() {
-    return code;
+    String content = m.group(1);
+    String[] splitter = content.split(",");
+    this.state = splitter[0].substring(splitter[0].indexOf("=") + 1);
+    this.data = content.contains(",") ? content.substring(content.indexOf(",") + 1) : "";
   }
 
   public String getData() {
     return data;
   }
-
+  
   public String getState() {
-    return state;
-  }
-
-  public String getMessage() {
-    return message;
+    return this.state;
   }
 
   public String[] parseData(String format) {

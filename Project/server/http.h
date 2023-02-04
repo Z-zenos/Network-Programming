@@ -44,7 +44,7 @@ bool is_port(char *);
 bool is_ip(const char *);
 void messagify(Message *, char *, char *, char *, char *);
 void responsify(Message *, char *, char *);
-void parse_params(Message *);
+void parse_params(Message *, char *);
 char *socket_addr(const struct sockaddr *);
 int server_init(char *);
 ClientAddr accept_conn(int);

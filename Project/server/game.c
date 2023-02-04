@@ -210,7 +210,7 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
-  sprintf(dataStr, "game_id=%d;password=%s", new_game.id, game_pwd);
+  sprintf(dataStr, "game_id=%d,password=%s", new_game.id, game_pwd);
   responsify(msg, "game_created", dataStr);
   return SUCCESS;
 }
@@ -315,7 +315,7 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
 
   sprintf(
     dataStr,
-    "game_id=%d;is_start=1;ip=127.0.0.1;id=%d;username=%s;avatar=%s;game=%d;win=%d;draw=%d;loss=%d;points=%d;rank=%d",
+    "game_id=%d,is_start=1,ip=127.0.0.1,id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
     game_found->id, opponent->id, opponent->username, opponent->avatar, opponent->game,
     opponent->achievement.win, opponent->achievement.draw, opponent->achievement.loss, opponent->achievement.points,
     my_rank(conn, opponent->id, tmp)
@@ -374,7 +374,7 @@ int game_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   do {
     sprintf(
       line,
-      "game_id=%d;password=%s;views=%d;num_move=%d;player1_id=%d;player2_id=%d;",
+      "game_id=%d,password=%s,views=%d,num_move=%d,player1_id=%d,player2_id=%d;",
       game->id, game->password, game->views, game->num_move,
       game->player1_id, game->player2_id
     );
