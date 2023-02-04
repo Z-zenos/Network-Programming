@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
     .num_move = 48,
     .result = 0,
     .turn = 'O',
-    .player1_id = 1,
+    .player1_id = 3,
     .player2_id = 2,
     .board = {
       {'_', 'O', 'X'},

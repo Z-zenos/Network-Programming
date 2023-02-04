@@ -224,7 +224,6 @@ int game_cancel(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   return SUCCESS;
 }
 
-
 char *game_board2string(char board[BOARD_S][BOARD_S]) {
   char *boardStr = (char*)calloc('\0', BOARD_S * BOARD_S);
   int i;
@@ -302,6 +301,11 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
     return FAILURE;
   }
 
+  if(game_found->player1_id && game_found->player2_id) {
+    responsify(msg, "game_full", NULL);
+    return FAILURE;
+  }
+
   if(game_found->player1_id) game_found->player2_id = player_id;
   else game_found->player1_id = player_id;
 
@@ -310,8 +314,10 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
 
   Player *player_found = player_find(playertree, player_id);
   player_found->sock = clnt_addr.sock;
+  player_found->is_playing = true;
 
   Player *opponent = player_find(playertree, (game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id));
+  opponent->is_playing = true;
   char tmp[DATA_L];
   memset(tmp, '\0', DATA_L);
 

@@ -201,7 +201,7 @@ public class SocketHandle implements Runnable {
           m.find();
           Client.waitingRoomFrm.game_id = Integer.parseInt(m.group(1));
           Client.waitingRoomFrm.setRoomName(m.group(1));
-          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + (m.group(2) == null ? "không có" : m.group(2)));
+          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + (m.group(2) == null ? "không có" : m.group(3)));
         }
         
         // Xử lý lấy danh sách phòng
@@ -222,7 +222,7 @@ public class SocketHandle implements Runnable {
           Client.roomListFrm.updateRoomList(rooms, passwords);
         }
         
-        // Xử lý kết quả tìm phòng từ server
+        // Xử lý vào phòng đã đủ người chơi 
         if(res.getState().equals("game_full")){
           Client.closeAllViews();
           Client.openView(Client.View.HOMEPAGE);
@@ -242,7 +242,6 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.HOMEPAGE);
           JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");
         }
-
 
      
         // Xử lý vào phòng. data: game_id=...,is_start=...,ip=...,id=...,username=...,password=...,avatar=...,game=...,win=...,draw=...,loss=...,points=...,rank=...
@@ -294,7 +293,21 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.GAMECLIENT, competitor, roomID, isStart, competitorIP);
           Client.gameClientFrm.newgame();
         }
+        
+        // Xử lý rời phòng
+        if(res.getState().equals("game_quit")){
+          Client.gameClientFrm.stopTimer();
+          Client.closeAllViews();
+          Client.openView(Client.View.GAMENOTICE, "Đối thủ đã thoát khỏi phòng", "Đang trở về trang chủ");
+          Thread.sleep(3000);       
+          Client.closeAllViews();
+          Client.openView(Client.View.HOMEPAGE);
+        }
 
+        
+        /* ---------------------------------------------------------------------------------- */
+        /*                                      FRIEND                                        */
+        /* ---------------------------------------------------------------------------------- */
         
                         
 //        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
@@ -316,6 +329,13 @@ public class SocketHandle implements Runnable {
           }
         }
         
+        //         Xử lý yêu cầu kết bạn tới
+//        if(res.getState().equals("friend_accept")){
+//          int ID = Integer.parseInt(messageSplit[1]);
+//          String username = messageSplit[2];
+//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
+//        }
+        
         // Xử lý xem rank
         if(res.getState().equals("rank")){
           if(Client.rankFrm != null){
@@ -323,12 +343,6 @@ public class SocketHandle implements Runnable {
           }
         }
                 
-//         Xử lý yêu cầu kết bạn tới
-//        if(res.getState().equals("friend_accept")){
-//          int ID = Integer.parseInt(messageSplit[1]);
-//          String username = messageSplit[2];
-//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
-//        }
 //   
 //        
 //        // Xử lý khi nhận được yêu cầu thách đấu
@@ -396,15 +410,7 @@ public class SocketHandle implements Runnable {
 //          Client.gameClientFrm.newgame();
 //        }
 //        
-        // Xử lý rời phòng
-        if(res.getState().equals("game_quit")){
-          Client.gameClientFrm.stopTimer();
-          Client.closeAllViews();
-          Client.openView(Client.View.GAMENOTICE, "Đối thủ đã thoát khỏi phòng", "Đang trở về trang chủ");
-          Thread.sleep(3000);       
-          Client.closeAllViews();
-          Client.openView(Client.View.HOMEPAGE);
-        }
+
 //        
 //        //Xử lý bị banned
 //        if(messageSplit[0].equals("banned-notice")){
