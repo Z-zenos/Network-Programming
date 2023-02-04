@@ -33,11 +33,12 @@ void parse_params(Message *msg, char *params) {
   }
 }
 
-void msg_parse(Message *msg, char *msg_str) {
+int msg_parse(Message *msg, char *msg_str) {
   char params[PARAM_L];
-  sscanf(msg_str, "%[^#]#%d#%[^#]#%[^\n]", msg->command, &msg->content_l, msg->__params__, msg->content);
+  if(sscanf(msg_str, "%[^#]#%d#%[^#]#%[^\n]", msg->command, &msg->content_l, msg->__params__, msg->content) < 3) return FAILURE;
   strcpy(params, msg->__params__);
   parse_params(msg, params);
+  return SUCCESS;
 }
 
 void msg_print(Message msg) {
@@ -180,11 +181,11 @@ int get_msg(int client_fd, Message *msg) {
   char msg_str[MSG_L];
   ssize_t numBytesRcvd = recv(client_fd, msg_str, MSG_L, 0);
   msg_str[numBytesRcvd - 1] = '\0';
-  logger("success", msg_str);
-  if(numBytesRcvd <= 0) {
-
+  if(numBytesRcvd <= 0 || strlen(msg_str) <= 0) {
+    return 0;
   }
-  msg_parse(msg, msg_str);
+  logger("success", msg_str);
+  if(!msg_parse(msg, msg_str)) return 0;
   return numBytesRcvd;
 }
 

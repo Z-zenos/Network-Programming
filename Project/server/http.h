@@ -38,7 +38,7 @@ typedef struct ClientAddr {
 
 void cleanup(Message *, int *);
 void msg_print(Message);
-void msg_parse(Message *, char *);
+int msg_parse(Message *, char *);
 void server_error(Message *);
 bool is_port(char *);
 bool is_ip(const char *);

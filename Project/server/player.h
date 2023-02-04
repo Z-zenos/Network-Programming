@@ -23,6 +23,8 @@ typedef struct User {
   char password[PASSWORD_L];
   int friends[FRIEND_L];
   Achievement achievement;
+  bool is_online;
+  bool is_playing;
 } Player;
 
 #pragma once

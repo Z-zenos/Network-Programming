@@ -64,7 +64,7 @@ PlayerTree *player_build(MYSQL *conn) {
   rbtree = rbnew(player_cmp, player_dup, player_rel);
 
   // TODO: Read players data from database
-  char query[QUERY_L] = "SELECT players.*, GROUP_CONCAT(friends.friend_id SEPARATOR ',') FROM players INNER JOIN friends ON players.id = friends.player_id GROUP BY players.id";
+  char query[QUERY_L] = "SELECT players.*, GROUP_CONCAT(friends.friend_id SEPARATOR ',') FROM players LEFT JOIN friends ON players.id = friends.player_id GROUP BY players.id";
 
   if (mysql_query(conn, query)) {
     logger(L_ERROR, mysql_error(conn));
@@ -96,10 +96,12 @@ PlayerTree *player_build(MYSQL *conn) {
     player.sock = 0;
 
     // TODO: Read friend
-    char **friend_ids = str_split(row[10], ',');
-    while (friend_ids[j]) {
-      player.friends[j] = atoi(friend_ids[j]);
-      j++;
+    if(row[10]) {
+      char **friend_ids = str_split(row[10], ',');
+      while (friend_ids[j]) {
+        player.friends[j] = atoi(friend_ids[j]);
+        j++;
+      }
     }
 
     player_add(rbtree, player);
