@@ -36,7 +36,7 @@ public class HomePageFrm extends javax.swing.JFrame {
     jLabel4.setText(Client.user.getUsername());
     jLabel7.setText(Integer.toString(Client.user.getnumberOfWin()));
     jLabel9.setText(Integer.toString(Client.user.getNumberOfGame()));
-    jLabel8.setIcon(new ImageIcon("assets/avatar/" + Client.user.getAvatar() + ".jpg"));
+    jLabel8.setIcon(new ImageIcon(Client.user.getAvatar()));
     jButton10.setIcon(new ImageIcon("assets/image/send2.png"));
     jTextArea1.setEditable(false);
     if(Client.user.getNumberOfGame() == 0){
@@ -425,13 +425,13 @@ public class HomePageFrm extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
       int res = JOptionPane.showConfirmDialog(rootPane, "Bạn có muốn đặt mật khẩu cho phòng không?", "Tạo phòng", JOptionPane.YES_NO_OPTION);
-      if(res == JOptionPane.YES_OPTION){
+      if(res == JOptionPane.YES_OPTION) {
         Client.closeView(Client.View.HOMEPAGE);
         Client.openView(Client.View.CREATEROOMPASSWORD);
       }
       else if(res == JOptionPane.NO_OPTION){
         try {
-          Client.socketHandle.write(Client.socketHandle.requestify("GAME_CREATE", 0, "player_id=" + Client.user.getID() + "password=", ""));
+          Client.socketHandle.write(Client.socketHandle.requestify("GAME_CREATE", 0, "player_id=" + Client.user.getID(), ""));
           Client.closeView(Client.View.HOMEPAGE);
         } catch (IOException ex) {
           JOptionPane.showMessageDialog(rootPane, ex.getMessage());
@@ -505,7 +505,7 @@ public class HomePageFrm extends javax.swing.JFrame {
         throw new Exception("Vui lòng nhập nội dung tin nhắn");
       }
       String temp = jTextArea1.getText();
-      temp += "Tôi: " + jTextField1.getText() + "\n";
+      temp += "Me: " + jTextField1.getText() + "\n";
       jTextArea1.setText(temp);
       Client.socketHandle.write(
         Client.socketHandle.requestify("CHAT", jTextField1.getText().length(), "game_id=0&player_id=" + Client.user.getID(), jTextField1.getText())
@@ -524,7 +524,7 @@ public class HomePageFrm extends javax.swing.JFrame {
    */
   public void addMessage(String message){
     String temp = jTextArea1.getText();
-    Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+)&content=(.+)");
+    Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+),content=(.+)");
     Matcher m = pattern.matcher(message);
     m.find();
     temp += "@" + m.group(1) + ": " + m.group(2) + "\n";

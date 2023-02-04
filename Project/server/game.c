@@ -173,7 +173,7 @@ int game_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
 int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id = atoi(map_val(msg->params, "player_id"));
   char game_pwd[PASSWORD_L];
-  strcpy(game_pwd, map_val(msg->params, "password"));
+  strcpy(game_pwd, !map_val(msg->params, "password") ? "" : map_val(msg->params, "password"));
 
   // TODO: random first turn for game board
   int r = rand() % 2;
@@ -194,6 +194,7 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
     .col = 0,
     .row = 0,
   };
+
   if(strlen(game_pwd) > 0) strcpy(new_game.password, game_pwd);
   else memset(new_game.password, '\0', PASSWORD_L);
 
@@ -210,7 +211,8 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
-  sprintf(dataStr, "game_id=%d,password=%s", new_game.id, game_pwd);
+  if(strlen(game_pwd) > 0) sprintf(dataStr, "game_id=%d,password=%s", new_game.id, game_pwd);
+  else sprintf(dataStr, "game_id=%d", new_game.id);
   responsify(msg, "game_created", dataStr);
   return SUCCESS;
 }

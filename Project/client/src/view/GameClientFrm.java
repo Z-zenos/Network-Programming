@@ -120,7 +120,7 @@ public class GameClientFrm extends javax.swing.JFrame{
       jLabel12.setText(competitor.getUsername());
       jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
       jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
-      jLabel19.setIcon(new ImageIcon("assets/game/"+Client.user.getAvatar()+".jpg"));
+      jLabel19.setIcon(new ImageIcon(Client.user.getAvatar()));
       jLabel18.setText("Phòng: " + room_ID);
       jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
       jLabel15.setText(competitor.getUsername());
@@ -840,7 +840,9 @@ public class GameClientFrm extends javax.swing.JFrame{
           String temp = jTextArea1.getText();
           temp += "Tôi: " + jTextField1.getText() + "\n";
           jTextArea1.setText(temp);
-          Client.socketHandle.write("chat," + jTextField1.getText());
+          Client.socketHandle.write(
+            Client.socketHandle.requestify("CHAT", jTextField1.getText().length(), "game_id=0&player_id=" + Client.user.getID(), jTextField1.getText())
+          );
           jTextField1.setText("");
           jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
         } catch (IOException ex) {
@@ -986,11 +988,12 @@ public class GameClientFrm extends javax.swing.JFrame{
         minute = 0;
         timer.start();
     }
+    
     public void addMessage(String message){
-        String temp = jTextArea1.getText();
-        temp += competitor.getUsername()+ ": " + message+"\n";
-        jTextArea1.setText(temp);
-        jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
+      String temp = jTextArea1.getText();
+      temp += competitor.getUsername() + ": " + message+"\n";
+      jTextArea1.setText(temp);
+      jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
     }
     
     public void addCompetitorMove(String x, String y){

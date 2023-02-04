@@ -13,13 +13,14 @@
 #include "http.h"
 
 bool is_valid_username(char *username) {
-  int i, username_l = strlen(username);
+  int i, username_l = strlen(username), num_alpha = 0;
   if(username_l < 4 || username_l > USERNAME_L)  return FAILURE;
   for(i = 0; i < username_l; i++) {
     if(!isalnum(username[i]))
       return FAILURE;
+    if(isalpha(username[i])) num_alpha++;
   }
-  return SUCCESS;
+  return num_alpha ? SUCCESS : FAILURE;
 }
 
 bool is_valid_password(char *password) {
@@ -63,15 +64,17 @@ bool compare_password(char *password_input, unsigned char *password_db) {
 }
 
 int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-  char username[USERNAME_L], password[PASSWORD_L], avatar[AVATAR_L];
+  char username[USERNAME_L], password[PASSWORD_L], avatar[AVATAR_L], dataStr[DATA_L];
   strcpy(username, map_val(msg->params, "username"));
   strcpy(password, map_val(msg->params, "password"));
   strcpy(avatar, map_val(msg->params, "avatar"));
+  memset(dataStr, '\0', DATA_L);
 
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
-    responsify(msg, "register_fail", NULL);
+    sprintf(dataStr, "username=%s,password=%s", username, password);
+    responsify(msg, "account_invalid", NULL);
     return FAILURE;
   }
 
@@ -106,13 +109,16 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   }
 
   playertree = player_build(conn);
-  char dataStr[DATA_L];
   memset(dataStr, '\0', DATA_L);
+  int new_id = (int)mysql_insert_id(conn);
+  Player *new_player = player_find(playertree, new_id);
+  new_player->is_online = true;
+  new_player->sock = clnt_addr.sock;
 
   sprintf(
     dataStr,
     "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
-    (int)mysql_insert_id(conn), username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
+    new_id, username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
   );
 
   responsify(msg, "register_success", dataStr);
@@ -149,7 +155,8 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
-    responsify(msg, "account_incorrect", NULL);
+    sprintf(dataStr, "username=%s,password=%s", username, password);
+    responsify(msg, "account_incorrect", dataStr);
     return FAILURE;
   }
 
@@ -166,6 +173,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
     return FAILURE;
   }
 
+  player_found->is_online = true;
   int rank = my_rank(conn, player_id, dataStr);
   memset(dataStr, '\0', DATA_L);
 

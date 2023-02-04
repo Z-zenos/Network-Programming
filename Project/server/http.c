@@ -27,7 +27,7 @@ void parse_params(Message *msg, char *params) {
   Object param;
   int i = 0;
   while (param_arr[i]) {
-    sscanf(param_arr[i], "%[^=]=%s", param.key, param.value);
+    if(sscanf(param_arr[i], "%[^=]=%s", param.key, param.value) == 1) memset(param.value, '\0', VAL_L);
     map_add(msg->params, param);
     i++;
   }

@@ -113,6 +113,11 @@ public class SocketHandle implements Runnable {
 //        if(messageSplit[0].equals("server-send-id")){
 //          ID_Server = Integer.parseInt(messageSplit[1]);
 //        }
+
+        
+        /* ---------------------------------------------------------------------------------- */
+        /*                                AUTHENTICATION                                      */
+        /* ---------------------------------------------------------------------------------- */
         
         // Đăng nhập thành công
         if(res.getState().equals("login_success") || res.getState().equals("register_success")){
@@ -125,7 +130,6 @@ public class SocketHandle implements Runnable {
         
         // Thông tin tài khoản sai
         if(res.getState().equals("account_incorrect")){
-          System.out.println("Thông tin sai");
           Client.closeView(Client.View.GAMENOTICE);
           Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+),password=([a-zA-Z0-9]+)");
           Matcher m = pattern.matcher(res.getData());
@@ -156,14 +160,66 @@ public class SocketHandle implements Runnable {
         if(res.getState().equals("username_duplicate")){
           Client.closeAllViews();
           Client.openView(Client.View.REGISTER);
-          JOptionPane.showMessageDialog(Client.registerFrm, "Tên tài khoản đã được người khác sử dụng");
+          JOptionPane.showMessageDialog(Client.registerFrm, "Username đã được sử dụng");
         }
+        
+        // Xử lý tài khoản hoặc mật khẩu không hợp lệ 
+        if(res.getState().equals("account_invalid")){
+          Client.closeAllViews();
+          Client.openView(Client.View.REGISTER);
+          JOptionPane.showMessageDialog(Client.registerFrm, "Tài khoản và mật khẩu không hợp lệ");
+        }
+        
+        
+        /* ---------------------------------------------------------------------------------- */
+        /*                                      CHAT                                          */
+        /* ---------------------------------------------------------------------------------- */
  
-        // Xử lý nhận thông tin, chat từ toàn server
+        // Xử lý chat global
         if(res.getState().equals("chat_global")){
           if(Client.homePageFrm != null){
             Client.homePageFrm.addMessage(res.getData());
           }
+        }
+        
+        // Xử lý chat trong game
+        if(res.getState().equals("chat_local")){
+          Client.gameClientFrm.addMessage(res.getData());
+        }
+        
+        /* ---------------------------------------------------------------------------------- */
+        /*                                      ROOM                                          */
+        /* ---------------------------------------------------------------------------------- */
+        
+                
+        // Tạo phòng và server trả về tên phòng
+        if(res.getState().equals("game_created")){
+          Client.closeAllViews();
+          Client.openView(Client.View.WAITINGROOM);
+          Pattern pattern = Pattern.compile("game_id=(\\d+)(,password=([a-zA-Z0-9]+))?");
+          Matcher m = pattern.matcher(res.getData());
+          m.find();
+          Client.waitingRoomFrm.game_id = Integer.parseInt(m.group(1));
+          Client.waitingRoomFrm.setRoomName(m.group(1));
+          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + (m.group(2) == null ? "không có" : m.group(2)));
+        }
+        
+        // Xử lý lấy danh sách phòng
+        if(res.getState().equals("game_list")){
+          Vector<String> rooms = new Vector<>();
+          Vector<String> passwords = new Vector<>();
+          String[] splitter = res.getData().split(";");
+          Pattern p = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+)?,views=(\\d+),num_move=(\\d+),player1_id=(\\d+),player2_id=(\\d+)");
+          Matcher m;
+          for (String splitter1 : splitter) {
+            m = p.matcher(splitter1);
+            if(m.find()) {
+              rooms.add("Phòng " + m.group(1));
+              passwords.add(m.group(2));
+              System.out.println("Room: " + m.group(1) + " - Password: " + m.group(2));
+            }
+          }
+          Client.roomListFrm.updateRoomList(rooms, passwords);
         }
         
         // Xử lý kết quả tìm phòng từ server
@@ -186,59 +242,9 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.HOMEPAGE);
           JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");
         }
-        
-        // Xử lý xem rank
-        if(res.getState().equals("rank")){
-          if(Client.rankFrm != null){
-            Client.rankFrm.setDataToTable(getListRank(res.getData()));
-          }
-        }
 
-        // Xử lý lấy danh sách phòng
-        if(res.getState().equals("game_list")){
-          Vector<String> rooms = new Vector<>();
-          Vector<String> passwords = new Vector<>();
-          String[] splitter = res.getData().split(";");
-          Pattern p = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+),views=(\\d+),num_move=(\\d+),player1_id=(\\d+),player2_id=(\\d+)");
-          Matcher m;
-          for(int i = 0; i < splitter.length; i++){
-            m = p.matcher(splitter[i]);
-            if(m.find()) {
-              rooms.add("Phòng " + m.group(1));
-              passwords.add(m.group(2));
-              System.out.println("Room: " + m.group(1) + " - Password: " + m.group(2));
-            }
-            
-          }
-          Client.roomListFrm.updateRoomList(rooms, passwords);
-        }
-                
-//        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
-//        if(res.getState().equals("friend_check")){
-//          if(Client.competitorInfoFrm != null){
-//              Pattern p = Pattern.compile("is_friend=(\\d+)");
-//              Matcher m = p.matcher(res.getData());
-//              m.find();
-//            String isFriend = m.group(1);
-//            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
-//          }
-//        }
-        
-        // Xử lý danh sách bạn bè 
-        if(res.getState().equals("friend_list")){
-          if(Client.friendListFrm != null){
-            String[] splitter = res.getData().split(";");
-            Client.friendListFrm.updateFriendList(getListUser(splitter));
-          }
-        }
-                
-//         Xử lý yêu cầu kết bạn tới
-//        if(res.getState().equals("friend_accept")){
-//          int ID = Integer.parseInt(messageSplit[1]);
-//          String username = messageSplit[2];
-//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
-//        }
-//        
+
+     
         // Xử lý vào phòng. data: game_id=...,is_start=...,ip=...,id=...,username=...,password=...,avatar=...,game=...,win=...,draw=...,loss=...,points=...,rank=...
         if(res.getState().equals("game_join")){
           System.out.println("Vào phòng");
@@ -288,18 +294,42 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.GAMECLIENT, competitor, roomID, isStart, competitorIP);
           Client.gameClientFrm.newgame();
         }
+
         
-        // Tạo phòng và server trả về tên phòng
-        if(res.getState().equals("game_created")){
-          Client.closeAllViews();
-          Client.openView(Client.View.WAITINGROOM);
-          Pattern pattern = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+)");
-          Matcher m = pattern.matcher(res.getData());
-          m.find();
-          Client.waitingRoomFrm.game_id = Integer.parseInt(m.group(1));
-          Client.waitingRoomFrm.setRoomName(m.group(1));
-          Client.waitingRoomFrm.setRoomPassword("Mật khẩu phòng: " + m.group(2));
+                        
+//        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
+//        if(res.getState().equals("friend_check")){
+//          if(Client.competitorInfoFrm != null){
+//              Pattern p = Pattern.compile("is_friend=(\\d+)");
+//              Matcher m = p.matcher(res.getData());
+//              m.find();
+//            String isFriend = m.group(1);
+//            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
+//          }
+//        }
+        
+        // Xử lý danh sách bạn bè 
+        if(res.getState().equals("friend_list")){
+          if(Client.friendListFrm != null){
+            String[] splitter = res.getData().split(";");
+            Client.friendListFrm.updateFriendList(getListUser(splitter));
+          }
         }
+        
+        // Xử lý xem rank
+        if(res.getState().equals("rank")){
+          if(Client.rankFrm != null){
+            Client.rankFrm.setDataToTable(getListRank(res.getData()));
+          }
+        }
+                
+//         Xử lý yêu cầu kết bạn tới
+//        if(res.getState().equals("friend_accept")){
+//          int ID = Integer.parseInt(messageSplit[1]);
+//          String username = messageSplit[2];
+//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
+//        }
+//   
 //        
 //        // Xử lý khi nhận được yêu cầu thách đấu
 //        if(messageSplit[0].equals("duel-notice")){
@@ -328,9 +358,7 @@ public class SocketHandle implements Runnable {
 //        if(messageSplit[0].equals("caro")){
 //          Client.gameClientFrm.addCompetitorMove(messageSplit[1], messageSplit[2]);
 //        }
-//        if(messageSplit[0].equals("chat")){
-//          Client.gameClientFrm.addMessage(messageSplit[1]);
-//        }
+
 //        if(messageSplit[0].equals("draw-request")){
 //          Client.gameClientFrm.showDrawRequest();
 //        }

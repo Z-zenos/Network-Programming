@@ -44,7 +44,7 @@ public class GameAIFrm extends javax.swing.JFrame {
         jLabel12.setText(Client.user.getUsername());
         jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
         jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
-        jLabel19.setIcon(new ImageIcon("assets/game/"+Client.user.getAvatar()+".jpg"));
+        jLabel19.setIcon(new ImageIcon(Client.user.getAvatar()));
         jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
         jLabel3.setIcon(new ImageIcon("assets/image/x3.jpg"));
         jLabel5.setIcon(new ImageIcon("assets/image/o3.jpg"));

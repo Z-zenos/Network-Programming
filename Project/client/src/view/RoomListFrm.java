@@ -67,7 +67,7 @@ public class RoomListFrm extends javax.swing.JFrame {
     defaultTableModel.setRowCount(0);
     ImageIcon imageIcon;
     for(int i = 0; i < listRoom.size(); i++){
-      if(listPassword.get(i).equals(" "))
+      if(listPassword.get(i) == null)
         imageIcon = new ImageIcon("assets/icon/swords-1-mini.png");
       else
         imageIcon = new ImageIcon("assets/icon/swords-1-lock-mini.png");
@@ -194,9 +194,9 @@ public class RoomListFrm extends javax.swing.JFrame {
           int index = jTable1.getSelectedRow();
           int room = Integer.parseInt(listRoom.get(index).split(" ")[1]);
           String password = listPassword.get(index);
-          if(password.equals(" ")){
+          if(password == null){
             Client.socketHandle.write(
-              Client.socketHandle.requestify("GAME_JOIN", 0, "game_id=" + room, "")
+              Client.socketHandle.requestify("GAME_JOIN", 0, "game_id=" + room + "&player_id=" + Client.user.getID(), "")
             );
             Client.closeView(Client.View.ROOMLIST);
           }

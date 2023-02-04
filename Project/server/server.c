@@ -62,6 +62,7 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
 
   Player *player_found = player_find(playertree, player_id);
   player_found->sock = 0;
+  player_found->is_online = false;
   time_print(clnt_addr.address, "OFFLINE", "", 0, "");
   for(int i = 0; i < MAX_CLIENT; i++)
     if(client_fds[i] == clnt_addr.sock)
