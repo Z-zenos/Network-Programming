@@ -180,6 +180,7 @@ int get_msg(int client_fd, Message *msg) {
   char msg_str[MSG_L];
   ssize_t numBytesRcvd = recv(client_fd, msg_str, MSG_L, 0);
   msg_str[numBytesRcvd - 1] = '\0';
+  logger("success", msg_str);
   if(numBytesRcvd <= 0) {
 
   }

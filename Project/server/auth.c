@@ -66,7 +66,7 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   char username[USERNAME_L], password[PASSWORD_L], avatar[AVATAR_L];
   strcpy(username, map_val(msg->params, "username"));
   strcpy(password, map_val(msg->params, "password"));
-  strcpy(username, map_val(msg->params, "username"));
+  strcpy(avatar, map_val(msg->params, "avatar"));
 
 
   // TODO: Validate

@@ -37,8 +37,13 @@ void signalHandler(int signo) {
     case SIGUSR1:
       logger(L_WARN, "Killing the program, coming out...\n");
       break;
+    case SIGABRT:
+      logger(L_WARN, "Detect an internal error or some seriously broken constraint, coming out...\n");
+      break;
   }
 
+  for(int i = 0; i < MAX_CLIENT; i++)
+    if(client_fds[i]) close(client_fds[i]);
   close(server_fd);
   exit(SUCCESS);
 }
@@ -49,6 +54,7 @@ void handle_signal() {
   signal(SIGHUP, signalHandler);
   signal(SIGTERM, signalHandler);
   signal(SIGUSR1, signalHandler);
+  signal(SIGABRT, signalHandler);
 }
 
 int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
@@ -118,7 +124,10 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   int nbytes;
   while(1) {
     cleanup(&msg, receiver);
-    if ((nbytes = get_msg(clnt_addr.sock, &msg)) <= 0) break;
+    if ((nbytes = get_msg(clnt_addr.sock, &msg)) <= 0) {
+      time_print(clnt_addr.address, "OFFLINE", "", 0, "");
+      break;
+    }
     time_print(clnt_addr.address, msg.command, msg.__params__, nbytes, msg.content);
 
     /*
