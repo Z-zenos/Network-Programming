@@ -177,7 +177,7 @@
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel2">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Nickname"/>
+        <Property name="text" type="java.lang.String" value="Username"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel3">
@@ -203,7 +203,7 @@
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel7">
       <Properties>
-        <Property name="text" type="java.lang.String" value="{nickname}"/>
+        <Property name="text" type="java.lang.String" value="{username}"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel8">

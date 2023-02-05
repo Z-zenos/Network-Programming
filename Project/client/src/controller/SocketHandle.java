@@ -31,13 +31,19 @@ public class SocketHandle implements Runnable {
   private int ID_Server;
   
   public List<User> getListUser(String[] message){
-    Pattern p = Pattern.compile("id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+)");
+    Pattern p = Pattern.compile("id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),is_online=([a-z]+),is_playing=([a-z]+)");
     Matcher m;
     List<User> friend = new ArrayList<>();
     for(int i = 0; i < message.length; i++){
       m = p.matcher(message[i]);
       if(m.find())
-        friend.add(new User(Integer.parseInt(m.group(1)), m.group(2), m.group(3)));
+        friend.add(new User(
+          Integer.parseInt(m.group(1)), 
+          m.group(2), 
+          m.group(3), 
+          Boolean.parseBoolean(m.group(4)), 
+          Boolean.parseBoolean(m.group(5))
+        ));
     }
     return friend;
   }
@@ -68,7 +74,7 @@ public class SocketHandle implements Runnable {
   public User getUserFromString(String data){
     Pattern pattern = Pattern.compile(
       "id=(\\d+),username=([a-zA-Z0-9]+),password=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),"
-          + "game=(\\d+),win=(\\d+),draw=(\\d+),loss=(\\d+),points=(\\d+),rank=(\\d+)"
+          + "game=(\\d+),win=(\\d+),draw=(\\d+),loss=(\\d+),points=(\\d+),rank=(\\d+),is_online=([a-z]+),is_playing=([a-z]+)"
     );
     Matcher m = pattern.matcher(data);
     m.find();
@@ -82,7 +88,9 @@ public class SocketHandle implements Runnable {
       Integer.parseInt(m.group(7)), 
       Integer.parseInt(m.group(8)), 
       Integer.parseInt(m.group(9)), 
-      Integer.parseInt(m.group(10))
+      Integer.parseInt(m.group(10)),
+      Boolean.parseBoolean(m.group(11)),
+      Boolean.parseBoolean(m.group(12))
     );
   }
   
@@ -303,16 +311,16 @@ public class SocketHandle implements Runnable {
         /* ---------------------------------------------------------------------------------- */
         
                         
-//        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
-//        if(res.getState().equals("friend_check")){
-//          if(Client.competitorInfoFrm != null){
-//              Pattern p = Pattern.compile("is_friend=(\\d+)");
-//              Matcher m = p.matcher(res.getData());
-//              m.find();
-//            String isFriend = m.group(1);
-//            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
-//          }
-//        }
+        // Xử lý hiển thị thông tin đối thủ là bạn bè/không
+        if(res.getState().equals("friend_check")){
+          if(Client.competitorInfoFrm != null){
+            Pattern p = Pattern.compile("is_friend=(\\d+)");
+            Matcher m = p.matcher(res.getData());
+            m.find();
+            String isFriend = m.group(1);
+            Client.competitorInfoFrm.checkFriend((isFriend.equals("1")));
+          }
+        }
         
         // Xử lý danh sách bạn bè 
         if(res.getState().equals("friend_list")){
@@ -322,12 +330,15 @@ public class SocketHandle implements Runnable {
           }
         }
         
-        //         Xử lý yêu cầu kết bạn tới
-//        if(res.getState().equals("friend_accept")){
-//          int ID = Integer.parseInt(messageSplit[1]);
-//          String username = messageSplit[2];
-//          Client.openView(Client.View.FRIENDREQUEST, ID, nickname);
-//        }
+        // Xử lý yêu cầu kết bạn tới
+        if(res.getState().equals("friend_request")){
+          Pattern p = Pattern.compile("player_id=(\\d+),username=([a-zA-Z0-9]+)");
+          Matcher m = p.matcher(res.getData());
+          m.find();
+          int ID = Integer.parseInt(m.group(1));
+          String username = m.group(2);
+          Client.openView(Client.View.FRIENDREQUEST, ID, username);
+        }
         
         // Xử lý xem rank
         if(res.getState().equals("rank")){
@@ -335,8 +346,6 @@ public class SocketHandle implements Runnable {
             Client.rankFrm.setDataToTable(getListRank(res.getData()));
           }
         }
-                
-//   
 //        
 //        // Xử lý khi nhận được yêu cầu thách đấu
 //        if(messageSplit[0].equals("duel-notice")){
@@ -360,6 +369,12 @@ public class SocketHandle implements Runnable {
 //          Client.openView(Client.View.HOMEPAGE);
 //          JOptionPane.showMessageDialog(Client.homePageFrm, "Đối thủ không đồng ý thách đấu");
 //        }
+
+
+        /* ---------------------------------------------------------------------------------- */
+        /*                                     GAME CARO                                      */
+        /* ---------------------------------------------------------------------------------- */
+
 //        
 //        // Xử lý đánh một nước trong ván chơi
 //        if(messageSplit[0].equals("caro")){

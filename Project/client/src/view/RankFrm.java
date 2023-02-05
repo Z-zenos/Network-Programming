@@ -44,7 +44,7 @@ public class RankFrm extends javax.swing.JFrame {
       rankSrc.add("nomal-rank");
     }
     try {
-      Client.socketHandle.write("GET /rank\r\nContent-Length: 0\r\nParams: player_id=" + Client.user.getID());
+      Client.socketHandle.write(Client.socketHandle.requestify("RANK", 0, "player_id=" + Client.user.getID(), ""));
     } catch (IOException ex) {
       JOptionPane.showMessageDialog(rootPane, ex.getMessage());
     }

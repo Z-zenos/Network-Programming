@@ -46,7 +46,7 @@ int rank(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int profile(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int friend_check(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int friend_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int friend_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int friend_add(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int friend_accept(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
 #endif

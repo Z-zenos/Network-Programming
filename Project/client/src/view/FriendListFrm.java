@@ -37,7 +37,6 @@ public class FriendListFrm extends javax.swing.JFrame {
     this.setDefaultCloseOperation(EXIT_ON_CLOSE);
     this.setLocationRelativeTo(null);
     isClicked = false;
-    requestUpdate();
     startThread();
   }
 

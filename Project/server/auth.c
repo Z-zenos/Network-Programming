@@ -113,11 +113,12 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   int new_id = (int)mysql_insert_id(conn);
   Player *new_player = player_find(playertree, new_id);
   new_player->is_online = true;
+  new_player->is_playing = false;
   new_player->sock = clnt_addr.sock;
 
   sprintf(
     dataStr,
-    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
+    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d,is_online=true,is_playing=false",
     new_id, username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
   );
 
@@ -174,12 +175,13 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   }
 
   player_found->is_online = true;
+  player_found->is_playing = false;
   int rank = my_rank(conn, player_id, dataStr);
   memset(dataStr, '\0', DATA_L);
 
   sprintf(
     dataStr,
-    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
+    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d,is_online=true,is_playing=false",
     player_found->id, username, pwd_encrypted, player_found->avatar, player_found->game, player_found->achievement.win,
     player_found->achievement.draw, player_found->achievement.loss, player_found->achievement.points, rank
   );

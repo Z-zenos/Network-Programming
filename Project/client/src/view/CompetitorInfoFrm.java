@@ -33,13 +33,13 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
       this.setResizable(false);
       this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
       this.setLocationRelativeTo(null);
-      jLabel6.setIcon(new ImageIcon("assets/avatar/"+user.getAvatar()+".jpg"));
+      jLabel6.setIcon(new ImageIcon(user.getAvatar()));
       jLabel7.setText(user.getUsername());
       jLabel8.setText("" + user.getNumberOfGame());
       jLabel9.setText("" + user.getnumberOfWin());
       jLabel17.setText("" + user.getNumberOfDraw());
       jLabel13.setText("" + user.getRank());
-      if(user.getNumberOfGame()==0){
+      if(user.getNumberOfGame() == 0){
         jLabel15.setText("-");
       }
       else{
@@ -53,17 +53,17 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
   }
   
   public void checkFriend(boolean isFriend){
-      this.isFriend = isFriend;
-      if(isFriend){
-        jButton1.setIcon(new ImageIcon("assets/icon/friendship.png"));
-        jButton1.setToolTipText("Bạn bè");
-        jLabel5.setText("Bạn bè");
-      }
-      else{
-        jButton1.setIcon(new ImageIcon("assets/icon/add-friend.png"));
-        jButton1.setToolTipText("Click để gửi yêu cầu kết bạn");
-        jLabel5.setText("Kết bạn để chơi cùng nhau dễ dàng hơn");
-      }
+    this.isFriend = isFriend;
+    if(isFriend){
+      jButton1.setIcon(new ImageIcon("assets/icon/friendship.png"));
+      jButton1.setToolTipText("Bạn bè");
+      jLabel5.setText("Bạn bè");
+    }
+    else{
+      jButton1.setIcon(new ImageIcon("assets/icon/add-friend.png"));
+      jButton1.setToolTipText("Click để gửi yêu cầu kết bạn");
+      jLabel5.setText("Kết bạn để chơi cùng nhau dễ dàng hơn");
+    }
   }
   /**
    * This method is called from within the constructor to initialize the form.
@@ -124,7 +124,7 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
       }
     });
 
-    jLabel2.setText("Nickname");
+    jLabel2.setText("Username");
 
     jLabel3.setText("Game");
 
@@ -134,7 +134,7 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
     jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
     jLabel5.setText("Các bạn hiện đang là bạn bè");
 
-    jLabel7.setText("{nickname}");
+    jLabel7.setText("{username}");
 
     jLabel8.setText("{sovachoi}");
 
@@ -250,7 +250,7 @@ public class CompetitorInfoFrm extends javax.swing.JFrame {
       }
       else{
         int res = JOptionPane.showConfirmDialog(rootPane, "Bạn đồng ý gửi lời mời kết bạn tới đối thủ chứ", "Xác nhận yêu cầu kết bạn", JOptionPane.YES_NO_OPTION);
-        if(res==JOptionPane.YES_OPTION){
+        if(res == JOptionPane.YES_OPTION){
           try {
             Client.socketHandle.write(Client.socketHandle.requestify("FRIEND_ADD", 0, "player_id=" + Client.user.getID() + "&friend_id=" + user.getID(), ""));
           } catch (IOException ex) {

@@ -45,10 +45,12 @@ public class User {
     this.points = points;
   }
   
-    public User(int ID, String username, String avatar) {
+  public User(int ID, String username, String avatar, boolean isOnline, boolean isPlaying) {
     this.ID = ID;
     this.username = username;
     this.avatar = avatar;
+    this.isOnline = isOnline;
+    this.isPlaying = isPlaying;
   }
 
   public int getRank() {
@@ -70,6 +72,21 @@ public class User {
     this.numberOfLoss = numberOfLoss;
     this.isOnline = isOnline;
     this.isPlaying = isPlaying;
+  }
+  
+    public User(int ID, String username, String password, String avatar, int numberOfGame, int numberOfWin, int numberOfDraw, int numberOfLoss, int points, int rank, boolean isOnline, boolean isPlaying) {
+    this.ID = ID;
+    this.username = username;
+    this.password = password;
+    this.avatar = avatar;
+    this.numberOfGame = numberOfGame;
+    this.numberOfWin = numberOfWin;
+    this.numberOfDraw = numberOfDraw;
+    this.numberOfLoss = numberOfLoss;
+    this.isOnline = isOnline;
+    this.isPlaying = isPlaying;
+    this.points = points;
+    this.rank = rank;
   }
 
   public User(int ID, String username, String password, String avatar, int numberOfGame, int numberOfWin, int numberOfDraw, int numberOfLoss) {

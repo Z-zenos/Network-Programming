@@ -109,6 +109,8 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   /* FRIEND */
   if(strcmp(cmd, "FRIEND_CHECK") == 0)      return friend_check;
   if(strcmp(cmd, "FRIEND_LIST") == 0)       return friend_list;
+  if(strcmp(cmd, "FRIEND_ADD") == 0)        return friend_add;
+  if(strcmp(cmd, "FRIEND_ACCEPT") == 0)     return friend_accept;
 
   /* AUTH */
   if(strcmp(cmd, "LOGIN") == 0)             return signin;
