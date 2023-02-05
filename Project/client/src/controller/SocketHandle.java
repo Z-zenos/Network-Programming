@@ -380,6 +380,43 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.HOMEPAGE);
           JOptionPane.showMessageDialog(Client.homePageFrm, "Đối thủ không đồng ý thách đấu");
         }
+        
+        // Xử lý đồng ý thách đấu
+        if(res.getState().equals("duel_accepted")){
+          String[] splitter = res.getData().split(";");
+          Pattern p = Pattern.compile(
+            "game_id=(\\d+),is_start=(\\d+),ip=([\\.\\d]+),"
+            + "id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),game=(\\d+),"
+            + "win=(\\d+),draw=(\\d+),loss=(\\d+),points=(\\d+),rank=(\\d+)"
+          );
+          Matcher m;
+          int opponentID, roomID = 0, isStart = 0;
+          String competitorIP = "0.0.0.0";
+          User competitor = new User(0, "");
+          for (String splitter1 : splitter) {
+            m = p.matcher(splitter1);
+            if(m.find()) {
+              opponentID = Integer.parseInt(m.group(4));
+              
+              if(opponentID != Client.user.getID()) {
+                roomID = Integer.parseInt(m.group(1));
+                isStart = Integer.parseInt(m.group(2));
+                competitorIP = m.group(3);
+                competitor = new User(
+                  opponentID, m.group(5), "", m.group(6),
+                  Integer.parseInt(m.group(7)), Integer.parseInt(m.group(8)),
+                  Integer.parseInt(m.group(9)), Integer.parseInt(m.group(10)),
+                  Integer.parseInt(m.group(11)), Integer.parseInt(m.group(12))
+                );
+              }
+            }
+          }
+
+          Client.closeAllViews();
+          System.out.println("Đã vào phòng: " + roomID);
+          Client.openView(Client.View.GAMECLIENT, competitor, roomID, isStart, competitorIP);
+          Client.gameClientFrm.newgame();
+        }
 
 
         /* ---------------------------------------------------------------------------------- */

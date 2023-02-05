@@ -464,20 +464,6 @@ int duel_request(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
   return SUCCESS;
 }
 
-int duel_agree(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-  int player_id = atoi(map_val(msg->params, "player_id"));
-  int friend_id = atoi(map_val(msg->params, "friend_id"));
-  char dataStr[DATA_L];
-  memset(dataStr, '\0', DATA_L);
-
-  Player *requester = player_find(playertree, player_id);
-  Player *friend = player_find(playertree, friend_id);
-  sprintf(dataStr, "player_id=%d,username=%s", player_id, requester->username);
-  receiver[0] = friend->sock;
-  responsify(msg, "duel_request", dataStr);
-  return SUCCESS;
-}
-
 int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id = atoi(map_val(msg->params, "player_id"));
   int friend_id = atoi(map_val(msg->params, "friend_id"));
@@ -495,9 +481,56 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
     return SUCCESS;
   }
 
+  // TODO: If agree then create new game for 2 player
+  int r = rand() % 2;
 
-  receiver[0] = friend->sock;
-  responsify(msg, "duel_rejected", dataStr);
+  rbtrav_t *rbtrav;
+  rbtrav = rbtnew();
+  Game *last_game = rbtlast(rbtrav, gametree);
+
+  // TODO: Create game
+  Game new_game = {
+    .id = !last_game ? 1 : last_game->id + 1,
+    .views = 0,
+    .num_move = 0,
+    .result = 0,
+    .turn = (r == 1) ? 'X' : 'O',
+    .player1_id = player_id,
+    .player2_id = friend_id,
+    .col = 0,
+    .row = 0,
+  };
+  memset(new_game.password, '\0', PASSWORD_L);
+  for ( int i = 0; i < BOARD_S; ++i ){
+    memset(new_game.board[i], '_', sizeof new_game.board[i]);
+  }
+  memset(new_game.joiner, 0, sizeof new_game.joiner);
+  new_game.joiner[0] = me->sock;
+  new_game.joiner[1] = friend->sock;
+
+  game_add(gametree, new_game);
+
+  me->is_playing = friend->is_playing = true;
+
+  char tmp[DATA_L];
+  memset(tmp, '\0', DATA_L);
+
+  sprintf(
+    dataStr,
+    "game_id=%d,is_start=1,ip=127.0.0.1,"
+    "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d;"
+    "game_id=%d,is_start=1,ip=127.0.0.1,"
+    "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
+    new_game.id, me->id, me->username, me->avatar, me->game,
+    me->achievement.win, me->achievement.draw, me->achievement.loss, me->achievement.points,
+    my_rank(conn, me->id, tmp),
+    new_game.id, friend->id, friend->username, friend->avatar, friend->game,
+    friend->achievement.win, friend->achievement.draw, friend->achievement.loss, friend->achievement.points,
+    my_rank(conn, friend->id, tmp)
+  );
+
+  receiver[1] = friend->sock;
+  responsify(msg, "duel_accepted", dataStr);
   return SUCCESS;
 }
 
