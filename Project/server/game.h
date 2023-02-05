@@ -52,6 +52,7 @@ int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 int game_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int caro(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_quick(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_cancel(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);

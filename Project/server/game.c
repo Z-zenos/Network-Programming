@@ -170,6 +170,27 @@ int game_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
   return SUCCESS;
 }
 
+int caro(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int game_id = atoi(map_val(msg->params, "game_id"));
+  int opponent_id = atoi(map_val(msg->params, "opponent_id"));
+  int x = atoi(map_val(msg->params, "x"));
+  int y = atoi(map_val(msg->params, "y"));
+
+  // TODO: Find game -> Update game board
+  Game *game = game_find(gametree, game_id);
+  game->num_move++;
+  game->col = x;
+  game->row = y;
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', sizeof dataStr);
+
+  Player *opponent = player_find(playertree, opponent_id);
+  receiver[0] = opponent->sock;
+  sprintf(dataStr, "x=%d,y=%d", x, y);
+  responsify(msg, "caro", dataStr);
+  return SUCCESS;
+}
+
 int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id = atoi(map_val(msg->params, "player_id"));
   char game_pwd[PASSWORD_L];

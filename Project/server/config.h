@@ -15,7 +15,6 @@
 #define MSG_L 2222
 
 #define DATA_L 2050
-#define MESSAGE_L 128
 #define MAX_SPECTATOR 20
 #define MAX_CLIENT 22
 #define FRIEND_L 10
@@ -25,7 +24,7 @@
 #define KEY_L 50
 #define VAL_L 50
 
-#define BOARD_S 3
+#define BOARD_S 15
 #define BACKLOG 10
 
 #define DB_HOST "localhost"

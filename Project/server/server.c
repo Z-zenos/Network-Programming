@@ -100,6 +100,7 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
 
   /* GAME */
   if (strcmp(cmd, "GAME_PLAY") == 0)        return game_handler;
+  if (strcmp(cmd, "CARO") == 0)             return caro;
   if (strcmp(cmd, "GAME_QUICK") == 0)       return game_quick;
   if (strcmp(cmd, "GAME_CREATE") == 0)      return game_create;
   if (strcmp(cmd, "GAME_CANCEL") == 0)      return game_cancel;
