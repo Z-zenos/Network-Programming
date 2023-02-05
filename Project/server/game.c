@@ -286,7 +286,8 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   int game_id = atoi(map_val(msg->params, "game_id"));
   char dataStr[DATA_L], game_pwd[PASSWORD_L];
   memset(dataStr, '\0', DATA_L);
-  strcpy(game_pwd, map_val(msg->params, "password"));
+  char *temp_pwd = map_val(msg->params, "password");
+  strcpy(game_pwd, temp_pwd ? temp_pwd : "");
 
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);

@@ -65,11 +65,6 @@ public class FindRoomFrm extends javax.swing.JFrame {
         // Nếu hết thời gian 20s mà chưa tìm thấy phòng 
         else {
           ((Timer) (e.getSource())).stop();
-//          try {
-//            Client.socketHandle.write("cancel-room,");
-//          } catch (IOException ex) {
-//            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-//          }
           int res = JOptionPane.showConfirmDialog(rootPane, "Tìm kiếm thất bại, bạn muốn thử lại lần nữa chứ?");
           if (res == JOptionPane.YES_OPTION){
             startFind();
@@ -212,11 +207,6 @@ public class FindRoomFrm extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
       if(isFinded)
         return;
-//      try {
-//        Client.socketHandle.write("cancel-room,");
-//      } catch (IOException ex) {
-//        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-//      }
       timer.stop();
       Client.closeView(Client.View.FINDROOM);
       Client.openView(Client.View.HOMEPAGE);

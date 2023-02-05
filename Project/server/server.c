@@ -40,10 +40,14 @@ void signalHandler(int signo) {
     case SIGABRT:
       logger(L_WARN, "Detect an internal error or some seriously broken constraint, coming out...\n");
       break;
+    case SIGSEGV:
+      logger(L_WARN, "Attempting to access memory that doesn't belong to server program, coming out...\n");
+      break;
   }
 
   for(int i = 0; i < MAX_CLIENT; i++)
     if(client_fds[i]) close(client_fds[i]);
+  number_clients = 0;
   close(server_fd);
   exit(SUCCESS);
 }
@@ -55,6 +59,7 @@ void handle_signal() {
   signal(SIGTERM, signalHandler);
   signal(SIGUSR1, signalHandler);
   signal(SIGABRT, signalHandler);
+  signal(SIGSEGV, signalHandler);
 }
 
 int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
@@ -64,9 +69,12 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
   player_found->sock = 0;
   player_found->is_online = false;
   time_print(clnt_addr.address, "OFFLINE", "", 0, "");
-  for(int i = 0; i < MAX_CLIENT; i++)
-    if(client_fds[i] == clnt_addr.sock)
+  for (int i = 0; i < MAX_CLIENT; i++) {
+    if (client_fds[i] == clnt_addr.sock) {
       client_fds[i] = 0;
+      number_clients--;
+    }
+  }
   close(clnt_addr.sock);
   return SUCCESS;
 }
@@ -128,6 +136,13 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     cleanup(&msg, receiver);
     if ((nbytes = get_msg(clnt_addr.sock, &msg)) <= 0) {
       time_print(clnt_addr.address, "OFFLINE", "", 0, "");
+      for (int i = 0; i < MAX_CLIENT; i++) {
+        if (client_fds[i] == clnt_addr.sock) {
+          client_fds[i] = 0;
+          number_clients--;
+        }
+      }
+      close(clnt_addr.sock);
       break;
     }
     time_print(clnt_addr.address, msg.command, msg.__params__, nbytes, msg.content);
@@ -222,8 +237,8 @@ int main(int argc, char *argv[]) {
     .num_move = 48,
     .result = 0,
     .turn = 'O',
-    .player1_id = 3,
-    .player2_id = 2,
+    .player1_id = 2,
+    .player2_id = 0,
     .board = {
       {'_', 'O', 'X'},
       {'X', '_', '_'},
@@ -231,7 +246,7 @@ int main(int argc, char *argv[]) {
     } ,
     .col = 1,
     .row = 0,
-    .password = "abc"
+    .password = ""
   };
   memset(g.joiner, 0, sizeof g.joiner);
 
