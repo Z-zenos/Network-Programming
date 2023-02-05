@@ -242,10 +242,9 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.HOMEPAGE);
           JOptionPane.showMessageDialog(Client.homePageFrm, "Mật khẩu phòng sai");
         }
-
      
         // Xử lý vào phòng. data: game_id=...,is_start=...,ip=...,id=...,username=...,password=...,avatar=...,game=...,win=...,draw=...,loss=...,points=...,rank=...
-        if(res.getState().equals("game_join")){
+        if(res.getState().equals("game_joined")){
           System.out.println("Vào phòng");
           Pattern p = Pattern.compile(
             "game_id=(\\d+),is_start=(\\d+),ip=([\\.\\d]+),"
@@ -259,16 +258,10 @@ public class SocketHandle implements Runnable {
           String competitorIP = m.group(3);
 
           User competitor = new User(
-            Integer.parseInt(m.group(4)), 
-            m.group(5), 
-            "", 
-            m.group(6),
-            Integer.parseInt(m.group(7)),
-            Integer.parseInt(m.group(8)),
-            Integer.parseInt(m.group(9)),
-            Integer.parseInt(m.group(10)),
-            Integer.parseInt(m.group(11)),
-            Integer.parseInt(m.group(12))
+            Integer.parseInt(m.group(4)), m.group(5), "", m.group(6),
+            Integer.parseInt(m.group(7)), Integer.parseInt(m.group(8)),
+            Integer.parseInt(m.group(9)), Integer.parseInt(m.group(10)),
+            Integer.parseInt(m.group(11)), Integer.parseInt(m.group(12))
           );
           
           if(Client.findRoomFrm != null){

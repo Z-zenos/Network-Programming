@@ -45,7 +45,7 @@ import model.User;
  * @author Admin
  */
 public class GameClientFrm extends javax.swing.JFrame{
-
+  public int roomId;
   private User competitor;
   private JButton[][] button;
   private int[][] competitorMatrix;
@@ -74,125 +74,123 @@ public class GameClientFrm extends javax.swing.JFrame{
   private String competitorIP;
 
   public GameClientFrm(User competitor, int room_ID, int isStart, String competitorIP) {
-      initComponents();
-      numberOfMatch = isStart;
-      this.competitor = competitor;
-      this.competitorIP = competitorIP;
-      //
-      isSending = false;
-      isListening = false;
-      jButton5.setIcon(new ImageIcon("assets/game/mute.png"));
-      jButton4.setIcon(new ImageIcon("assets/game/mutespeaker.png"));
-      //init score
-      userWin = 0;
-      competitorWin = 0;
-      //
-      this.setTitle("Caro Master");
-      this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-      this.setResizable(false);
-      this.setLocationRelativeTo(null);
-      this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
-      this.setResizable(false);
-      this.getContentPane().setLayout(null);
-      //Set layout dạng lưới cho panel chứa button
-      jPanel1.setLayout(new GridLayout(size, size));
-      //Setup play button
-      button = new JButton[size][size];
-      for (int i = 0; i < size; i++) {
-          for (int j = 0; j < size; j++) {
-              button[i][j] = new JButton("");
-              button[i][j].setBackground(Color.white);
-              button[i][j].setDisabledIcon(new ImageIcon("assets/image/border.jpg"));
-              jPanel1.add(button[i][j]);
+    this.roomId = room_ID;
+    initComponents();
+    numberOfMatch = isStart;
+    this.competitor = competitor;
+    this.competitorIP = competitorIP;
+    //
+    isSending = false;
+    isListening = false;
+    jButton5.setIcon(new ImageIcon("assets/game/mute.png"));
+    jButton4.setIcon(new ImageIcon("assets/game/mutespeaker.png"));
+    //init score
+    userWin = 0;
+    competitorWin = 0;
+    //
+    this.setTitle("Caro Master");
+    this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+    this.setResizable(false);
+    this.setLocationRelativeTo(null);
+    this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
+    this.setResizable(false);
+    this.getContentPane().setLayout(null);
+    //Set layout dạng lưới cho panel chứa button
+    jPanel1.setLayout(new GridLayout(size, size));
+    //Setup play button
+    button = new JButton[size][size];
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            button[i][j] = new JButton("");
+            button[i][j].setBackground(Color.white);
+            button[i][j].setDisabledIcon(new ImageIcon("assets/image/border.jpg"));
+            jPanel1.add(button[i][j]);
+        }
+    }
+    //SetUp play Matrix
+    competitorMatrix = new int[size][size];
+    matrix = new int[size][size];
+    userMatrix = new int[size][size];
+    //Setup UI
+    jLabel1.setFont(new Font("Arial", Font.BOLD, 15));
+    jLabel6.setFont(new Font("Arial", Font.BOLD, 15));
+    jLabel18.setFont(new Font("Arial", Font.BOLD, 15));
+    jLabel18.setAlignmentX(JLabel.CENTER);
+    jButton1.setBackground(Color.white);
+    jButton1.setIcon(new ImageIcon("assets/image/send2.png"));
+    jLabel12.setText(competitor.getUsername());
+    jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
+    jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
+    jLabel19.setIcon(new ImageIcon(Client.user.getAvatar()));
+    jLabel18.setText("Phòng: " + room_ID);
+    jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
+    jLabel15.setText(competitor.getUsername());
+    jLabel16.setText(Integer.toString(competitor.getNumberOfGame()));
+    jLabel17.setText(Integer.toString(competitor.getnumberOfWin()));
+    jButton3.setIcon(new ImageIcon("assets/game/"+competitor.getAvatar()+".jpg"));
+    jButton3.setToolTipText("Xem thông tin đối thủ");
+    jLabel3.setVisible(false);
+    jLabel5.setVisible(false);
+    jButton2.setVisible(false);
+    yourTurnJLabel3.setVisible(false);
+    compretitorTurnJLabel.setVisible(false);
+    timerjLabel19.setVisible(false);
+    jTextArea1.setEditable(false);
+    jLabel20.setText("Tỉ số: 0-0");
+    //Setup timer
+    second = 60;
+    minute = 0;
+    timer = new Timer(1000, new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        String temp = minute.toString();
+        String temp1 = second.toString();
+        if (temp.length() == 1) {
+          temp = "0" + temp;
+        }
+        if (temp1.length() == 1) {
+          temp1 = "0" + temp1;
+        }
+        if (second == 0) {
+          timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
+          second = 60;
+          minute = 0;
+          try {
+            Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
+            increaseWinMatchToCompetitor();
+            Client.socketHandle.write("lose,");
+          } catch (IOException ex) {
+            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
           }
+        } else {
+          timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
+          second--;
+        }
       }
-      //SetUp play Matrix
-      competitorMatrix = new int[size][size];
-      matrix = new int[size][size];
-      userMatrix = new int[size][size];
-      //Setup UI
-      jLabel1.setFont(new Font("Arial", Font.BOLD, 15));
-      jLabel6.setFont(new Font("Arial", Font.BOLD, 15));
-      jLabel18.setFont(new Font("Arial", Font.BOLD, 15));
-      jLabel18.setAlignmentX(JLabel.CENTER);
-      jButton1.setBackground(Color.white);
-      jButton1.setIcon(new ImageIcon("assets/image/send2.png"));
-      jLabel12.setText(competitor.getUsername());
-      jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
-      jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
-      jLabel19.setIcon(new ImageIcon(Client.user.getAvatar()));
-      jLabel18.setText("Phòng: " + room_ID);
-      jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
-      jLabel15.setText(competitor.getUsername());
-      jLabel16.setText(Integer.toString(competitor.getNumberOfGame()));
-      jLabel17.setText(Integer.toString(competitor.getnumberOfWin()));
-      jButton3.setIcon(new ImageIcon("assets/game/"+competitor.getAvatar()+".jpg"));
-      jButton3.setToolTipText("Xem thông tin đối thủ");
-      jLabel3.setVisible(false);
-      jLabel5.setVisible(false);
-      jButton2.setVisible(false);
-      yourTurnJLabel3.setVisible(false);
-      compretitorTurnJLabel.setVisible(false);
-      timerjLabel19.setVisible(false);
-      jTextArea1.setEditable(false);
-      jLabel20.setText("Tỉ số: 0-0");
-      //Setup timer
-      second = 60;
-      minute = 0;
-      timer = new Timer(1000, new ActionListener() {
-          @Override
-          public void actionPerformed(ActionEvent e) {
-              String temp = minute.toString();
-              String temp1 = second.toString();
-              if (temp.length() == 1) {
-                  temp = "0" + temp;
-              }
-              if (temp1.length() == 1) {
-                  temp1 = "0" + temp1;
-              }
-              if (second == 0) {
-                  timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
-                  second = 60;
-                  minute = 0;
-                  try {
-                      Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
-                      increaseWinMatchToCompetitor();
-                      Client.socketHandle.write("lose,");
-                  } catch (IOException ex) {
-                      JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-                  }
+    });
 
-              } else {
-                  timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
-                  second--;
-              }
+    //Setup icon
+    normalItem = new String[2];
+    normalItem[1] = "assets/image/o2.jpg";
+    normalItem[0] = "assets/image/x2.jpg";
+    winItem = new String[2];
+    winItem[1] = "assets/image/owin.jpg";
+    winItem[0] = "assets/image/xwin.jpg";
+    iconItem = new String[2];
+    iconItem[1] = "assets/image/o3.jpg";
+    iconItem[0] = "assets/image/x3.jpg";
+    preItem = new String[2];
+    preItem[1] = "assets/image/o2_pre.jpg";
+    preItem[0] = "assets/image/x2_pre.jpg";
+    setupButton();
 
-          }
-
-      });
-
-      //Setup icon
-      normalItem = new String[2];
-      normalItem[1] = "assets/image/o2.jpg";
-      normalItem[0] = "assets/image/x2.jpg";
-      winItem = new String[2];
-      winItem[1] = "assets/image/owin.jpg";
-      winItem[0] = "assets/image/xwin.jpg";
-      iconItem = new String[2];
-      iconItem[1] = "assets/image/o3.jpg";
-      iconItem[0] = "assets/image/x3.jpg";
-      preItem = new String[2];
-      preItem[1] = "assets/image/o2_pre.jpg";
-      preItem[0] = "assets/image/x2_pre.jpg";
-      setupButton();
-
-      setEnableButton(true);
-      this.addWindowListener(new WindowAdapter() {
-          @Override
-          public void windowClosing(WindowEvent e) {
-              exitGame();
-          }
-      });
+    setEnableButton(true);
+    this.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosing(WindowEvent e) {
+        exitGame();
+      }
+    });
 
   }
 
@@ -201,7 +199,7 @@ public class GameClientFrm extends javax.swing.JFrame{
       timer.stop();
       voiceCloseMic();
       voiceStopListening();
-      Client.socketHandle.write("PLAY /game/quit\r\nContent-Length: 0\r\nParams: ");
+      Client.socketHandle.write(Client.socketHandle.requestify("GAME_QUIT", 0, "game_id=" + this.roomId + "&player_id=" + Client.user.getID(), ""));
       Client.closeAllViews();
       Client.openView(Client.View.HOMEPAGE);
     } catch (IOException ex) {
@@ -841,7 +839,7 @@ public class GameClientFrm extends javax.swing.JFrame{
           temp += "Tôi: " + jTextField1.getText() + "\n";
           jTextArea1.setText(temp);
           Client.socketHandle.write(
-            Client.socketHandle.requestify("CHAT", jTextField1.getText().length(), "game_id=0&player_id=" + Client.user.getID(), jTextField1.getText())
+            Client.socketHandle.requestify("CHAT", jTextField1.getText().length(), "game_id=" + this.roomId + "&player_id=" + Client.user.getID(), jTextField1.getText())
           );
           jTextField1.setText("");
           jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());

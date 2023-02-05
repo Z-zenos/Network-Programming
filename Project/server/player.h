@@ -34,7 +34,7 @@ typedef struct rbtree PlayerTree;
 
 
 PlayerTree *player_build(MYSQL *);
-//void drop_playertree(PlayerTree *);
+void player_drop(PlayerTree *);
 int player_add(PlayerTree *, Player);
 //int player_delete(PlayerTree *, int);
 Player *player_find(PlayerTree *, int);

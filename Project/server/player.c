@@ -34,6 +34,8 @@ static void *player_dup(void *p) {
 
 static void player_rel(void *p) { free(p); }
 
+void player_drop(PlayerTree *playertree) { rbdelete(playertree); }
+
 int player_add(PlayerTree *playertree, Player new_player) {
   int ret;
 

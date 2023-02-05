@@ -92,6 +92,7 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
 
   /* GAME */
   if (strcmp(cmd, "GAME_PLAY") == 0)        return game_handler;
+  if (strcmp(cmd, "GAME_QUICK") == 0)       return game_quick;
   if (strcmp(cmd, "GAME_CREATE") == 0)      return game_create;
   if (strcmp(cmd, "GAME_CANCEL") == 0)      return game_cancel;
   if (strcmp(cmd, "GAME_JOIN") == 0)        return game_join;
@@ -115,7 +116,7 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   /* CHAT */
   if(strcmp(cmd, "CHAT") == 0)              return chat;
 
-  /* QUIT*/
+  /* QUIT */
   if(strcmp(cmd, "EXIT") == 0)              return disconnect;
 
   return route_null;
@@ -241,6 +242,8 @@ int main(int argc, char *argv[]) {
   server_listen(conn, gametree, playertree);
 
   game_drop(gametree);
+  player_drop(playertree);
   mysql_close(conn);
+  close(server_fd);
   return SUCCESS;
 }

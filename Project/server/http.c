@@ -65,7 +65,8 @@ void messagify(Message *msg, char *cmd, char *params, char *state, char *data) {
 void responsify(Message *msg, char *state, char *data) {
   strcpy(msg->command, "RESPONSE");
   strcpy(msg->__params__, "0");
-  sprintf(msg->content, "state=%s", state);
+  memset(msg->content, '\0', CONTENT_L);
+  sprintf(msg->content, "state=%s", state ? state : "null");
   if(data) {
     strcat(msg->content, ",");
     strcat(msg->content, data);

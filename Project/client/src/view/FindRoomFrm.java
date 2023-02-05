@@ -21,88 +21,92 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  * @author Admin
  */
 public class FindRoomFrm extends javax.swing.JFrame {
-    private Timer timer;
-    private boolean isFinded;
-    /**
-     * Creates new form FindRoomFrm
-     */
-    public FindRoomFrm() {
-        initComponents();
-        this.setTitle("Caro Master");
-        this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
-        this.setResizable(false);
-        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
-        this.setLocationRelativeTo(null);
-        jLabel5.setIcon(new ImageIcon("assets/icon/loading1.gif"));
-        jButton1.setIcon(new ImageIcon("assets/icon/door_exit.png"));
-        jProgressBar1.setValue(70);
-        isFinded = false;
-        startFind();
-        sendFindRequest();
-    }
-    public void stopAllThread(){
-        timer.stop();
-    }
-    public void startFind(){
-        jLabel4.setVisible(false);
-        jLabel5.setVisible(false);
-        timer = new Timer(1000, new ActionListener() {
-            int count = 20;
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                count--;
-                if (count >= 0) {
-                    if(count>=10)
-                        jLabel3.setText("00:" + count);
-                    else
-                        jLabel3.setText("00:0" + count);
-                    jProgressBar1.setValue(Math.round((float) count / 20 * 100));
-                } else {
-                    ((Timer) (e.getSource())).stop();
-                    try {
-                        Client.socketHandle.write("cancel-room,");
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-                    }
-                    int res = JOptionPane.showConfirmDialog(rootPane, "Tìm kiếm thất bại, bạn muốn thử lại lần nữa chứ?");
-                    if (res==JOptionPane.YES_OPTION){
-                        startFind();
-                        sendFindRequest();
-                    }
-                    else{
-                        //Có thể hỏi chơi với máy không
-                        Client.closeView(Client.View.FINDROOM);
-                        Client.openView(Client.View.HOMEPAGE);
-                    }
-                }
-            }
-        });
-        timer.setInitialDelay(0);
-        timer.start();
-    }
+  private Timer timer;
+  private boolean isFinded;
+  /**
+   * Creates new form FindRoomFrm
+   */
+  public FindRoomFrm() {
+    initComponents();
+    this.setTitle("Caro Master");
+    this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
+    this.setResizable(false);
+    this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    this.setLocationRelativeTo(null);
+    jLabel5.setIcon(new ImageIcon("assets/icon/loading1.gif"));
+    jButton1.setIcon(new ImageIcon("assets/icon/door_exit.png"));
+    jProgressBar1.setValue(70);
+    isFinded = false;
+    startFind();
     
-    public void sendFindRequest(){
-        try {
-            Client.socketHandle.write("quick-room,");
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+  }
+  
+  public void stopAllThread(){
+    timer.stop();
+  }
+  
+  public void startFind(){
+    jLabel4.setVisible(false);
+    jLabel5.setVisible(false);
+    timer = new Timer(1000, new ActionListener() {
+      int count = 20;
+
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        count--;
+        if (count >= 0) {
+          sendFindRequest();
+          if(count >= 10)
+            jLabel3.setText("00:" + count);
+          else
+            jLabel3.setText("00:0" + count);
+          jProgressBar1.setValue(Math.round((float) count / 20 * 100));
+        } 
+        // Nếu hết thời gian 20s mà chưa tìm thấy phòng 
+        else {
+          ((Timer) (e.getSource())).stop();
+//          try {
+//            Client.socketHandle.write("cancel-room,");
+//          } catch (IOException ex) {
+//            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+//          }
+          int res = JOptionPane.showConfirmDialog(rootPane, "Tìm kiếm thất bại, bạn muốn thử lại lần nữa chứ?");
+          if (res == JOptionPane.YES_OPTION){
+            startFind();
+            sendFindRequest();
+          }
+          else{
+            //Có thể hỏi chơi với máy không
+            Client.closeView(Client.View.FINDROOM);
+            Client.openView(Client.View.HOMEPAGE);
+          }
         }
+      }
+    });
+    timer.setInitialDelay(0);
+    timer.start();
+  }
+
+  public void sendFindRequest(){
+    try {
+      Client.socketHandle.write(Client.socketHandle.requestify("GAME_QUICK", 0, "player_id=" + Client.user.getID(), ""));
+    } catch (IOException ex) {
+      JOptionPane.showMessageDialog(rootPane, ex.getMessage());
     }
-    public void showFindedRoom(){
-        isFinded = true;
-        timer.stop();
-        jLabel4.setVisible(true);
-        jLabel5.setVisible(true);
-        jLabel2.setVisible(false);
-        
-    }
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
+  }
+  public void showFindedRoom(){
+    isFinded = true;
+    timer.stop();
+    jLabel4.setVisible(true);
+    jLabel5.setVisible(true);
+    jLabel2.setVisible(false);
+  }
+  /**
+   * This method is called from within the constructor to initialize the form.
+   * WARNING: Do NOT modify this code. The content of this method is always
+   * regenerated by the Form Editor.
+   */
+  @SuppressWarnings("unchecked")
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
 
@@ -206,16 +210,16 @@ public class FindRoomFrm extends javax.swing.JFrame {
   }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        if(isFinded)
-            return;
-        try {
-            Client.socketHandle.write("cancel-room,");
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-        }
-        timer.stop();
-        Client.closeView(Client.View.FINDROOM);
-        Client.openView(Client.View.HOMEPAGE);
+      if(isFinded)
+        return;
+//      try {
+//        Client.socketHandle.write("cancel-room,");
+//      } catch (IOException ex) {
+//        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+//      }
+      timer.stop();
+      Client.closeView(Client.View.FINDROOM);
+      Client.openView(Client.View.HOMEPAGE);
     }//GEN-LAST:event_jButton1ActionPerformed
 
 

@@ -18,7 +18,7 @@ public class Response {
   private int dataLength;
 
   public Response(String response) {
-    Pattern pattern = Pattern.compile("RESPONSE#(\\d+)#0#(.+)");
+    Pattern pattern = Pattern.compile("RESPONSE#(\\d+)#0#(.+)?");
     Matcher m = pattern.matcher(response);
     m.find();
     this.dataLength = Integer.parseInt(m.group(1));

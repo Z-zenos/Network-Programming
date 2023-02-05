@@ -53,6 +53,7 @@ Game *game_find(GameTree *, int);
 void game_info(GameTree *);
 int game_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_quick(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_cancel(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_view(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);

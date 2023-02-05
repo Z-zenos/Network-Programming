@@ -330,7 +330,7 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   );
 
   receiver[1] = opponent->sock;
-  responsify(msg, "game_join", dataStr);
+  responsify(msg, "game_joined", dataStr);
   return SUCCESS;
 }
 
@@ -345,6 +345,9 @@ int game_quit(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
     responsify(msg, "game_null", NULL);
     return FAILURE;
   }
+
+  Player *quit_player = player_find(playertree, player_id);
+  quit_player->is_playing = false;
 
   // TODO: Update game state: Unset socket of player or spectator
   if(game_found->joiner[0] == clnt_addr.sock) game_found->joiner[0] = 0;
@@ -394,4 +397,53 @@ int game_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
 
   responsify(msg, "game_list", dataStr);
   return SUCCESS;
+}
+
+int game_quick(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  // TODO: Find game no password for player
+  Game *game;
+  rbtrav_t *rbtrav;
+  rbtrav = rbtnew();
+  game = rbtfirst(rbtrav, gametree);
+
+  do {
+    if(strlen(game->password) > 0) continue;
+    else if(game->player1_id && game->player2_id) continue;
+    else {
+      // FIND game !
+      if(game->player1_id) game->player2_id = player_id;
+      else game->player1_id = player_id;
+
+      if(game->joiner[0]) game->joiner[1] = clnt_addr.sock;
+      else game->joiner[0] = clnt_addr.sock;
+
+      Player *player_found = player_find(playertree, player_id);
+      player_found->sock = clnt_addr.sock;
+      player_found->is_playing = true;
+
+      Player *opponent = player_find(playertree, (game->player1_id == player_id ? game->player2_id : game->player1_id));
+      opponent->is_playing = true;
+      char tmp[DATA_L];
+      memset(tmp, '\0', DATA_L);
+
+      sprintf(
+        dataStr,
+        "game_id=%d,is_start=1,ip=127.0.0.1,id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
+        game->id, opponent->id, opponent->username, opponent->avatar, opponent->game,
+        opponent->achievement.win, opponent->achievement.draw, opponent->achievement.loss, opponent->achievement.points,
+        my_rank(conn, opponent->id, tmp)
+      );
+
+      receiver[1] = opponent->sock;
+      responsify(msg, "game_joined", dataStr);
+      return SUCCESS;
+    }
+  } while ((game = rbtnext(rbtrav)) != NULL);
+
+  responsify(msg, NULL, NULL);
+  return FAILURE;
 }
