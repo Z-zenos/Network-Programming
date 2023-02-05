@@ -324,10 +324,16 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
 
   sprintf(
     dataStr,
-    "game_id=%d,is_start=1,ip=127.0.0.1,id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
+    "game_id=%d,is_start=1,ip=127.0.0.1,"
+    "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d;"
+    "game_id=%d,is_start=0,ip=127.0.0.1,"
+    "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
     game_found->id, opponent->id, opponent->username, opponent->avatar, opponent->game,
     opponent->achievement.win, opponent->achievement.draw, opponent->achievement.loss, opponent->achievement.points,
-    my_rank(conn, opponent->id, tmp)
+    my_rank(conn, opponent->id, tmp),
+    game_found->id, player_found->id, player_found->username, player_found->avatar, player_found->game,
+    player_found->achievement.win, player_found->achievement.draw, player_found->achievement.loss, player_found->achievement.points,
+    my_rank(conn, player_found->id, tmp)
   );
 
   receiver[1] = opponent->sock;
@@ -434,10 +440,16 @@ int game_quick(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
 
       sprintf(
         dataStr,
-        "game_id=%d,is_start=1,ip=127.0.0.1,id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
+        "game_id=%d,is_start=1,ip=127.0.0.1,"
+        "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d;"
+        "game_id=%d,is_start=0,ip=127.0.0.1,"
+        "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
         game->id, opponent->id, opponent->username, opponent->avatar, opponent->game,
         opponent->achievement.win, opponent->achievement.draw, opponent->achievement.loss, opponent->achievement.points,
-        my_rank(conn, opponent->id, tmp)
+        my_rank(conn, opponent->id, tmp),
+        game->id, player_found->id, player_found->username, player_found->avatar, player_found->game,
+        player_found->achievement.win, player_found->achievement.draw, player_found->achievement.loss, player_found->achievement.points,
+        my_rank(conn, player_found->id, tmp)
       );
 
       receiver[1] = opponent->sock;
@@ -517,7 +529,7 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
 
   sprintf(
     dataStr,
-    "game_id=%d,is_start=1,ip=127.0.0.1,"
+    "game_id=%d,is_start=0,ip=127.0.0.1,"
     "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d;"
     "game_id=%d,is_start=1,ip=127.0.0.1,"
     "id=%d,username=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d",
@@ -533,4 +545,3 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
   responsify(msg, "duel_accepted", dataStr);
   return SUCCESS;
 }
-

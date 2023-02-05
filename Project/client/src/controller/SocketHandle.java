@@ -253,24 +253,35 @@ public class SocketHandle implements Runnable {
      
         // Xử lý vào phòng. data: game_id=...,is_start=...,ip=...,id=...,username=...,password=...,avatar=...,game=...,win=...,draw=...,loss=...,points=...,rank=...
         if(res.getState().equals("game_joined")){
-          System.out.println("Vào phòng");
+          String[] splitter = res.getData().split(";");
           Pattern p = Pattern.compile(
             "game_id=(\\d+),is_start=(\\d+),ip=([\\.\\d]+),"
             + "id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),game=(\\d+),"
             + "win=(\\d+),draw=(\\d+),loss=(\\d+),points=(\\d+),rank=(\\d+)"
           );
-          Matcher m = p.matcher(res.getData());
-          m.find();
-          int roomID = Integer.parseInt(m.group(1));
-          int isStart = Integer.parseInt(m.group(2));
-          String competitorIP = m.group(3);
-
-          User competitor = new User(
-            Integer.parseInt(m.group(4)), m.group(5), "", m.group(6),
-            Integer.parseInt(m.group(7)), Integer.parseInt(m.group(8)),
-            Integer.parseInt(m.group(9)), Integer.parseInt(m.group(10)),
-            Integer.parseInt(m.group(11)), Integer.parseInt(m.group(12))
-          );
+          Matcher m;
+          int opponentID, roomID = 0, isStart = 0;
+          String competitorIP = "0.0.0.0";
+          User competitor = new User(0, "");
+          for (String splitter1 : splitter) {
+            m = p.matcher(splitter1);
+            if(m.find()) {
+              opponentID = Integer.parseInt(m.group(4));
+              
+              if(opponentID != Client.user.getID()) {
+                roomID = Integer.parseInt(m.group(1));
+                isStart = Integer.parseInt(m.group(2));
+                competitorIP = m.group(3);
+                competitor = new User(
+                  opponentID, m.group(5), "", m.group(6),
+                  Integer.parseInt(m.group(7)), Integer.parseInt(m.group(8)),
+                  Integer.parseInt(m.group(9)), Integer.parseInt(m.group(10)),
+                  Integer.parseInt(m.group(11)), Integer.parseInt(m.group(12))
+                );
+              }
+            }
+          }
+          System.out.println("Vào phòng");
           
           if(Client.findRoomFrm != null){
             Client.findRoomFrm.showFindedRoom();
@@ -423,11 +434,14 @@ public class SocketHandle implements Runnable {
         /*                                     GAME CARO                                      */
         /* ---------------------------------------------------------------------------------- */
 
-//        
-//        // Xử lý đánh một nước trong ván chơi
-//        if(messageSplit[0].equals("caro")){
-//          Client.gameClientFrm.addCompetitorMove(messageSplit[1], messageSplit[2]);
-//        }
+        
+        // Xử lý đánh một nước trong ván chơi
+        if(res.getState().equals("caro")){
+          Pattern p = Pattern.compile("x=(\\d+),y=(\\d+)");
+          Matcher m = p.matcher(res.getData());
+          m.find();
+          Client.gameClientFrm.addCompetitorMove(m.group(1), m.group(2));
+        }
 
 //        if(messageSplit[0].equals("draw-request")){
 //          Client.gameClientFrm.showDrawRequest();
