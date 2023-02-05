@@ -222,7 +222,7 @@ public class FriendListFrm extends javax.swing.JFrame {
         if(res == JOptionPane.YES_OPTION){
           Client.closeAllViews();
           Client.openView(Client.View.GAMENOTICE, "Thách đấu", "Đang chờ phản hồi từ đối thủ");
-          Client.socketHandle.write("duel-request," + friend.getID());
+          Client.socketHandle.write(Client.socketHandle.requestify("DUEL_REQUEST", 0, "player_id=" + Client.user.getID() + "&friend_id=" + friend.getID(), ""));
         }
         else{
           isClicked = false;

@@ -367,6 +367,7 @@ int game_quit(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   }
 
   // TODO: Send response to quited player
+  receiver[1] = player_find(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id)->sock;
   responsify(msg, "game_quit", NULL);
   return SUCCESS;
 }
@@ -448,3 +449,55 @@ int game_quick(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
   responsify(msg, NULL, NULL);
   return FAILURE;
 }
+
+int duel_request(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int friend_id = atoi(map_val(msg->params, "friend_id"));
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  Player *requester = player_find(playertree, player_id);
+  Player *friend = player_find(playertree, friend_id);
+  sprintf(dataStr, "player_id=%d,username=%s", player_id, requester->username);
+  receiver[0] = friend->sock;
+  responsify(msg, "duel_request", dataStr);
+  return SUCCESS;
+}
+
+int duel_agree(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int friend_id = atoi(map_val(msg->params, "friend_id"));
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  Player *requester = player_find(playertree, player_id);
+  Player *friend = player_find(playertree, friend_id);
+  sprintf(dataStr, "player_id=%d,username=%s", player_id, requester->username);
+  receiver[0] = friend->sock;
+  responsify(msg, "duel_request", dataStr);
+  return SUCCESS;
+}
+
+int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int friend_id = atoi(map_val(msg->params, "friend_id"));
+  int agree = atoi(map_val(msg->params, "agree"));
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  Player *me = player_find(playertree, player_id);
+  Player *friend = player_find(playertree, friend_id);
+
+  // TODO: If disagree
+  if(!agree) {
+    receiver[0] = friend->sock;
+    responsify(msg, "duel_rejected", NULL);
+    return SUCCESS;
+  }
+
+
+  receiver[0] = friend->sock;
+  responsify(msg, "duel_rejected", dataStr);
+  return SUCCESS;
+}
+

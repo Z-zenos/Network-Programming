@@ -106,6 +106,10 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   if (strcmp(cmd, "GAME_JOIN") == 0)        return game_join;
   if (strcmp(cmd, "GAME_QUIT") == 0)        return game_quit;
 
+  /* DUEL */
+  if (strcmp(cmd, "DUEL_REQUEST") == 0)      return duel_request;
+  if (strcmp(cmd, "DUEL") == 0)              return duel_handler;
+
   /* FRIEND */
   if(strcmp(cmd, "FRIEND_CHECK") == 0)      return friend_check;
   if(strcmp(cmd, "FRIEND_LIST") == 0)       return friend_list;

@@ -61,4 +61,7 @@ char *game_board2string(char [BOARD_S][BOARD_S]);
 int game_join(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_quit(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
+int duel_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int duel_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+
 #endif
