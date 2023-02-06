@@ -99,7 +99,7 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   strcpy(cmd, msg.command);
 
   /* GAME */
-  if (strcmp(cmd, "GAME_PLAY") == 0)        return game_handler;
+  if (strcmp(cmd, "GAME_FINISH") == 0)      return game_finish;
   if (strcmp(cmd, "CARO") == 0)             return caro;
   if (strcmp(cmd, "GAME_QUICK") == 0)       return game_quick;
   if (strcmp(cmd, "GAME_CREATE") == 0)      return game_create;
@@ -111,6 +111,10 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   if (strcmp(cmd, "DUEL_REQUEST") == 0)      return duel_request;
   if (strcmp(cmd, "DUEL") == 0)              return duel_handler;
 
+  /* DRAW REQUEST */
+  if (strcmp(cmd, "DRAW_REQUEST") == 0)      return draw_request;
+  if (strcmp(cmd, "DRAW") == 0)              return draw_handler;
+
   /* FRIEND */
   if(strcmp(cmd, "FRIEND_CHECK") == 0)      return friend_check;
   if(strcmp(cmd, "FRIEND_LIST") == 0)       return friend_list;
@@ -119,19 +123,19 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
 
   /* AUTH */
   if(strcmp(cmd, "LOGIN") == 0)             return signin;
+  if(strcmp(cmd, "LOGOUT") == 0)            return signout;
   if(strcmp(cmd, "REGISTER") == 0)          return signup;
   if(strcmp(cmd, "PASSWORD_UPDATE") == 0)   return change_password;
 
   /* GET */
   if(strcmp(cmd, "RANK") == 0)              return rank;
   if(strcmp(cmd, "PROFILE") == 0)           return profile;
-  if(strcmp(cmd, "GAME_VIEW") == 0)         return game_view;
   if(strcmp(cmd, "GAME_LIST") == 0)         return game_list;
 
   /* CHAT */
   if(strcmp(cmd, "CHAT") == 0)              return chat;
 
-  /* QUIT */
+  /* EXIT APP */
   if(strcmp(cmd, "EXIT") == 0)              return disconnect;
 
   return route_null;
@@ -240,7 +244,6 @@ int main(int argc, char *argv[]) {
   gametree = game_new();
   Game g = {
     .id = 1,
-    .views = 9,
     .num_move = 48,
     .result = 0,
     .turn = 'O',
@@ -255,7 +258,6 @@ int main(int argc, char *argv[]) {
     .row = 0,
     .password = ""
   };
-  memset(g.joiner, 0, sizeof g.joiner);
 
   game_add(gametree, g);
   playertree = player_build(conn);

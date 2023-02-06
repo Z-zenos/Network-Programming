@@ -46,21 +46,16 @@ int game_add(GameTree *gametree, Game new_game) {
   Game *game;
   game = calloc(1, sizeof(Game));
   game->id = new_game.id;
-  game->views = new_game.views;
   game->turn = new_game.turn;
   game->result = new_game.result;
   game->player1_id = new_game.player1_id;
   game->player2_id = new_game.player2_id;
-  game->chat_id = new_game.chat_id;
   game->num_move = new_game.num_move;
   game->col = new_game.col;
   game->row = new_game.row;
   strcpy(game->password, new_game.password);
   for ( int i = 0; i < BOARD_S; ++i ){
     memcpy(game->board[i], new_game.board[i], sizeof new_game.board[i]);
-  }
-  for ( int i = 0; i < MAX_SPECTATOR; ++i ){
-    game->joiner[i] = new_game.joiner[i];
   }
 
   ret = rbinsert(gametree, (void *)game);
@@ -109,64 +104,102 @@ void game_print_board(char board[BOARD_S][BOARD_S]) {
   }
 }
 
-void game_info(GameTree *gametree) {
-  Game *game;
+int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int game_id = atoi(map_val(msg->params, "game_id"));
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int opponent_id = atoi(map_val(msg->params, "opponent_id"));
+  int x = atoi(map_val(msg->params, "x"));
+  int y = atoi(map_val(msg->params, "y"));
+  int result = atoi(map_val(msg->params, "result"));
+  char type[10];
+  strcpy(type, map_val(msg->params, "type"));
 
-  rbtrav_t *rbtrav;
-  rbtrav = rbtnew();
-  game = rbtfirst(rbtrav, gametree);
-  printf("id %d - views: %d - turn: %c - num_moves: %d - result: %d\n", game->id, game->views, game->turn, game->num_move, game->result);
-  game_print_board(game->board);
+  // TODO: Find game -> Update game board
+  Game *game = game_find(gametree, game_id);
+  game->col = x;
+  game->row = y;
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', sizeof dataStr);
+  Player *player = player_find(playertree, player_id);
+  Player *opponent = player_find(playertree, opponent_id);
+  char query[QUERY_L];
+  memset(query, '\0', QUERY_L);
 
+  switch (result) {
+    case 1: // Win
+      if(strcmp(type, "caro") == 0) {
+        game->result = player_id;
+        sprintf(
+          query,
+          "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
+          player->game + 1, player->achievement.win + 1, player->achievement.points + 3, player_id
+        );
+        mysql_query(conn, query);
 
-  while ((game = rbtnext(rbtrav)) != NULL) {
-    printf("id %d - views: %d - turn: %c - num_moves: %d - result: %d\n", game->id, game->views, game->turn, game->num_move, game->result);
-    game_print_board(game->board);
+        sprintf(
+          query,
+          "UPDATE players SET game = %d, loss = %d WHERE id = %d",
+          opponent->game + 1, opponent->achievement.loss + 1, opponent_id
+        );
+        mysql_query(conn, query);
+
+        sprintf(
+          query,
+          "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
+          player_id, opponent_id, game->num_move);
+        mysql_query(conn, query);
+        receiver[0] = opponent->sock;
+        sprintf(dataStr, "x=%d,y=%d", x, y);
+        responsify(msg, "caro", dataStr);
+      }
+      else if(strcmp(type, "timeout") == 0) {
+        game->num_move = 0;
+        receiver[0] = player->sock;
+        receiver[1] = opponent->sock;
+        responsify(msg, "new_game", NULL);
+      }
+      break;
+
+    case 0: // DRAW
+      game->result = 0;
+      sprintf(
+        query,
+        "UPDATE players SET game = %d, draw = %d, points = %d WHERE id = %d",
+        player->game + 1, player->achievement.draw + 1, player->achievement.points + 1, player_id
+      );
+      mysql_query(conn, query);
+
+      sprintf(
+        query,
+        "UPDATE players SET game = %d, draw = %d, points = %d WHERE id = %d",
+        opponent->game + 1, opponent->achievement.draw + 1, opponent->achievement.points + 1, opponent_id
+      );
+      mysql_query(conn, query);
+
+      sprintf(query, "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 0, %d)", player_id, opponent_id, game->num_move);
+      mysql_query(conn, query);
+      receiver[0] = player->sock;
+      receiver[1] = opponent->sock;
+      responsify(msg, "draw", NULL);
+      break;
+
+    case -1: // LOSS
+      if(strcmp(type, "timeout") == 0) {
+        receiver[0] = opponent->sock;
+        memset(dataStr, '\0', DATA_L);
+        sprintf(dataStr, "game_id=%d,opponent_id=%d", game_id, player_id);
+        responsify(msg, "timeout", dataStr);
+      }
+      else if(strcmp(type, "caro") == 0) {
+        game->num_move = 0;
+        receiver[0] = player->sock;
+        receiver[1] = opponent->sock;
+        responsify(msg, "new_game", NULL);
+      }
+      break;
   }
-}
 
-int game_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-//  int game_id, player_id, col, row, opponent_id;
-//  char turn;
-//
-//  // TODO: Get id
-//  sscanf(req->header.params, "game_id=%d&player_id=%d&turn=%c&col=%d&row=%d", &game_id, &player_id, &turn, &col, &row);
-//
-//  // TODO: Find game -> Update game board
-//  Game *game = game_find(gametree, game_id);
-//  game->turn = turn;
-//  game->num_move++;
-//  game->col = col;
-//  game->row = row;
-//  char dataStr[DATA_L];
-//  memset(dataStr, '\0', sizeof dataStr);
-//
-//  // TODO: Check state game chưa ghi vào db này
-//  if(checkWinning(game->board, turn, game->col, game->row)) {
-//    Player *winner = player_find(playertree, player_id);
-//    opponent_id = game->player1_id == player_id ? game->player2_id : player_id;
-//    Player *losser = player_find(playertree, opponent_id);
-//
-//    winner->achievement.win++;
-//    winner->achievement.points += 3;
-//
-//    losser->achievement.loss++;
-//    losser->achievement.points -= 1;
-//
-//    // TODO: Update data in database
-//    char query[QUERY_L];
-//    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", winner->achievement.win, winner->achievement.points, winner->id);
-//    mysql_query(conn, query);
-//    sprintf(query, "UPDATE players SET win = %d AND points = %d WHERE id = %d", losser->achievement.win, losser->achievement.points, losser->id);
-//    mysql_query(conn, query);
-//
-//    sprintf(dataStr, "win=%d", player_id);
-//    responsify(res, 200, NULL, dataStr, "Player id win", SEND_JOINER);
-//    return;
-//  }
-//
-//  sprintf(dataStr, "turn=%c&col=%d&row=%d", turn, col, row);
-//  responsify(res, 200, NULL, dataStr, NULL, SEND_JOINER);
+  playertree = player_build(conn);
   return SUCCESS;
 }
 
@@ -206,7 +239,6 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   // TODO: Create game
   Game new_game = {
     .id = !last_game ? 1 : last_game->id + 1,
-    .views = 0,
     .num_move = 0,
     .result = 0,
     .turn = (r == 1) ? 'X' : 'O',
@@ -222,8 +254,6 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   for ( int i = 0; i < BOARD_S; ++i ){
     memset(new_game.board[i], '_', sizeof new_game.board[i]);
   }
-  memset(new_game.joiner, 0, sizeof new_game.joiner);
-  new_game.joiner[0] = clnt_addr.sock;
 
   game_add(gametree, new_game);
 
@@ -242,63 +272,6 @@ int game_cancel(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   int game_id = atoi(map_val(msg->params, "game_id"));
   game_delete(gametree, game_id);
   responsify(msg, "game_cancel", NULL);
-  return SUCCESS;
-}
-
-char *game_board2string(char board[BOARD_S][BOARD_S]) {
-  char *boardStr = (char*)calloc('\0', BOARD_S * BOARD_S);
-  int i;
-  for(i = 0; i < BOARD_S; i++)
-    strcat(boardStr, board[i]);
-  boardStr[BOARD_S * BOARD_S] = '\0';
-  return boardStr;
-}
-
-int game_view(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-//  int player_id = 0, game_id;
-//  char msgStr[MESSAGE_L], dataStr[DATA_L];
-//  memset(msgStr, '\0', MESSAGE_L);
-//  memset(dataStr, '\0', DATA_L);
-//
-//  // TODO: Get player id if exists and game id from user
-//  if(sscanf(req->header.params, "game_id=%d&player_id=%d", &game_id, &player_id) <= 0) {
-//    responsify(res, 400, NULL, NULL, "Bad request. Usage: GET /viewgame game_id=...[&player_id=...]", SEND_ME);
-//    return;
-//  }
-//
-//  // TODO: Find game room for player
-//  Game *game_found = game_find(gametree, game_id);
-//
-//  if(!game_found) {
-//    sprintf(msgStr, "Game [%d] does not exist", game_id);
-//    responsify(res, 400, NULL, NULL, msgStr, SEND_ME);
-//    return;
-//  }
-//
-//  ++game_found->views;
-//  if(game_found->views > MAX_SPECTATOR) {
-//    responsify(res, 403, NULL, NULL, "Max spectators reached", SEND_ME);
-//    return;
-//  }
-//
-//  for(int i = 2; i < MAX_SPECTATOR + 2; i++) {
-//    if (game_found->joiner[i] == 0) {
-//      game_found->joiner[i] = clnt_addr.sock;
-//      break;
-//    }
-//  }
-//
-//  sprintf(
-//    dataStr,
-//    "game_id=%d&turn=%d&views=%d&num_move=%d&player1_id=%d&player2_id=%d&board=[%s]&col=%d&row=%d",
-//    game_found->id, game_found->turn, game_found->views, game_found->num_move,
-//    game_found->player1_id, game_found->player2_id,
-//    game_board2string(game_found->board), game_found->col, game_found->row
-//  );
-//
-//  sprintf(msgStr, "You have become a spectator of the game [%d]", game_id);
-//  responsify(res, 200, NULL, dataStr, msgStr, SEND_JOINER);
-//  return;
   return SUCCESS;
 }
 
@@ -330,9 +303,6 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
 
   if(game_found->player1_id) game_found->player2_id = player_id;
   else game_found->player1_id = player_id;
-
-  if(game_found->joiner[0]) game_found->joiner[1] = clnt_addr.sock;
-  else game_found->joiner[0] = clnt_addr.sock;
 
   Player *player_found = player_find(playertree, player_id);
   player_found->sock = clnt_addr.sock;
@@ -377,21 +347,8 @@ int game_quit(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   Player *quit_player = player_find(playertree, player_id);
   quit_player->is_playing = false;
 
-  // TODO: Update game state: Unset socket of player or spectator
-  if(game_found->joiner[0] == clnt_addr.sock) game_found->joiner[0] = 0;
-  else game_found->joiner[1] = 0;
-
   if(game_found->player1_id == player_id) game_found->player1_id = 0;
   else if(game_found->player2_id == player_id) game_found->player2_id = 0;
-  else {
-    game_found->views--;
-    for(int i = 2; i < MAX_SPECTATOR + 2; i++) {
-      if(game_found->joiner[i] == clnt_addr.sock) {
-        game_found->joiner[i] = 0;
-        break;
-      }
-    }
-  }
 
   // TODO: Send response to quited player
   receiver[1] = player_find(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id)->sock;
@@ -414,8 +371,8 @@ int game_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   do {
     sprintf(
       line,
-      "game_id=%d,password=%s,views=%d,num_move=%d,player1_id=%d,player2_id=%d;",
-      game->id, game->password, game->views, game->num_move,
+      "game_id=%d,password=%s,num_move=%d,player1_id=%d,player2_id=%d;",
+      game->id, game->password, game->num_move,
       game->player1_id, game->player2_id
     );
     strcat(dataStr, line);
@@ -446,9 +403,6 @@ int game_quick(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
       // FIND game !
       if(game->player1_id) game->player2_id = player_id;
       else game->player1_id = player_id;
-
-      if(game->joiner[0]) game->joiner[1] = clnt_addr.sock;
-      else game->joiner[0] = clnt_addr.sock;
 
       Player *player_found = player_find(playertree, player_id);
       player_found->sock = clnt_addr.sock;
@@ -524,7 +478,6 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
   // TODO: Create game
   Game new_game = {
     .id = !last_game ? 1 : last_game->id + 1,
-    .views = 0,
     .num_move = 0,
     .result = 0,
     .turn = (r == 1) ? 'X' : 'O',
@@ -537,9 +490,6 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
   for ( int i = 0; i < BOARD_S; ++i ){
     memset(new_game.board[i], '_', sizeof new_game.board[i]);
   }
-  memset(new_game.joiner, 0, sizeof new_game.joiner);
-  new_game.joiner[0] = me->sock;
-  new_game.joiner[1] = friend->sock;
 
   game_add(gametree, new_game);
 
@@ -564,5 +514,59 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
 
   receiver[1] = friend->sock;
   responsify(msg, "duel_accepted", dataStr);
+  return SUCCESS;
+}
+
+int draw_request(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int opponent_id = atoi(map_val(msg->params, "opponent_id"));
+  Player *opponent = player_find(playertree, opponent_id);
+  receiver[0] = opponent->sock;
+  responsify(msg, "draw_request", NULL);
+  return SUCCESS;
+}
+
+int draw_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int game_id = atoi(map_val(msg->params, "game_id"));
+  int player_id = atoi(map_val(msg->params, "player_id"));
+  int opponent_id = atoi(map_val(msg->params, "opponent_id"));
+  int confirm = atoi(map_val(msg->params, "confirm"));
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
+
+  Player *me = player_find(playertree, player_id);
+  Player *opponent = player_find(playertree, opponent_id);
+  Game *game = game_find(gametree, game_id);
+
+  if(confirm) {
+    game->num_move = 0;
+    char query[QUERY_L];
+    memset(query, '\0', sizeof(query));
+    game->result = 0;
+    sprintf(
+      query,
+      "UPDATE players SET game = %d, draw = %d, points = %d WHERE id = %d",
+      me->game + 1, me->achievement.draw + 1, me->achievement.points + 1, player_id
+    );
+    mysql_query(conn, query);
+
+    sprintf(
+      query,
+      "UPDATE players SET game = %d, draw = %d, points = %d WHERE id = %d",
+      opponent->game + 1, opponent->achievement.draw + 1, opponent->achievement.points + 1, opponent_id
+    );
+    mysql_query(conn, query);
+
+    sprintf(query, "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 0, %d)", player_id, opponent_id, game->num_move);
+    mysql_query(conn, query);
+    receiver[0] = me->sock;
+    receiver[1] = opponent->sock;
+    responsify(msg, "draw", NULL);
+  }
+  else {
+    responsify(msg, "draw_refuse", NULL);
+    receiver[0] = opponent->sock;
+  }
+
+  playertree = player_build(conn);
   return SUCCESS;
 }

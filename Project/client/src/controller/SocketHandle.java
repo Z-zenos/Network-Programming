@@ -155,15 +155,8 @@ public class SocketHandle implements Runnable {
           m.find();
           Client.openView(Client.View.LOGIN, m.group(1), m.group(2));
           Client.loginFrm.showError("Tài khoản đã đăng nhập ở nơi khác");
-        }
-//        
-//        // Tài khoản đã bị banned
-//        if(messageSplit[0].equals("banned-user")){
-//          Client.closeView(Client.View.GAMENOTICE);
-//          Client.openView(Client.View.LOGIN, messageSplit[1], messageSplit[2]);
-//          Client.loginFrm.showError("Tài khoản đã bị ban");
-//        }
-//        
+        }       
+       
         // Xử lý register trùng tên
         if(res.getState().equals("username_duplicate")){
           Client.closeAllViews();
@@ -217,7 +210,7 @@ public class SocketHandle implements Runnable {
           Vector<String> rooms = new Vector<>();
           Vector<String> passwords = new Vector<>();
           String[] splitter = res.getData().split(";");
-          Pattern p = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+)?,views=(\\d+),num_move=(\\d+),player1_id=(\\d+),player2_id=(\\d+)");
+          Pattern p = Pattern.compile("game_id=(\\d+),password=([a-zA-Z0-9]+)?,num_move=(\\d+),player1_id=(\\d+),player2_id=(\\d+)");
           Matcher m;
           for (String splitter1 : splitter) {
             m = p.matcher(splitter1);
@@ -443,58 +436,55 @@ public class SocketHandle implements Runnable {
           Client.gameClientFrm.addCompetitorMove(m.group(1), m.group(2));
         }
 
-//        if(messageSplit[0].equals("draw-request")){
-//          Client.gameClientFrm.showDrawRequest();
-//        }
-//
-//        if(messageSplit[0].equals("draw-refuse")){
-//          if(Client.gameNoticeFrm != null) Client.closeView(Client.View.GAMENOTICE);
-//          Client.gameClientFrm.displayDrawRefuse();
-//        }
-//
-//        if(messageSplit[0].equals("new-game")){
-//          System.out.println("New game");
-//          Thread.sleep(4000);
-//          Client.gameClientFrm.updateNumberOfGame();
-//          Client.closeView(Client.View.GAMENOTICE);
-//          Client.gameClientFrm.newgame();
-//        }
-//        
-//        if(messageSplit[0].equals("draw-game")){
-//          System.out.println("Draw game");
-//          Client.closeView(Client.View.GAMENOTICE);
-//          Client.openView(Client.View.GAMENOTICE, "Ván chơi hòa", "Ván chơi mới dang được thiết lập");
-//          Client.gameClientFrm.displayDrawGame();
-//          Thread.sleep(4000);
-//          Client.gameClientFrm.updateNumberOfGame();
-//          Client.closeView(Client.View.GAMENOTICE);
-//          Client.gameClientFrm.newgame();
-//        }
-//        
-//        if(messageSplit[0].equals("competitor-time-out")){
-//          Client.gameClientFrm.increaseWinMatchToUser();
-//          Client.openView(Client.View.GAMENOTICE, "Bạn đã thắng do đối thủ quá thới gian","Đang thiết lập ván chơi mới");
-//          Thread.sleep(4000);
-//          Client.closeView(Client.View.GAMENOTICE);
-//          Client.gameClientFrm.updateNumberOfGame();
-//          Client.gameClientFrm.newgame();
-//        }
-//        
+        if(res.getState().equals("draw_request")){
+          Client.gameClientFrm.showDrawRequest();
+        }
 
-//        
-//        //Xử lý bị banned
-//        if(messageSplit[0].equals("banned-notice")){
-//          Client.socketHandle.write("offline," + Client.user.getID());
-//          Client.closeAllViews();
-//          Client.openView(Client.View.LOGIN);
-//          JOptionPane.showMessageDialog(Client.loginFrm, messageSplit[1], "Bạn đã bị BAN", JOptionPane.WARNING_MESSAGE);
-//        }
-//        
-//        //Xử lý cảnh cáo
-//        if(messageSplit[0].equals("warning-notice")){
-//          JOptionPane.showMessageDialog(null, messageSplit[1] , "Bạn nhận được một cảnh cáo", JOptionPane.WARNING_MESSAGE);
-//        }
+        if(res.getState().equals("draw_refuse")){
+          if(Client.gameNoticeFrm != null) Client.closeView(Client.View.GAMENOTICE);
+          Client.gameClientFrm.displayDrawRefuse();
+        }
+
+        if(res.getState().equals("new_game")){
+          System.out.println("New game");
+          Thread.sleep(4000);
+          Client.gameClientFrm.updateNumberOfGame();
+          Client.closeView(Client.View.GAMENOTICE);
+          Client.gameClientFrm.newgame();
+        }
+
+        if(res.getState().equals("draw")){
+          System.out.println("Draw game");
+          Client.closeView(Client.View.GAMENOTICE);
+          Client.openView(Client.View.GAMENOTICE, "Ván chơi hòa", "Ván chơi mới dang được thiết lập");
+          Client.gameClientFrm.displayDrawGame();
+          Thread.sleep(4000);
+          Client.gameClientFrm.updateNumberOfGame();
+          Client.closeView(Client.View.GAMENOTICE);
+          Client.gameClientFrm.newgame();
+        }
+        
+        if(res.getState().equals("timeout")){
+          Pattern p = Pattern.compile("game_id=(\\d+),opponent_id=(\\d+)");
+          Matcher m = p.matcher(res.getData());
+          m.find();
+          int roomID = Integer.parseInt(m.group(1));
+          int opponentID = Integer.parseInt(m.group(2));
+          Client.gameClientFrm.increaseWinMatchToUser();
+
+          Client.openView(Client.View.GAMENOTICE, "Bạn đã thắng do đối thủ quá thời gian", "Đang thiết lập ván chơi mới");
+          Thread.sleep(4000);
+          Client.closeView(Client.View.GAMENOTICE);
+          Client.socketHandle.write(
+            Client.socketHandle.requestify(
+              "GAME_FINISH", 0, 
+              "game_id=" + roomID + "&player_id=" + Client.user.getID() + "&opponent_id=" + opponentID + "&x=-1&y=-1&result=1&type=timeout", 
+              ""
+            )
+          );
+        }
       }
+      
     } catch (UnknownHostException e) {
       e.printStackTrace();
     } catch (IOException e) {

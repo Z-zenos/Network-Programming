@@ -237,8 +237,8 @@ public class HomePageFrm extends javax.swing.JFrame {
                     .addGap(37, 37, 37)))
                 .addGap(13, 13, 13))
               .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(79, 79, 79)))
+                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
               .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -445,7 +445,7 @@ public class HomePageFrm extends javax.swing.JFrame {
         Client.openView(Client.View.ROOMLIST);
         Client.socketHandle.write(Client.socketHandle.requestify("GAME_LIST", 0, "player_id=" + Client.user.getID(), ""));
       } catch (IOException ex) {
-          JOptionPane.showMessageDialog(rootPane, ex.getMessage());
+        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
       }
     }//GEN-LAST:event_jButton4ActionPerformed
 
@@ -455,7 +455,7 @@ public class HomePageFrm extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
       try {
-        Client.socketHandle.write("offline,"+Client.user.getID());
+        Client.socketHandle.write(Client.socketHandle.requestify("LOGOUT", 0, "player_id=" + Client.user.getID(), ""));
       } catch (IOException ex) {
         JOptionPane.showMessageDialog(rootPane, ex.getMessage());
       }

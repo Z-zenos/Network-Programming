@@ -243,6 +243,17 @@ int change_password(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   return SUCCESS;
 }
 
+int signout(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+
+  Player *player_found = player_find(playertree, player_id);
+  player_found->is_playing = false;
+  player_found->is_online = false;
+
+  responsify(msg, NULL, NULL);
+  return SUCCESS;
+}
+
 int forgot_password(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree * playertree, Message *msg, int *receiver) {
   return SUCCESS;
 }

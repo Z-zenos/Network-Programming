@@ -9,6 +9,7 @@
 #include "http.h"
 
 int signin(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int signout(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int signup(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int change_password(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int forgot_password(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);

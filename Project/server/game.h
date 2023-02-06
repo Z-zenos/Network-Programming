@@ -12,15 +12,9 @@ typedef struct Game {
   int id;
   int player1_id;
   int player2_id;
-  int chat_id;
 
   char board[BOARD_S][BOARD_S];
   char password[PASSWORD_L];
-
-  int views;
-
-  /* joiner array contains socket of player 1, player 2 and 20 spectators */
-  int joiner[MAX_SPECTATOR + 2];
 
   /* current: X or O */
   char turn;
@@ -30,7 +24,6 @@ typedef struct Game {
   int row;
 
   int num_move;
-  time_t time;
 
   /*
    `if player1 win player2 then [result = player1's id]
@@ -50,17 +43,17 @@ void game_drop(GameTree *);
 int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
-void game_info(GameTree *);
-int game_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_finish(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int caro(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_quick(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_cancel(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_view(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-char *game_board2string(char [BOARD_S][BOARD_S]);
 int game_join(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_quit(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+
+int draw_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int draw_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
 int duel_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int duel_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
