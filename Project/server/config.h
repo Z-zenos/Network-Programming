@@ -1,22 +1,20 @@
 #define SUCCESS 1
 #define FAILURE 0
 
-#define INPUT_L 1000
 #define PASSWORD_L 50
 #define USERNAME_L 50
 #define AVATAR_L 50
 
+#define MSG_L 2222
 #define CMD_L 32
 #define PARAM_L 128
 #define CONTENT_L 2050
 #define CHAT_L 2000
 
 // https://stackoverflow.com/questions/12931528/c-socket-programming-max-size-of-tcp-ip-socket-buffer
-#define MSG_L 2222
 
 #define DATA_L 2050
-#define MAX_SPECTATOR 20
-#define MAX_CLIENT 22
+#define MAX_CLIENT 20
 #define FRIEND_L 10
 
 #define QUERY_L 1000
@@ -24,7 +22,6 @@
 #define KEY_L 50
 #define VAL_L 50
 
-#define BOARD_S 15
 #define BACKLOG 10
 
 #define DB_HOST "localhost"

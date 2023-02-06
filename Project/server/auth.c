@@ -1,38 +1,49 @@
+#include <ctype.h>
+#include <mysql/mysql.h>
+#include <openssl/sha.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <mysql/mysql.h>
-#include <ctype.h>
-#include <openssl/sha.h>
 
 #include "auth.h"
-#include "utils.h"
 #include "config.h"
-#include "player.h"
 #include "http.h"
+#include "player.h"
+#include "utils.h"
 
 bool is_valid_username(char *username) {
   int i, username_l = strlen(username), num_alpha = 0;
-  if(username_l < 4 || username_l > USERNAME_L)  return FAILURE;
+
+  if(username_l < 4 || username_l > USERNAME_L)
+    return FAILURE;
+
   for(i = 0; i < username_l; i++) {
     if(!isalnum(username[i]))
       return FAILURE;
-    if(isalpha(username[i])) num_alpha++;
+    if(isalpha(username[i]))
+      num_alpha++;
   }
+
   return num_alpha ? SUCCESS : FAILURE;
 }
 
 bool is_valid_password(char *password) {
   int i, password_l = strlen(password);
-  if(password_l < 4 || password_l > PASSWORD_L) return FAILURE;
+
+  if(password_l < 4 || password_l > PASSWORD_L)
+    return FAILURE;
+
   for(i = 0; i < password_l; i++) {
-    if(password[i] < 33 || password[i] > 126) return FAILURE;
+    if(!isalnum(password[i]))
+      return FAILURE;
   }
+
   return SUCCESS;
 }
 
 char *encrypt(char *password) {
+  // TODO: Hash password
   SHA256_CTX context;
   unsigned char md[SHA256_DIGEST_LENGTH];
   SHA256_Init(&context);
@@ -40,27 +51,12 @@ char *encrypt(char *password) {
   SHA256_Final(md, &context);
   char *converter = (char*)malloc(64);
   int i, k = 0;
+
   for(i = 0; i < sizeof(md); i++) {
     k += sprintf(converter + k, "%x", md[i]);
   }
+
   return converter;
-}
-
-bool compare_password(char *password_input, unsigned char *password_db) {
-  SHA256_CTX context;
-  unsigned char md[SHA256_DIGEST_LENGTH];
-  int pl = strlen(password_input);
-  SHA256_Init(&context);
-  SHA256_Update(&context, (unsigned char *)password_input, pl);
-  SHA256_Final(md, &context);
-
-  int i;
-  for(i = 0; i < sizeof(md); i++) {
-    if(md[i] != password_db[i])
-      return FAILURE;
-  }
-
-  return SUCCESS;
 }
 
 int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
@@ -69,7 +65,6 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   strcpy(password, map_val(msg->params, "password"));
   strcpy(avatar, map_val(msg->params, "avatar"));
   memset(dataStr, '\0', DATA_L);
-
 
   // TODO: Validate
   if(!is_valid_username(username) || !is_valid_password(password)) {
@@ -100,7 +95,7 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
   char *pwd_encrypted = encrypt(password);
 
   // TODO: Insert data
-  str_clear(query);
+  memset(query, '\0', QUERY_L);
   sprintf(query, "INSERT INTO players(username, password, avatar) VALUES('%s', '%s', '%s')", username, pwd_encrypted, avatar);
 
   if (mysql_query(conn, query)) {
@@ -108,18 +103,19 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
     return FAILURE;
   }
 
+  // TODO: Rebuild playertree for new player
   playertree = player_build(conn);
-  memset(dataStr, '\0', DATA_L);
-  int new_id = (int)mysql_insert_id(conn);
+  int new_id = (int)mysql_insert_id(conn); // Get new id inserted from db
   Player *new_player = player_find(playertree, new_id);
   new_player->is_online = true;
   new_player->is_playing = false;
   new_player->sock = clnt_addr.sock;
 
+  memset(dataStr, '\0', DATA_L);
   sprintf(
     dataStr,
-    "id=%d,username=%s,password=%s,avatar=%s,game=%d,win=%d,draw=%d,loss=%d,points=%d,rank=%d,is_online=true,is_playing=false",
-    new_id, username, pwd_encrypted, avatar, 0, 0, 0, 0, 0, 0
+    "id=%d,username=%s,password=%s,avatar=%s,game=0,win=0,draw=0,loss=0,points=0,rank=0,is_online=true,is_playing=false",
+    new_id, username, pwd_encrypted, avatar
   );
 
   responsify(msg, "register_success", dataStr);
@@ -127,12 +123,11 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
 }
 
 int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-  int player_id;
   char username[USERNAME_L], password[PASSWORD_L];
-  char dataStr[DATA_L];
-  memset(dataStr, '\0', DATA_L);
   strcpy(username, map_val(msg->params, "username"));
   strcpy(password, map_val(msg->params, "password"));
+  char dataStr[DATA_L];
+  memset(dataStr, '\0', DATA_L);
 
   // TODO: Validate username & password
   if(!is_valid_username(username) || !is_valid_password(password)) {
@@ -141,6 +136,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
     return FAILURE;
   }
 
+  // TODO: Encrypt password
   char *pwd_encrypted = encrypt(password);
 
   // TODO: Authen account
@@ -163,7 +159,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
 
   // TODO: Check if the account is logged in on other device?
   MYSQL_ROW row = mysql_fetch_row(qres);
-  player_id = atoi(row[0]);
+  int player_id = atoi(row[0]);
 
   Player *player_found = player_find(playertree, player_id);
   if(!player_found->sock) player_found->sock = clnt_addr.sock;
@@ -188,6 +184,19 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *pl
 
   mysql_free_result(qres);
   responsify(msg, "login_success", dataStr);
+  return SUCCESS;
+}
+
+int signout(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+
+  // TODO: unset
+  Player *player_found = player_find(playertree, player_id);
+  player_found->is_playing = false;
+  player_found->is_online = false;
+  player_found->sock = 0;
+
+  responsify(msg, NULL, NULL);
   return SUCCESS;
 }
 
@@ -240,17 +249,6 @@ int change_password(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
   mysql_free_result(qres);
   sprintf(dataStr, "password=%s", new_pwd_encrypted);
   responsify(msg, "password_updated", NULL);
-  return SUCCESS;
-}
-
-int signout(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-  int player_id = atoi(map_val(msg->params, "player_id"));
-
-  Player *player_found = player_find(playertree, player_id);
-  player_found->is_playing = false;
-  player_found->is_online = false;
-
-  responsify(msg, NULL, NULL);
   return SUCCESS;
 }
 

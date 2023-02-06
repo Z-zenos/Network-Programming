@@ -45,17 +45,11 @@ int game_add(GameTree *gametree, Game new_game) {
   Game *game;
   game = calloc(1, sizeof(Game));
   game->id = new_game.id;
-  game->turn = new_game.turn;
   game->result = new_game.result;
   game->player1_id = new_game.player1_id;
   game->player2_id = new_game.player2_id;
   game->num_move = new_game.num_move;
-  game->col = new_game.col;
-  game->row = new_game.row;
   strcpy(game->password, new_game.password);
-  for ( int i = 0; i < BOARD_S; ++i ){
-    memcpy(game->board[i], new_game.board[i], sizeof new_game.board[i]);
-  }
 
   ret = rbinsert(gametree, (void *)game);
   if (ret == 0) {
@@ -93,16 +87,6 @@ Game *game_find(GameTree *gametree, int id) {
   return !game ? NULL : game;
 }
 
-void game_print_board(char board[BOARD_S][BOARD_S]) {
-  int i, j;
-  for (i = 0; i < BOARD_S; i++) {
-    for (j = 0; j < BOARD_S; j++) {
-      printf("%c ", board[i][j]);
-    }
-    printf("\n");
-  }
-}
-
 int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int game_id = atoi(map_val(msg->params, "game_id"));
   int player_id = atoi(map_val(msg->params, "player_id"));
@@ -115,8 +99,6 @@ int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
 
   // TODO: Find game -> Update game board
   Game *game = game_find(gametree, game_id);
-  game->col = x;
-  game->row = y;
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
   Player *player = player_find(playertree, player_id);
@@ -212,8 +194,6 @@ int caro(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
   // TODO: Find game -> Update game board
   Game *game = game_find(gametree, game_id);
   game->num_move++;
-  game->col = x;
-  game->row = y;
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
 
@@ -229,9 +209,6 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   char game_pwd[PASSWORD_L];
   strcpy(game_pwd, !map_val(msg->params, "password") ? "" : map_val(msg->params, "password"));
 
-  // TODO: random first turn for game board
-  int r = rand() % 2;
-
   rbtrav_t *rbtrav;
   rbtrav = rbtnew();
   Game *last_game = rbtlast(rbtrav, gametree);
@@ -241,19 +218,12 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
     .id = !last_game ? 1 : last_game->id + 1,
     .num_move = 0,
     .result = 0,
-    .turn = (r == 1) ? 'X' : 'O',
     .player1_id = player_id,
     .player2_id = 0,
-    .col = 0,
-    .row = 0,
   };
 
   if(strlen(game_pwd) > 0) strcpy(new_game.password, game_pwd);
   else memset(new_game.password, '\0', PASSWORD_L);
-
-  for ( int i = 0; i < BOARD_S; ++i ){
-    memset(new_game.board[i], '_', sizeof new_game.board[i]);
-  }
 
   game_add(gametree, new_game);
 
@@ -494,9 +464,6 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
     return SUCCESS;
   }
 
-  // TODO: If agree then create new game for 2 player
-  int r = rand() % 2;
-
   rbtrav_t *rbtrav;
   rbtrav = rbtnew();
   Game *last_game = rbtlast(rbtrav, gametree);
@@ -506,16 +473,10 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
     .id = !last_game ? 1 : last_game->id + 1,
     .num_move = 0,
     .result = 0,
-    .turn = (r == 1) ? 'X' : 'O',
     .player1_id = player_id,
     .player2_id = friend_id,
-    .col = 0,
-    .row = 0,
   };
   memset(new_game.password, '\0', PASSWORD_L);
-  for ( int i = 0; i < BOARD_S; ++i ){
-    memset(new_game.board[i], '_', sizeof new_game.board[i]);
-  }
 
   game_add(gametree, new_game);
 

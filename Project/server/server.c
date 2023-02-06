@@ -246,16 +246,8 @@ int main(int argc, char *argv[]) {
     .id = 1,
     .num_move = 48,
     .result = 0,
-    .turn = 'O',
     .player1_id = 2,
     .player2_id = 0,
-    .board = {
-      {'_', 'O', 'X'},
-      {'X', '_', '_'},
-      {'O', 'X', '_'}
-    } ,
-    .col = 1,
-    .row = 0,
     .password = ""
   };
 

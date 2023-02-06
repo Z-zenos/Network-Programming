@@ -13,16 +13,7 @@ typedef struct Game {
   int player1_id;
   int player2_id;
 
-  char board[BOARD_S][BOARD_S];
   char password[PASSWORD_L];
-
-  /* current: X or O */
-  char turn;
-
-  /* Coordinate of X / O */
-  int col;
-  int row;
-
   int num_move;
 
   /*
@@ -37,12 +28,12 @@ typedef struct rbtree GameTree;
 
 #include "player.h"
 
-
 GameTree *game_new();
 void game_drop(GameTree *);
 int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
+
 int game_finish(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int caro(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);

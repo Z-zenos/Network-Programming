@@ -194,7 +194,7 @@ int send_msg(int *receiver, Message msg) {
   char msg_str[MSG_L];
   sprintf(msg_str, "%s#%d#%s#%s\n", msg.command, msg.content_l, msg.__params__, msg.content);
   size_t msg_l = strlen(msg_str);
-  for(int i = 0; i < MAX_SPECTATOR + 2; i++)
+  for(int i = 0; i < MAX_CLIENT; i++)
     if(receiver[i] > 0) send(receiver[i], msg_str, msg_l, 0);
   return SUCCESS;
 }

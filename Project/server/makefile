@@ -2,19 +2,13 @@ CFLAGS = -g -c -Wall -pthread
 CC = gcc
 LIBS = -lm
 
-build: clean | server client
-
-client: client.o http.o utils.o rbtree.o map.o
-	${CC} client.o http.o utils.o rbtree.o map.o -pthread -o client
+build: clean | server
 
 server: server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o
 	${CC} server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
 
 server.o: server.c
 	${CC} ${CFLAGS} server.c
-
-client.o: client.c
-	${CC} ${CFLAGS} client.c
 
 rbtree.o: rbtree.c
 	${CC} ${CFLAGS} rbtree.c
@@ -41,4 +35,4 @@ player.o: player.c
 	${CC} ${CFLAGS} player.c
 
 clean:
-	rm -f *.o *~ | rm -rf server client
+	rm -f *.o *~ | rm -rf server

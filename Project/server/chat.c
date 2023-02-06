@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "game.h"
 #include "config.h"
-#include "player.h"
+#include "game.h"
 #include "http.h"
+#include "player.h"
+#include "utils.h"
 
 int chat(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id = atoi(map_val(msg->params, "player_id"));
@@ -25,8 +26,8 @@ int chat(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
 
   // TODO: Chat global
   if(game_id == 0) {
-    sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), content);
-    receiver[0] = -1;
+    sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), str_trim(content));
+    receiver[0] = -1; // -1 mean sent for all player
     responsify(msg, "chat_global", dataStr);
     return SUCCESS;
   }
@@ -39,14 +40,8 @@ int chat(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
     return FAILURE;
   }
 
-  // TODO: Check if the sender of the message is 1 of 2 players
-  if(game_found->player1_id != player_id && game_found->player2_id != player_id) {
-    responsify(msg, "chat_fail", NULL);
-    return FAILURE;
-  }
-
   receiver[0] = player_fd(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id);
-  sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), content);
+  sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), str_trim(content));
   responsify(msg, "chat_local", dataStr);
   return SUCCESS;
 }
