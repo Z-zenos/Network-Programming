@@ -204,7 +204,11 @@ public class GameClientFrm extends javax.swing.JFrame{
   public void exitGame() {
     try {
       timer.stop();
-      Client.socketHandle.write(Client.socketHandle.requestify("GAME_QUIT", 0, "game_id=" + this.roomId + "&player_id=" + Client.user.getID(), ""));
+      Client.socketHandle.write(
+        Client.socketHandle.requestify(
+          "GAME_QUIT", 0, "game_id=" + this.roomId + "&player_id=" + Client.user.getID() + "&opponent_id=" + competitor.getID(), ""
+        )
+      );
       Client.closeAllViews();
       Client.openView(Client.View.HOMEPAGE);
     } catch (IOException ex) {

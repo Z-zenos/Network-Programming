@@ -127,33 +127,34 @@ int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
 
   switch (result) {
     case 1: // Win
+      game->num_move = 0;
+      game->result = player_id;
+      sprintf(
+        query,
+        "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
+        player->game + 1, player->achievement.win + 1, player->achievement.points + 3, player_id
+      );
+      mysql_query(conn, query);
+
+      sprintf(
+        query,
+        "UPDATE players SET game = %d, loss = %d WHERE id = %d",
+        opponent->game + 1, opponent->achievement.loss + 1, opponent_id
+      );
+      mysql_query(conn, query);
+
+      sprintf(
+        query,
+        "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
+        player_id, opponent_id, game->num_move);
+      mysql_query(conn, query);
+
       if(strcmp(type, "caro") == 0) {
-        game->result = player_id;
-        sprintf(
-          query,
-          "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
-          player->game + 1, player->achievement.win + 1, player->achievement.points + 3, player_id
-        );
-        mysql_query(conn, query);
-
-        sprintf(
-          query,
-          "UPDATE players SET game = %d, loss = %d WHERE id = %d",
-          opponent->game + 1, opponent->achievement.loss + 1, opponent_id
-        );
-        mysql_query(conn, query);
-
-        sprintf(
-          query,
-          "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
-          player_id, opponent_id, game->num_move);
-        mysql_query(conn, query);
         receiver[0] = opponent->sock;
         sprintf(dataStr, "x=%d,y=%d", x, y);
         responsify(msg, "caro", dataStr);
       }
       else if(strcmp(type, "timeout") == 0) {
-        game->num_move = 0;
         receiver[0] = player->sock;
         receiver[1] = opponent->sock;
         responsify(msg, "new_game", NULL);
@@ -335,23 +336,49 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
 int game_quit(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id = atoi(map_val(msg->params, "player_id"));
   int game_id = atoi(map_val(msg->params, "game_id"));
+  int opponent_id = atoi(map_val(msg->params, "opponent_id"));
 
   // TODO: Find game room for player
-  Game *game_found = game_find(gametree, game_id);
+  Game *game = game_find(gametree, game_id);
 
-  if(!game_found) {
+  if(!game) {
     responsify(msg, "game_null", NULL);
     return FAILURE;
   }
 
   Player *quit_player = player_find(playertree, player_id);
+  Player *winner = player_find(playertree, opponent_id);
   quit_player->is_playing = false;
 
-  if(game_found->player1_id == player_id) game_found->player1_id = 0;
-  else if(game_found->player2_id == player_id) game_found->player2_id = 0;
+  if(game->player1_id && game->player2_id) {
+    char query[QUERY_L];
+    memset(query, '\0', QUERY_L);
+    game->num_move = 0;
+    game->result = player_id;
+    sprintf(
+      query,
+      "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
+      winner->game + 1, winner->achievement.win + 3, winner->achievement.points + 3, opponent_id
+    );
+    mysql_query(conn, query);
 
-  // TODO: Send response to quited player
-  receiver[1] = player_find(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id)->sock;
+    sprintf(
+      query,
+      "UPDATE players SET game = %d, loss = %d WHERE id = %d",
+      quit_player->game + 1, quit_player->achievement.loss + 1, player_id
+    );
+    mysql_query(conn, query);
+
+    sprintf(
+      query,
+      "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
+      winner->id, quit_player->id, game->num_move);
+    mysql_query(conn, query);
+    playertree = player_build(conn);
+  }
+
+  game_delete(gametree, game_id);
+  receiver[0] = winner->sock;
   responsify(msg, "game_quit", NULL);
   return SUCCESS;
 }
