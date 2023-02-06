@@ -5,7 +5,6 @@
 #include "http.h"
 #include "player.h"
 #include "game.h"
-#include "algo.h"
 #include "utils.h"
 #include "rbtree.h"
 
