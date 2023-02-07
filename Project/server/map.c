@@ -53,22 +53,6 @@ int map_add(Map *map, Object new_object) {
   return 0;
 }
 
-int map_delete(Map *map, char *key) {
-  int ret;
-  Object *object;
-
-  object = calloc(1, sizeof(Object));
-  strcpy(object->key, key);
-
-  ret = rberase(map, (void *)object);
-  if (ret == 0) {
-    free(object);
-    return -1;
-  }
-
-  return 0;
-}
-
 char *map_val(Map *map, char *key) {
   Object *object, object_find;
 

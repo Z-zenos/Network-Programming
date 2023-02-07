@@ -70,14 +70,14 @@ PlayerTree *player_build(MYSQL *conn) {
   char query_friend[QUERY_L];
 
   if (mysql_query(conn, query_player)) {
-    server_error(msg);
+    logger(L_INFO, "Build playertree failed...");
     return NULL;
   }
 
   MYSQL_RES *res_player = mysql_store_result(conn);
   if(!res_player->row_count) {
     mysql_free_result(res_player);
-    server_error(msg);
+    logger(L_INFO, "Build playertree failed...");
     return NULL;
   }
 
@@ -157,14 +157,12 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
     "order by points desc";
 
   if (mysql_query(conn, query)) {
-    server_error(msg);
     return -1;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
-    server_error(msg);
     return -1;
   }
 
@@ -219,7 +217,7 @@ int rank(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
     player[i].achievement.win = atoi(row[3]);
     player[i].achievement.loss = atoi(row[4]);
     player[i].achievement.points = atoi(row[5]);
-    char line[100];
+    char line[1000];
     sprintf(
       line,
       "id=%d,username=%s,avatar=%s,win=%d,loss=%d,points=%d;",
