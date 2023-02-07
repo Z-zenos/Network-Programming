@@ -1037,20 +1037,8 @@ public class GameClientFrm extends javax.swing.JFrame{
     public void displayDrawGame(){
       String tmp = jTextArea1.getText();
       tmp += "--Ván chơi hòa--\n";
-      try {
-        timer.stop();
-        setEnableButton(false);
-        Client.socketHandle.write(
-          Client.socketHandle.requestify(
-            "GAME_FINISH", 0, 
-            "game_id=" + roomId + "&player_id=" + Client.user.getID() + "&opponent_id=" + 
-            competitor.getID() + "&x=-1&y=-1&result=0", 
-            ""
-          )
-        );
-      } catch (IOException ex) {
-        JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-      }
+      timer.stop();
+      setEnableButton(false);
       jTextArea1.setText(tmp);
       jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
     }

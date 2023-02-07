@@ -99,6 +99,7 @@ int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   Game *game = game_find(gametree, game_id);
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
+
   Player *player = player_find(playertree, player_id);
   Player *opponent = player_find(playertree, opponent_id);
   char query[QUERY_L];
@@ -106,19 +107,27 @@ int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
 
   switch (result) {
     case 1: // Win
-      game->num_move = 0;
+      // TODO: Update gametree and playertree
       game->result = player_id;
+      ++player->game;
+      ++player->achievement.win;
+      player->achievement.points += 3;
+
+      ++opponent->game;
+      ++opponent->achievement.loss;
+
+      // TODO: Update database
       sprintf(
         query,
         "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
-        player->game + 1, player->achievement.win + 1, player->achievement.points + 3, player_id
+        player->game, player->achievement.win, player->achievement.points, player_id
       );
       mysql_query(conn, query);
 
       sprintf(
         query,
         "UPDATE players SET game = %d, loss = %d WHERE id = %d",
-        opponent->game + 1, opponent->achievement.loss + 1, opponent_id
+        opponent->game, opponent->achievement.loss, opponent_id
       );
       mysql_query(conn, query);
 
@@ -134,33 +143,11 @@ int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
         responsify(msg, "caro", dataStr);
       }
       else if(strcmp(type, "timeout") == 0) {
+        game->num_move = 0;
         receiver[0] = player->sock;
         receiver[1] = opponent->sock;
         responsify(msg, "new_game", NULL);
       }
-      break;
-
-    case 0: // DRAW
-      game->result = 0;
-      sprintf(
-        query,
-        "UPDATE players SET game = %d, draw = %d, points = %d WHERE id = %d",
-        player->game + 1, player->achievement.draw + 1, player->achievement.points + 1, player_id
-      );
-      mysql_query(conn, query);
-
-      sprintf(
-        query,
-        "UPDATE players SET game = %d, draw = %d, points = %d WHERE id = %d",
-        opponent->game + 1, opponent->achievement.draw + 1, opponent->achievement.points + 1, opponent_id
-      );
-      mysql_query(conn, query);
-
-      sprintf(query, "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 0, %d)", player_id, opponent_id, game->num_move);
-      mysql_query(conn, query);
-      receiver[0] = player->sock;
-      receiver[1] = opponent->sock;
-      responsify(msg, "draw", NULL);
       break;
 
     case -1: // LOSS
@@ -179,7 +166,6 @@ int game_finish(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
       break;
   }
 
-  playertree = player_build(conn);
   return SUCCESS;
 }
 
@@ -195,8 +181,7 @@ int caro(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
 
-  Player *opponent = player_find(playertree, opponent_id);
-  receiver[0] = opponent->sock;
+  receiver[0] = player_fd(playertree, opponent_id);
   sprintf(dataStr, "x=%d,y=%d", x, y);
   responsify(msg, "caro", dataStr);
   return SUCCESS;
@@ -224,9 +209,6 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   else memset(new_game.password, '\0', PASSWORD_L);
 
   game_add(gametree, new_game);
-
-  Player *player_found = player_find(playertree, player_id);
-  player_found->sock = clnt_addr.sock;
 
   char dataStr[DATA_L];
   memset(dataStr, '\0', sizeof dataStr);
@@ -259,6 +241,7 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
     return FAILURE;
   }
 
+  // TODO: Check room state
   if(strcmp(game_found->password, game_pwd) != 0) {
     responsify(msg, "game_password_incorrect", NULL);
     return FAILURE;
@@ -273,7 +256,6 @@ int game_join(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   else game_found->player1_id = player_id;
 
   Player *player_found = player_find(playertree, player_id);
-  player_found->sock = clnt_addr.sock;
   player_found->is_playing = true;
 
   Player *opponent = player_find(playertree, (game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id));
@@ -308,40 +290,43 @@ int game_quit(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   // TODO: Find game room for player
   Game *game = game_find(gametree, game_id);
 
-  if(!game) {
-    responsify(msg, "game_null", NULL);
-    return FAILURE;
-  }
-
   Player *quit_player = player_find(playertree, player_id);
   Player *winner = player_find(playertree, opponent_id);
   quit_player->is_playing = false;
+  winner->is_playing = false;
 
+  // TODO: Handle first player quit room
   if(game->player1_id && game->player2_id) {
     char query[QUERY_L];
     memset(query, '\0', QUERY_L);
-    game->num_move = 0;
-    game->result = player_id;
+    game->result = winner->id;
+    ++quit_player->game;
+    ++quit_player->achievement.loss;
+
+    ++winner->game;
+    ++winner->achievement.win;
+    winner->achievement += 3;
+
     sprintf(
       query,
       "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
-      winner->game + 1, winner->achievement.win + 3, winner->achievement.points + 3, opponent_id
+      winner->game, winner->achievement.win, winner->achievement.points, opponent_id
     );
     mysql_query(conn, query);
 
     sprintf(
       query,
       "UPDATE players SET game = %d, loss = %d WHERE id = %d",
-      quit_player->game + 1, quit_player->achievement.loss + 1, player_id
+      quit_player->game, quit_player->achievement.loss, player_id
     );
     mysql_query(conn, query);
 
     sprintf(
       query,
       "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
-      winner->id, quit_player->id, game->num_move);
+      winner->id, quit_player->id, game->num_move
+    );
     mysql_query(conn, query);
-    playertree = player_build(conn);
   }
 
   game_delete(gametree, game_id);
@@ -359,7 +344,7 @@ int game_list(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree 
   rbtrav_t *rbtrav;
   rbtrav = rbtnew();
   game = rbtfirst(rbtrav, gametree);
-  char line[1000];
+  char line[100];
   memset(line, '\0', 100);
 
   do {
