@@ -218,15 +218,13 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
   }
 }
 
-// Structure of arguments to pass to client thread
 typedef struct ThreadArgs {
-  ClientAddr client_addr; // Socket descriptor for client
+  ClientAddr client_addr;
   MYSQL *conn;
   GameTree *gametree;
   PlayerTree *playertree;
 } ThreadArgs;
 
-// Each thread executes this function
 void *ThreadMain(void *threadArgs) {
   // Guarantees that thread resources are deallocated upon return
   pthread_detach(pthread_self());
@@ -249,7 +247,6 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     time_print(client_addr.address, "ONLINE", "", 0, "");
     client_fds[number_clients++] = client_addr.sock;
 
-    // Create separate memory for client argument
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
     if(threadArgs == NULL) {
       close(server_fd);
@@ -275,6 +272,11 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 }
 
 int main(int argc, char *argv[]) {
+  if(argc != 2) {
+    logger(L_INFO, "Usage: ./server <port>");
+    return FAILURE;
+  }
+
   srand(time(NULL));
   handle_signal();
 
@@ -306,6 +308,7 @@ int main(int argc, char *argv[]) {
 
   game_drop(gametree);
   player_drop(playertree);
+  if(msg.params) map_drop(msg.params);
   mysql_close(conn);
   close(server_fd);
   return SUCCESS;
