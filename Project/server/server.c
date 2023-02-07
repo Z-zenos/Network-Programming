@@ -62,23 +62,6 @@ void handle_signal() {
   signal(SIGSEGV, signalHandler);
 }
 
-int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-  int player_id = atoi(map_val(msg->params, "player_id"));
-
-  Player *player_found = player_find(playertree, player_id);
-  player_found->sock = 0;
-  player_found->is_online = false;
-  time_print(clnt_addr.address, "OFFLINE", "", 0, "");
-  for (int i = 0; i < MAX_CLIENT; i++) {
-    if (client_fds[i] == clnt_addr.sock) {
-      client_fds[i] = 0;
-      number_clients--;
-    }
-  }
-  close(clnt_addr.sock);
-  return SUCCESS;
-}
-
 void connect_database(MYSQL *conn) {
   if(mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWRD, DB_NAME, 0, NULL, 0) == NULL) {
     logger(L_ERROR, "Connect to database failed !");
@@ -86,6 +69,70 @@ void connect_database(MYSQL *conn) {
     exit(FAILURE);
   }
   logger(L_SUCCESS, "Connect database successfully...");
+}
+
+int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+  int player_id = atoi(map_val(msg->params, "player_id"));
+
+  Player *player_found = player_find(playertree, player_id);
+  player_found->sock = 0;
+  player_found->is_online = false;
+  time_print(clnt_addr.address, "EXIT APP", "", 0, "");
+  for (int i = 0; i < MAX_CLIENT; i++) {
+    if (client_fds[i] == clnt_addr.sock) {
+      client_fds[i] = 0;
+      number_clients--;
+    }
+  }
+
+  // TODO: Handle player quit app while playing game
+  if(player_found->is_playing) {
+    Game *game;
+    rbtrav_t *rbtrav;
+    rbtrav = rbtnew();
+    game = rbtfirst(rbtrav, gametree);
+
+    do {
+      if (game->player1_id == player_id || game->player2_id == player_id) {
+        int opponent_id = game->player1_id == player_id ? game->player2_id : game->player1_id;
+        Player *opponent = player_find(playertree, opponent_id);
+        char query[QUERY_L];
+        memset(query, '\0', QUERY_L);
+
+        game->result = player_id;
+        ++player_found->game;
+        ++player_found->achievement.loss;
+
+        ++opponent->game;
+        ++opponent->achievement.win;
+        opponent->achievement.points += 3;
+
+        // TODO: Update database
+        sprintf(
+          query,
+          "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
+          opponent->game, opponent->achievement.win, opponent->achievement.points, opponent_id
+        );
+        mysql_query(conn, query);
+
+        sprintf(
+          query,
+          "UPDATE players SET game = %d, loss = %d WHERE id = %d",
+          player_found->game, player_found->achievement.loss, player_id
+        );
+        mysql_query(conn, query);
+
+        sprintf(
+          query,
+          "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, -1, %d)",
+          player_id, opponent_id, game->num_move);
+        mysql_query(conn, query);
+      }
+    } while ((game = rbtnext(rbtrav)) != NULL);
+  }
+
+  close(clnt_addr.sock);
+  return SUCCESS;
 }
 
 int route_null(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {

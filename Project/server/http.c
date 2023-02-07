@@ -141,7 +141,7 @@ int get_msg(int client_fd, Message *msg) {
   if(numBytesRcvd <= 0 || strlen(msg_str) <= 0) {
     return 0;
   }
-  logger("info", msg_str);
+  logger(L_INFO, msg_str);
   if(!msg_parse(msg, msg_str)) return 0;
   return numBytesRcvd;
 }
