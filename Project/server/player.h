@@ -32,18 +32,17 @@ typedef struct rbtree PlayerTree;
 
 #include "game.h"
 
-
 PlayerTree *player_build(MYSQL *);
 void player_drop(PlayerTree *);
 int player_add(PlayerTree *, Player);
-//int player_delete(PlayerTree *, int);
 Player *player_find(PlayerTree *, int);
-void player_info(PlayerTree *);
 int player_fd(PlayerTree *, int);
 char *player_username(PlayerTree *, int);
+
 int my_rank(MYSQL *, int, char *);
 int rank(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int profile(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+
 int friend_check(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int friend_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int friend_add(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);

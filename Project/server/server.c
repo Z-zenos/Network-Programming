@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
   Game g = {
     .id = 1,
     .num_move = 48,
-    .result = 0,
+    .result = -1,
     .player1_id = 2,
     .player2_id = 0,
     .password = ""

@@ -11,7 +11,6 @@
 #include "rbtree.h"
 #include "utils.h"
 
-
 static int player_cmp(const void *p1, const void *p2) {
   Player *player1, *player2;
 
@@ -47,13 +46,14 @@ int player_add(PlayerTree *playertree, Player new_player) {
   strcpy(player->password, new_player.password);
   strcpy(player->avatar, new_player.avatar);
   player->game = new_player.game;
-  player->sock = 0;
+  player->sock = new_player.sock;
   player->achievement = new_player.achievement;
   memcpy(player->friends, new_player.friends, FRIEND_L);
+  player->is_online = new_player.is_online;
+  player->is_playing = new_player.is_playing;
 
   ret = rbinsert(playertree, (void *)player);
   if (ret == 0) {
-    logger(L_ERROR, "Can't insert new player for players");
     free(player);
     return -1;
   }
@@ -70,13 +70,14 @@ PlayerTree *player_build(MYSQL *conn) {
   char query_friend[QUERY_L];
 
   if (mysql_query(conn, query_player)) {
-    logger(L_ERROR, mysql_error(conn));
+    server_error(msg);
     return NULL;
   }
 
   MYSQL_RES *res_player = mysql_store_result(conn);
   if(!res_player->row_count) {
     mysql_free_result(res_player);
+    server_error(msg);
     return NULL;
   }
 
@@ -109,8 +110,10 @@ PlayerTree *player_build(MYSQL *conn) {
       "WHERE players.id IN (friends.player_id, friends.friend_id) AND confirmed = 1 AND players.id = %d",
       player.id, player.id
     );
+
     mysql_query(conn, query_friend);
     res_friend = mysql_store_result(conn);
+
     if(res_friend->row_count) {
       while ((row_friend = mysql_fetch_row(res_friend))) {
         player.friends[j] = atoi(row_friend[0]);
@@ -132,31 +135,8 @@ Player *player_find(PlayerTree *playertree, int player_id) {
 
   player_find.id = player_id;
   player = rbfind(playertree, &player_find);
-  if (!player) {
-    return NULL;
-  }
-  return player;
-}
 
-void player_print(Player *player) {
-  printf(
-    "id %d - username: %s - password: %s - avatar: %s - game: %d - win: %d - draw: %d - loss: %d - streak: %d - points: %d\n",
-    player->id, player->username, player->password, player->avatar, player->game,
-    player->achievement.win, player->achievement.draw, player->achievement.loss, player->achievement.streak, player->achievement.points
-  );
-}
-
-void player_info(PlayerTree *playertree) {
-  Player *player;
-
-  rbtrav_t *rbtrav;
-  rbtrav = rbtnew();
-  player = rbtfirst(rbtrav, playertree);
-  player_print(player);
-
-  while ((player = rbtnext(rbtrav)) != NULL) {
-    player_print(player);
-  }
+  return !player ? NULL : player;
 }
 
 int player_fd(PlayerTree *playertree, int player_id) {
@@ -177,14 +157,14 @@ int my_rank(MYSQL *conn, int player_id, char *dataStr) {
     "order by points desc";
 
   if (mysql_query(conn, query)) {
-    logger(L_ERROR, "Query to database failed");
-    logger(L_ERROR, mysql_error(conn));
+    server_error(msg);
     return -1;
   }
 
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
+    server_error(msg);
     return -1;
   }
 
@@ -221,6 +201,7 @@ int rank(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
   MYSQL_RES *qres = mysql_store_result(conn);
   if(!qres->row_count) {
     mysql_free_result(qres);
+    server_error(msg);
     return FAILURE;
   }
 
@@ -238,7 +219,7 @@ int rank(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *play
     player[i].achievement.win = atoi(row[3]);
     player[i].achievement.loss = atoi(row[4]);
     player[i].achievement.points = atoi(row[5]);
-    char line[1000];
+    char line[100];
     sprintf(
       line,
       "id=%d,username=%s,avatar=%s,win=%d,loss=%d,points=%d;",

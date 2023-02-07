@@ -2,11 +2,11 @@
 #ifndef _GAME_H_
 #define _GAME_H_
 
-#include <time.h>
 #include <mysql/mysql.h>
+#include <time.h>
 
-#include "http.h"
 #include "config.h"
+#include "http.h"
 
 typedef struct Game {
   int id;
@@ -17,8 +17,8 @@ typedef struct Game {
   int num_move;
 
   /*
-   `if player1 win player2 then [result = player1's id]
-  ``if both player draw then [result = 0]
+                start     player1 win   player2_win   draw
+    result:      -1       player1_id    player2_id     0
   */
   int result;
 } Game;
@@ -34,10 +34,10 @@ int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 
-int game_finish(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int caro(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_quick(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int game_finish(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_cancel(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 int game_join(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);

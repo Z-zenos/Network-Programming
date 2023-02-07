@@ -1,3 +1,0 @@
-- Chưa mutex req, res object
-- Chưa test nhiều client
-- Chưa test kết nối với java 

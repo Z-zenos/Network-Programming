@@ -41,27 +41,6 @@ int msg_parse(Message *msg, char *msg_str) {
   return SUCCESS;
 }
 
-void msg_print(Message msg) {
-  printf("\n========\n");
-  printf("Command: %s\n", msg.command);
-  printf("Content-Length: %d\n", msg.content_l);
-  printf("Params: %s\n", msg.__params__);
-  printf("---------------\n");
-  printf("%s\n", msg.content);
-  printf("\n========\n");
-}
-
-void messagify(Message *msg, char *cmd, char *params, char *state, char *data) {
-  strcpy(msg->command, cmd ? cmd : "RESPONSE");
-  strcpy(msg->__params__, params ? params : "0");
-  sprintf(msg->content, "state=%s", state);
-  if(data) {
-    strcat(msg->content, ",");
-    strcat(msg->content, data);
-  }
-  msg->content_l = strlen(msg->content);
-}
-
 void responsify(Message *msg, char *state, char *data) {
   strcpy(msg->command, "RESPONSE");
   strcpy(msg->__params__, "0");
@@ -76,29 +55,6 @@ void responsify(Message *msg, char *state, char *data) {
 
 void server_error(Message *msg) {
   responsify(msg, "server_error", NULL);
-}
-
-bool is_ip(const char *ip) {    /* Handle login */
-  struct sockaddr_in sa;
-  char ip_tmp[CONTENT_L];
-  strcpy(ip_tmp, ip);
-  // Convert ip address in xxx.xxx.xxx.xxx format to binary format
-  int valid = inet_pton(AF_INET, ip_tmp, &(sa.sin_addr));
-  return valid != 0;
-}
-
-bool is_port(char *str) {
-  while (*str) {
-    if (isdigit(*str++) == 0) return false;
-  }
-  return true;
-}
-
-bool is_usr(char *str) {
-  while (*str) {
-    if (isalnum(*str++) == 0) return false;
-  }
-  return true;
 }
 
 char *socket_addr(const struct sockaddr *address) {
@@ -185,7 +141,7 @@ int get_msg(int client_fd, Message *msg) {
   if(numBytesRcvd <= 0 || strlen(msg_str) <= 0) {
     return 0;
   }
-  logger("success", msg_str);
+  logger("info", msg_str);
   if(!msg_parse(msg, msg_str)) return 0;
   return numBytesRcvd;
 }

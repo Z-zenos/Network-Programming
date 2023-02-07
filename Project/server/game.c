@@ -53,7 +53,6 @@ int game_add(GameTree *gametree, Game new_game) {
 
   ret = rbinsert(gametree, (void *)game);
   if (ret == 0) {
-    logger(L_ERROR, "Can't insert new game for players");
     free(game);
     return -1;
   }
@@ -70,7 +69,6 @@ int game_delete(GameTree *gametree, int id) {
 
   ret = rberase(gametree, (void *)game);
   if (ret == 0) {
-    logger(L_ERROR, "Can't delete game id: %d", id);
     free(game);
     return -1;
   }
@@ -217,7 +215,7 @@ int game_create(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTre
   Game new_game = {
     .id = !last_game ? 1 : last_game->id + 1,
     .num_move = 0,
-    .result = 0,
+    .result = -1,
     .player1_id = player_id,
     .player2_id = 0,
   };
@@ -472,7 +470,7 @@ int duel_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTr
   Game new_game = {
     .id = !last_game ? 1 : last_game->id + 1,
     .num_move = 0,
-    .result = 0,
+    .result = -1,
     .player1_id = player_id,
     .player2_id = friend_id,
   };
