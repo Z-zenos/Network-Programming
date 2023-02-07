@@ -22,17 +22,17 @@ CC = gcc
 LIBS = -lm
 
 build: clean server
-	@$(ECHO) "Build server success"
+	@$(ECHO) && echo "\033[1;38;5;47mBuild server success\033[0m"
 
 server: server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o
 	@${CC} $(CFLAGS) server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
 	@$(ECHO) Linking $@
-	@sleep 0.05
+	@sleep 0.02
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c $^
 	@$(ECHO) Compiling $@
-	@sleep 0.05
+	@sleep 0.02
 
 clean:
 	@rm -f *.o *~ server

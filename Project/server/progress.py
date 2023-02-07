@@ -35,14 +35,14 @@ def main():
 	args = parser.parse_args()
 
 	nchars = int(math.log(args.nsteps, 10)) + 1
-	fmt_str = "\r[{:Xd}/{:Xd}]({:6.2f}%) ".replace("X", str(nchars))
+	fmt_str = "\r[\x1b[1;38;5;226m{:Xd}/{:Xd}\x1b[0m](\x1b[1;38;5;47m{:6.2f}%\x1b[0m) <|".replace("X", str(nchars))
 	progress = 100 * args.stepno / args.nsteps
 	sys.stdout.write(fmt_str.format(args.stepno, args.nsteps, progress))
 	sys.stdout.write(get_progress_bar(20, percent=progress))
 	remainder_str = " ".join(args.remainder)
-	sys.stdout.write(" {:20s}".format(remainder_str[:20]))
-	if args.stepno == args.nsteps:
-		sys.stdout.write("\n")
+	sys.stdout.write("|> {:2s}".format(remainder_str[:20]))
+	# if args.stepno == args.nsteps:
+	# 	sys.stdout.write("\n")
 
 if __name__ == "__main__":
 	main()

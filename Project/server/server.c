@@ -326,6 +326,8 @@ int main(int argc, char *argv[]) {
   playertree = player_build(conn);
 
   server_fd = server_init(argv[1]);
+  cleanup(&msg, receiver);
+
   server_listen(conn, gametree, playertree);
 
   game_drop(gametree);
