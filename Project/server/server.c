@@ -19,6 +19,7 @@ Message msg;
 int receiver[MAX_CLIENT];
 int client_fds[MAX_CLIENT];
 int number_clients = 0;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void signalHandler(int signo) {
   switch (signo) {
@@ -191,9 +192,8 @@ int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Playe
 void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
   int nbytes;
   while(1) {
-    cleanup(&msg, receiver);
     if ((nbytes = get_msg(clnt_addr.sock, &msg)) <= 0) {
-      time_print(clnt_addr.address, "OFFLINE", "", 0, "");
+      time_print(clnt_addr.address, "EXIT APP", "", 0, "");
       for (int i = 0; i < MAX_CLIENT; i++) {
         if (client_fds[i] == clnt_addr.sock) {
           client_fds[i] = 0;
@@ -203,6 +203,10 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
       close(clnt_addr.sock);
       break;
     }
+
+    // LOCK resource
+    pthread_mutex_lock(&mutex);
+
     time_print(clnt_addr.address, msg.command, msg.__params__, nbytes, msg.content);
 
     /*
@@ -215,6 +219,10 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
 
     route_handler(conn, clnt_addr, gametree, playertree)(conn, clnt_addr, gametree, playertree, &msg, receiver);
     send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
+    cleanup(&msg, receiver);
+
+    // UNLOCK resource
+    pthread_mutex_unlock(&mutex);
   }
 }
 
@@ -229,7 +237,7 @@ void *ThreadMain(void *threadArgs) {
   // Guarantees that thread resources are deallocated upon return
   pthread_detach(pthread_self());
 
-  // Extract socket file descriptor argument
+  // Extract argument from main thread
   ClientAddr clnt_addr = ((ThreadArgs *)threadArgs)->client_addr;
   MYSQL *conn = ((ThreadArgs *)threadArgs)->conn;
   GameTree *gametree = ((ThreadArgs *)threadArgs)->gametree;
@@ -244,6 +252,18 @@ void *ThreadMain(void *threadArgs) {
 void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
   for(;;) {
     ClientAddr client_addr = accept_conn(server_fd);
+
+    // TODO: Reject client if numbers of client greater than 20
+    if(number_clients == MAX_CLIENT) {
+      pthread_mutex_lock(&mutex);
+      receiver[0] = client_addr.sock;
+      server_error(&msg);
+      send_msg(receiver, msg);
+      cleanup(&msg, receiver);
+      pthread_mutex_unlock(&mutex);
+      continue;
+    }
+
     time_print(client_addr.address, "ONLINE", "", 0, "");
     client_fds[number_clients++] = client_addr.sock;
 
@@ -264,7 +284,9 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 
     /* Reduce CPU usage */
     sleep(1);
+
     if(rtnVal != 0) {
+      server_error(&msg);
       close(server_fd);
       exit(FAILURE);
     }

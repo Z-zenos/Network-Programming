@@ -1,38 +1,40 @@
-CFLAGS = -g -c -Wall -pthread
+_mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+I := $(patsubst %/,%,$(dir $(_mkfile_path)))
+
+ifneq ($(words $(MAKECMDGOALS)),1)
+.DEFAULT_GOAL = build
+%:
+	@$(MAKE) $@ --no-print-directory -rRf $(firstword $(MAKEFILE_LIST))
+else
+ifndef ECHO
+T := $(shell $(MAKE) $(MAKECMDGOALS) --no-print-directory \
+      -nrRf $(firstword $(MAKEFILE_LIST)) \
+      ECHO="COUNTTHIS" | grep -c "COUNTTHIS")
+N := x
+C = $(words $N)$(eval N := x $N)
+ECHO = python progress.py --stepno=$C --nsteps=$T
+endif
+
+.PHONY: build clean
+
+CFLAGS = -g -Wall
 CC = gcc
 LIBS = -lm
 
-build: clean | server
+build: clean server
+	@$(ECHO) "Build server success"
 
 server: server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o
-	${CC} server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
+	@${CC} $(CFLAGS) server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o -L/usr/local/mysql/lib -lmysqlclient -lssl -lcrypto -pthread -o server
+	@$(ECHO) Linking $@
+	@sleep 0.05
 
-server.o: server.c
-	${CC} ${CFLAGS} server.c
-
-rbtree.o: rbtree.c
-	${CC} ${CFLAGS} rbtree.c
-
-http.o: http.c
-	${CC} ${CFLAGS} http.c
-
-auth.o: auth.c
-	${CC} ${CFLAGS} auth.c
-
-map.o: map.c
-	${CC} ${CFLAGS} map.c
-
-utils.o: utils.c
-	${CC} ${CFLAGS} utils.c
-
-chat.o: chat.c
-	${CC} ${CFLAGS} chat.c
-
-game.o: game.c
-	${CC} ${CFLAGS} game.c
-
-player.o: player.c
-	${CC} ${CFLAGS} player.c
+%.o: %.c
+	@$(CC) $(CFLAGS) -c $^
+	@$(ECHO) Compiling $@
+	@sleep 0.05
 
 clean:
-	rm -f *.o *~ | rm -rf server
+	@rm -f *.o *~ server
+
+endif
