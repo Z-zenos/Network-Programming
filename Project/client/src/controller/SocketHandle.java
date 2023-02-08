@@ -98,7 +98,7 @@ public class SocketHandle implements Runnable {
   public void run() {
     try {
       // Gửi yêu cầu kết nối tới Server đang lắng nghe
-      socketOfClient = new Socket("127.0.0.1", 12121);
+      socketOfClient = new Socket("0.tcp.ap.ngrok.io", 10874);
       System.out.println("Kết nối thành công!");
       
       // Tạo luồng đầu ra tại client (Gửi dữ liệu tới server)
