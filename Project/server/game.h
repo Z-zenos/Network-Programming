@@ -34,19 +34,19 @@ int game_add(GameTree *, Game);
 int game_delete(GameTree *, int);
 Game *game_find(GameTree *, int);
 
-int caro(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_create(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_quick(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_finish(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_cancel(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_list(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_join(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int game_quit(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int caro(GameTree *, PlayerTree *, Message *, int *);
+int game_create(GameTree *, Message *);
+int game_quick(MYSQL *, GameTree *, PlayerTree *, Message *, int *);
+int game_finish(MYSQL *, GameTree *, PlayerTree *, Message *, int *);
+int game_cancel(GameTree *, Message *);
+int game_list(GameTree *, Message *);
+int game_join(MYSQL *, GameTree *, PlayerTree *, Message *, int *);
+int game_quit(MYSQL *, GameTree *, PlayerTree *, Message *, int *);
 
-int draw_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int draw_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int draw_request(PlayerTree *, Message *, int *);
+int draw_handler(MYSQL *, GameTree *, PlayerTree *, Message *, int *);
 
-int duel_request(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int duel_handler(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int duel_request(PlayerTree *, Message *, int *);
+int duel_handler(MYSQL *, GameTree *, PlayerTree *, Message *, int *);
 
 #endif

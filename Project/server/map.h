@@ -4,7 +4,6 @@
 #define _MAP_H_
 
 #include "config.h"
-#include "map.h"
 
 typedef struct Object {
   char key[KEY_L];

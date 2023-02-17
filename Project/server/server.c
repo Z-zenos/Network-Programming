@@ -16,6 +16,7 @@
 /* Global variable */
 int server_fd;
 Message msg;
+BadWordsStorage *bad_word_storage;
 int receiver[MAX_CLIENT];
 int client_fds[MAX_CLIENT];
 int number_clients = 0;
@@ -72,7 +73,7 @@ void connect_database(MYSQL *conn) {
   logger(L_SUCCESS, "Connect database successfully...");
 }
 
-int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
+int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg) {
   int player_id = atoi(map_val(msg->params, "player_id"));
 
   Player *player_found = player_find(playertree, player_id);
@@ -136,57 +137,52 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
   return SUCCESS;
 }
 
-int route_null(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
-  responsify(msg, "resource_null", NULL);
-  return FAILURE;
-}
-
-int (*route_handler(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree))
-    (MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *) {
+void route_handler(
+  MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree,
+  PlayerTree *playertree, int *receiver
+) {
   char cmd[CMD_L];
   strcpy(cmd, msg.command);
 
   /* GAME */
-  if (strcmp(cmd, "GAME_FINISH") == 0)      return game_finish;
-  if (strcmp(cmd, "CARO") == 0)             return caro;
-  if (strcmp(cmd, "GAME_QUICK") == 0)       return game_quick;
-  if (strcmp(cmd, "GAME_CREATE") == 0)      return game_create;
-  if (strcmp(cmd, "GAME_CANCEL") == 0)      return game_cancel;
-  if (strcmp(cmd, "GAME_JOIN") == 0)        return game_join;
-  if (strcmp(cmd, "GAME_QUIT") == 0)        return game_quit;
+  if (strcmp(cmd, "GAME_FINISH") == 0)      game_finish(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "CARO") == 0)             caro(gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_QUICK") == 0)       game_quick(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_CREATE") == 0)      game_create(gametree, &msg);
+  if (strcmp(cmd, "GAME_CANCEL") == 0)      game_cancel(gametree, &msg);
+  if (strcmp(cmd, "GAME_JOIN") == 0)        game_join(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_QUIT") == 0)        game_quit(conn, gametree, playertree, &msg, receiver);
 
   /* DUEL */
-  if (strcmp(cmd, "DUEL_REQUEST") == 0)      return duel_request;
-  if (strcmp(cmd, "DUEL") == 0)              return duel_handler;
+  if (strcmp(cmd, "DUEL_REQUEST") == 0)      duel_request(playertree, &msg, receiver);
+  if (strcmp(cmd, "DUEL") == 0)              duel_handler(conn, gametree, playertree, &msg, receiver);
 
   /* DRAW REQUEST */
-  if (strcmp(cmd, "DRAW_REQUEST") == 0)      return draw_request;
-  if (strcmp(cmd, "DRAW") == 0)              return draw_handler;
+  if (strcmp(cmd, "DRAW_REQUEST") == 0)      draw_request(playertree, &msg, receiver);
+  if (strcmp(cmd, "DRAW") == 0)              draw_handler(conn, gametree, playertree, &msg, receiver);
 
   /* FRIEND */
-  if(strcmp(cmd, "FRIEND_CHECK") == 0)      return friend_check;
-  if(strcmp(cmd, "FRIEND_LIST") == 0)       return friend_list;
-  if(strcmp(cmd, "FRIEND_ADD") == 0)        return friend_add;
-  if(strcmp(cmd, "FRIEND_ACCEPT") == 0)     return friend_accept;
+  if(strcmp(cmd, "FRIEND_CHECK") == 0)      friend_check(conn, &msg);
+  if(strcmp(cmd, "FRIEND_LIST") == 0)       friend_list(conn, playertree, &msg);
+  if(strcmp(cmd, "FRIEND_ADD") == 0)        friend_add(conn, playertree, &msg, receiver);
+  if(strcmp(cmd, "FRIEND_ACCEPT") == 0)     friend_accept(conn, playertree, &msg);
 
   /* AUTH */
-  if(strcmp(cmd, "LOGIN") == 0)             return signin;
-  if(strcmp(cmd, "LOGOUT") == 0)            return signout;
-  if(strcmp(cmd, "REGISTER") == 0)          return signup;
-  if(strcmp(cmd, "PASSWORD_UPDATE") == 0)   return change_password;
+  if(strcmp(cmd, "LOGIN") == 0)             signin(conn, clnt_addr, playertree, &msg);
+  if(strcmp(cmd, "LOGOUT") == 0)            signout(playertree, &msg);
+  if(strcmp(cmd, "REGISTER") == 0)          signup(conn, clnt_addr, playertree, &msg);
+  if(strcmp(cmd, "PASSWORD_UPDATE") == 0)   change_password(conn, playertree, &msg);
 
   /* GET */
-  if(strcmp(cmd, "RANK") == 0)              return rank;
-  if(strcmp(cmd, "PROFILE") == 0)           return profile;
-  if(strcmp(cmd, "GAME_LIST") == 0)         return game_list;
+  if(strcmp(cmd, "RANK") == 0)              rank(conn, &msg);
+  if(strcmp(cmd, "PROFILE") == 0)           profile(conn, &msg);
+  if(strcmp(cmd, "GAME_LIST") == 0)         game_list(gametree, &msg);
 
   /* CHAT */
-  if(strcmp(cmd, "CHAT") == 0)              return chat;
+  if(strcmp(cmd, "CHAT") == 0)              chat(gametree, playertree, bad_word_storage, &msg, receiver);
 
   /* EXIT APP */
-  if(strcmp(cmd, "EXIT") == 0)              return disconnect;
-
-  return route_null;
+  if(strcmp(cmd, "EXIT") == 0)              disconnect(conn, clnt_addr, gametree, playertree, &msg);
 }
 
 void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
@@ -217,7 +213,7 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
      * */
     receiver[0] = clnt_addr.sock;
 
-    route_handler(conn, clnt_addr, gametree, playertree)(conn, clnt_addr, gametree, playertree, &msg, receiver);
+    route_handler(conn, clnt_addr, gametree, playertree, receiver);
     send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
     cleanup(&msg, receiver);
 
@@ -303,6 +299,8 @@ int main(int argc, char *argv[]) {
   handle_signal();
 
   MYSQL *conn = mysql_init(NULL);
+  bad_word_storage = bad_words_build();
+
   GameTree *gametree;
   PlayerTree *playertree;
 
@@ -332,6 +330,7 @@ int main(int argc, char *argv[]) {
 
   game_drop(gametree);
   player_drop(playertree);
+  bad_words_drop(bad_word_storage);
   if(msg.params) map_drop(msg.params);
   mysql_close(conn);
   close(server_fd);

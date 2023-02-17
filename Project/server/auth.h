@@ -9,10 +9,10 @@
 #include "http.h"
 #include "player.h"
 
-int signin(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int signout(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int signup(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
-int change_password(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
+int signin(MYSQL *, ClientAddr, PlayerTree *, Message *);
+int signout(PlayerTree *, Message *);
+int signup(MYSQL *, ClientAddr, PlayerTree *, Message *);
+int change_password(MYSQL *, PlayerTree *, Message *);
 int forgot_password(MYSQL *, ClientAddr, GameTree *, PlayerTree *, Message *, int *);
 
 #endif
