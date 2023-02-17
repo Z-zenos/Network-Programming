@@ -225,15 +225,21 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
 
     // TODO: Update the latest information for player after loging or registering
     if(state == UPDATE) {
+      sleep(1);
       receiver[0] = clnt_addr.sock;
+      responsify(&msg, "updating", NULL);
+      send_msg(receiver, msg);
+
       int count = queue_msg->count(queue_msg), j = 0;
       for(j = 0; j < count; j++) {
         Chat *ct = queue_msg->at(queue_msg, j);
         responsify(&msg, "chat_global", ct->content);
         send_msg(receiver, msg);
       }
-    }
 
+      responsify(&msg, "updated", NULL);
+      send_msg(receiver, msg);
+    }
 
     cleanup(&msg, receiver);
 

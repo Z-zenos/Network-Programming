@@ -130,7 +130,7 @@ public class SocketHandle implements Runnable {
           User user = getUserFromString(res.getData());
           Client.user = user;
           Client.openView(Client.View.HOMEPAGE);
-        }
+        }     
         
         // Thông tin tài khoản sai
         if(res.getState().equals("account_incorrect")){
@@ -488,6 +488,21 @@ public class SocketHandle implements Runnable {
               ""
             )
           );
+        }
+        
+        
+        /* ---------------------------------------------------------------------------------- */
+        /*                                        OTHER                                       */
+        /* ---------------------------------------------------------------------------------- */
+        
+                
+        if(res.getState().equals("updating")) {
+          Client.openView(Client.View.GAMENOTICE, "Đang cập nhật dữ liệu mới nhất", "Vui lòng chờ");
+        }
+        
+        if(res.getState().equals("updated")) {
+          Thread.sleep(1000);
+          Client.closeView(Client.View.GAMENOTICE);
         }
       }
       

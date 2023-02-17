@@ -21,7 +21,7 @@ CFLAGS = -g -Wall
 CC = gcc
 LIBS = -lm
 
-build: clean server
+build: server
 	@$(ECHO) && echo "\033[1;38;5;47mBuild server success\033[0m"
 
 server: server.o auth.o http.o utils.o game.o player.o rbtree.o chat.o map.o clist.o
