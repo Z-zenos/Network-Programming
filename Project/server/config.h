@@ -1,5 +1,6 @@
-#define SUCCESS 1
 #define FAILURE 0
+#define SUCCESS 1
+#define UPDATE 2
 
 #define PASSWORD_L 50
 #define USERNAME_L 50

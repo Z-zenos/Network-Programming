@@ -7,6 +7,7 @@
 
 #include "auth.h"
 #include "chat.h"
+#include "clist.h"
 #include "config.h"
 #include "game.h"
 #include "http.h"
@@ -21,6 +22,7 @@ int receiver[MAX_CLIENT];
 int client_fds[MAX_CLIENT];
 int number_clients = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+CList *queue_msg;
 
 void signalHandler(int signo) {
   switch (signo) {
@@ -47,6 +49,8 @@ void signalHandler(int signo) {
       break;
   }
 
+  bad_words_drop(bad_word_storage);
+  queue_msg->free(queue_msg);
   for(int i = 0; i < MAX_CLIENT; i++)
     if(client_fds[i]) close(client_fds[i]);
   number_clients = 0;
@@ -137,7 +141,7 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
   return SUCCESS;
 }
 
-void route_handler(
+int route_handler(
   MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree,
   PlayerTree *playertree, int *receiver
 ) {
@@ -145,48 +149,51 @@ void route_handler(
   strcpy(cmd, msg.command);
 
   /* GAME */
-  if (strcmp(cmd, "GAME_FINISH") == 0)      game_finish(conn, gametree, playertree, &msg, receiver);
-  if (strcmp(cmd, "CARO") == 0)             caro(gametree, playertree, &msg, receiver);
-  if (strcmp(cmd, "GAME_QUICK") == 0)       game_quick(conn, gametree, playertree, &msg, receiver);
-  if (strcmp(cmd, "GAME_CREATE") == 0)      game_create(gametree, &msg);
-  if (strcmp(cmd, "GAME_CANCEL") == 0)      game_cancel(gametree, &msg);
-  if (strcmp(cmd, "GAME_JOIN") == 0)        game_join(conn, gametree, playertree, &msg, receiver);
-  if (strcmp(cmd, "GAME_QUIT") == 0)        game_quit(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_FINISH") == 0)      return game_finish(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "CARO") == 0)             return caro(gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_QUICK") == 0)       return game_quick(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_CREATE") == 0)      return game_create(gametree, &msg);
+  if (strcmp(cmd, "GAME_CANCEL") == 0)      return game_cancel(gametree, &msg);
+  if (strcmp(cmd, "GAME_JOIN") == 0)        return game_join(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "GAME_QUIT") == 0)        return game_quit(conn, gametree, playertree, &msg, receiver);
 
   /* DUEL */
-  if (strcmp(cmd, "DUEL_REQUEST") == 0)      duel_request(playertree, &msg, receiver);
-  if (strcmp(cmd, "DUEL") == 0)              duel_handler(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "DUEL_REQUEST") == 0)     return duel_request(playertree, &msg, receiver);
+  if (strcmp(cmd, "DUEL") == 0)             return duel_handler(conn, gametree, playertree, &msg, receiver);
 
   /* DRAW REQUEST */
-  if (strcmp(cmd, "DRAW_REQUEST") == 0)      draw_request(playertree, &msg, receiver);
-  if (strcmp(cmd, "DRAW") == 0)              draw_handler(conn, gametree, playertree, &msg, receiver);
+  if (strcmp(cmd, "DRAW_REQUEST") == 0)     return draw_request(playertree, &msg, receiver);
+  if (strcmp(cmd, "DRAW") == 0)             return draw_handler(conn, gametree, playertree, &msg, receiver);
 
   /* FRIEND */
-  if(strcmp(cmd, "FRIEND_CHECK") == 0)      friend_check(conn, &msg);
-  if(strcmp(cmd, "FRIEND_LIST") == 0)       friend_list(conn, playertree, &msg);
-  if(strcmp(cmd, "FRIEND_ADD") == 0)        friend_add(conn, playertree, &msg, receiver);
-  if(strcmp(cmd, "FRIEND_ACCEPT") == 0)     friend_accept(conn, playertree, &msg);
+  if(strcmp(cmd, "FRIEND_CHECK") == 0)      return friend_check(conn, &msg);
+  if(strcmp(cmd, "FRIEND_LIST") == 0)       return friend_list(conn, playertree, &msg);
+  if(strcmp(cmd, "FRIEND_ADD") == 0)        return friend_add(conn, playertree, &msg, receiver);
+  if(strcmp(cmd, "FRIEND_ACCEPT") == 0)     return friend_accept(conn, playertree, &msg);
 
   /* AUTH */
-  if(strcmp(cmd, "LOGIN") == 0)             signin(conn, clnt_addr, playertree, &msg);
-  if(strcmp(cmd, "LOGOUT") == 0)            signout(playertree, &msg);
-  if(strcmp(cmd, "REGISTER") == 0)          signup(conn, clnt_addr, playertree, &msg);
-  if(strcmp(cmd, "PASSWORD_UPDATE") == 0)   change_password(conn, playertree, &msg);
+  if(strcmp(cmd, "LOGIN") == 0)             return signin(conn, clnt_addr, playertree, &msg);
+  if(strcmp(cmd, "LOGOUT") == 0)            return signout(playertree, &msg);
+  if(strcmp(cmd, "REGISTER") == 0)          return signup(conn, clnt_addr, playertree, &msg);
+  if(strcmp(cmd, "PASSWORD_UPDATE") == 0)   return change_password(conn, playertree, &msg);
 
   /* GET */
-  if(strcmp(cmd, "RANK") == 0)              rank(conn, &msg);
-  if(strcmp(cmd, "PROFILE") == 0)           profile(conn, &msg);
-  if(strcmp(cmd, "GAME_LIST") == 0)         game_list(gametree, &msg);
+  if(strcmp(cmd, "RANK") == 0)              return rank(conn, &msg);
+  if(strcmp(cmd, "PROFILE") == 0)           return profile(conn, &msg);
+  if(strcmp(cmd, "GAME_LIST") == 0)         return game_list(gametree, &msg);
 
   /* CHAT */
-  if(strcmp(cmd, "CHAT") == 0)              chat(gametree, playertree, bad_word_storage, &msg, receiver);
+  if(strcmp(cmd, "CHAT") == 0)              return chat(gametree, playertree, queue_msg, bad_word_storage, &msg, receiver);
 
   /* EXIT APP */
-  if(strcmp(cmd, "EXIT") == 0)              disconnect(conn, clnt_addr, gametree, playertree, &msg);
+  if(strcmp(cmd, "EXIT") == 0)              return disconnect(conn, clnt_addr, gametree, playertree, &msg);
+
+  server_error(&msg);
+  return FAILURE;
 }
 
 void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
-  int nbytes;
+  int nbytes, state;
   while(1) {
     if ((nbytes = get_msg(clnt_addr.sock, &msg)) <= 0) {
       time_print(clnt_addr.address, "EXIT APP", "", 0, "");
@@ -213,8 +220,21 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
      * */
     receiver[0] = clnt_addr.sock;
 
-    route_handler(conn, clnt_addr, gametree, playertree, receiver);
+    state = route_handler(conn, clnt_addr, gametree, playertree, receiver);
     send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
+
+    // TODO: Update the latest information for player after loging or registering
+    if(state == UPDATE) {
+      receiver[0] = clnt_addr.sock;
+      int count = queue_msg->count(queue_msg), j = 0;
+      for(j = 0; j < count; j++) {
+        Chat *ct = queue_msg->at(queue_msg, j);
+        responsify(&msg, "chat_global", ct->content);
+        send_msg(receiver, msg);
+      }
+    }
+
+
     cleanup(&msg, receiver);
 
     // UNLOCK resource
@@ -301,6 +321,9 @@ int main(int argc, char *argv[]) {
   MYSQL *conn = mysql_init(NULL);
   bad_word_storage = bad_words_build();
 
+  queue_msg = CList_init(sizeof(Chat));
+  logger(L_SUCCESS, "Build global message successfully...");
+
   GameTree *gametree;
   PlayerTree *playertree;
 
@@ -332,6 +355,7 @@ int main(int argc, char *argv[]) {
   player_drop(playertree);
   bad_words_drop(bad_word_storage);
   if(msg.params) map_drop(msg.params);
+  queue_msg->free(queue_msg);
   mysql_close(conn);
   close(server_fd);
   return SUCCESS;

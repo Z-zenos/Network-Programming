@@ -117,11 +117,6 @@ public class SocketHandle implements Runnable {
         }
         System.out.println("Server response: " + message);
         res = new Response(message);
-        
-//        String[] messageSplit = message.split(",");
-//        if(messageSplit[0].equals("server-send-id")){
-//          ID_Server = Integer.parseInt(messageSplit[1]);
-//        }
 
         
         /* ---------------------------------------------------------------------------------- */

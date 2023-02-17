@@ -119,7 +119,7 @@ int signup(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Message *m
   );
 
   responsify(msg, "register_success", dataStr);
-  return SUCCESS;
+  return UPDATE;
 }
 
 int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Message *msg) {
@@ -184,7 +184,7 @@ int signin(MYSQL *conn, ClientAddr clnt_addr, PlayerTree *playertree, Message *m
 
   mysql_free_result(qres);
   responsify(msg, "login_success", dataStr);
-  return SUCCESS;
+  return UPDATE;
 }
 
 int signout(PlayerTree *playertree, Message *msg) {

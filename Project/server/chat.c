@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "clist.h"
 #include "config.h"
 #include "game.h"
 #include "http.h"
@@ -101,7 +102,7 @@ char *bad_words_filter(BadWordsStorage *bad_words_storage, char *content) {
 }
 
 int chat(
-  GameTree *gametree, PlayerTree *playertree,
+  GameTree *gametree, PlayerTree *playertree, CList *queue_msg,
   BadWordsStorage *bad_words_storage, Message *msg, int *receiver
 ) {
   int player_id = atoi(map_val(msg->params, "player_id"));
@@ -121,10 +122,18 @@ int chat(
     return FAILURE;
   }
 
+
   // TODO: Chat global
   if(game_id == 0) {
     // TODO: Filter bad words and trim space
     sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), str_trim(bad_words_filter(bad_words_storage, content)));
+
+    // TODO: Add global message to queue for send to players who come in later
+    Chat ct;
+    strcpy(ct.content, dataStr);
+    int count = queue_msg->count(queue_msg);
+    queue_msg->insert(queue_msg, (void *)&ct, count);
+
     receiver[0] = -1; // -1 mean sent for all player
     responsify(msg, "chat_global", dataStr);
     return SUCCESS;
