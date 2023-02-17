@@ -116,7 +116,7 @@ public class FindRoomFrm extends javax.swing.JFrame {
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-    jPanel1.setBackground(new java.awt.Color(102, 102, 102));
+    jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
     jLabel1.setBackground(new java.awt.Color(255, 255, 255));
     jLabel1.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
@@ -138,16 +138,19 @@ public class FindRoomFrm extends javax.swing.JFrame {
         .addContainerGap(25, Short.MAX_VALUE))
     );
 
-    jLabel2.setFont(new java.awt.Font("Tahoma", 2, 14)); // NOI18N
+    jLabel2.setFont(new java.awt.Font("Tahoma", 3, 14)); // NOI18N
+    jLabel2.setForeground(new java.awt.Color(81, 81, 104));
     jLabel2.setText("Đang tìm đối thủ");
 
     jLabel3.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+    jLabel3.setForeground(new java.awt.Color(81, 81, 104));
     jLabel3.setText("00:20");
 
     jLabel4.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
     jLabel4.setForeground(new java.awt.Color(0, 51, 204));
     jLabel4.setText("Đã tìm thấy đối thủ, đang vào phòng");
 
+    jButton1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(81, 81, 104)));
     jButton1.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
         jButton1ActionPerformed(evt);

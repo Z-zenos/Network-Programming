@@ -69,7 +69,7 @@ public class WaitingRoomFrm extends javax.swing.JFrame {
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-    jPanel1.setBackground(new java.awt.Color(102, 102, 102));
+    jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
     jLabel1.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
     jLabel1.setForeground(new java.awt.Color(255, 255, 255));
@@ -101,11 +101,14 @@ public class WaitingRoomFrm extends javax.swing.JFrame {
     );
 
     jLabel2.setFont(new java.awt.Font("Tahoma", 2, 14)); // NOI18N
+    jLabel2.setForeground(new java.awt.Color(81, 81, 104));
     jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
     jLabel2.setText("Đang chờ người chơi khác vào phòng");
 
+    jLabel3.setForeground(new java.awt.Color(81, 81, 104));
     jLabel3.setText("jLabel3");
 
+    jButton2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(81, 81, 104)));
     jButton2.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
         jButton2ActionPerformed(evt);

@@ -129,7 +129,7 @@ public class FriendListFrm extends javax.swing.JFrame {
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-    jPanel1.setBackground(new java.awt.Color(102, 102, 102));
+    jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
     jLabel1.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
     jLabel1.setForeground(new java.awt.Color(255, 255, 255));
@@ -143,6 +143,7 @@ public class FriendListFrm extends javax.swing.JFrame {
       }
     });
 
+    jTable1.setBackground(new java.awt.Color(231, 233, 237));
     jTable1.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
     jTable1.setModel(model);
     jTable1.setRowHeight(60);

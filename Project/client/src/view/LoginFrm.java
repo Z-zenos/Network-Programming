@@ -62,25 +62,41 @@ public class LoginFrm extends javax.swing.JFrame {
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-    jLabel1.setText("Username");
+    jTextField1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(81, 81, 104)));
 
-    jLabel2.setText("Mật khẩu");
+    jLabel1.setFont(new java.awt.Font("Liberation Sans", 1, 15)); // NOI18N
+    jLabel1.setForeground(new java.awt.Color(81, 81, 104));
+    jLabel1.setText("<html><u>U</u>sername</html>");
 
+    jLabel2.setFont(new java.awt.Font("Liberation Sans", 1, 15)); // NOI18N
+    jLabel2.setForeground(new java.awt.Color(81, 81, 104));
+    jLabel2.setText("<html><u>M</u>ật khẩu</html>");
+
+    jPasswordField1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(81, 81, 104)));
+
+    jButton1.setBackground(new java.awt.Color(231, 233, 237));
+    jButton1.setFont(new java.awt.Font("Liberation Sans", 1, 15)); // NOI18N
+    jButton1.setForeground(new java.awt.Color(81, 81, 104));
     jButton1.setText("Đăng Nhập");
+    jButton1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(81, 81, 104)));
     jButton1.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
         jButton1ActionPerformed(evt);
       }
     });
 
+    jButton2.setBackground(new java.awt.Color(231, 233, 237));
+    jButton2.setFont(new java.awt.Font("Liberation Sans", 1, 15)); // NOI18N
+    jButton2.setForeground(new java.awt.Color(81, 81, 104));
     jButton2.setText("Đăng kí");
+    jButton2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(81, 81, 104)));
     jButton2.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
         jButton2ActionPerformed(evt);
       }
     });
 
-    jPanel1.setBackground(new java.awt.Color(102, 102, 102));
+    jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
     jLabel3.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
     jLabel3.setForeground(new java.awt.Color(255, 255, 255));
@@ -135,16 +151,16 @@ public class LoginFrm extends javax.swing.JFrame {
         .addGap(18, 18, 18)
         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
           .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-          .addComponent(jLabel1))
+          .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
           .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-          .addComponent(jLabel2))
+          .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         .addGap(25, 25, 25)
         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-          .addComponent(jButton1)
-          .addComponent(jButton2))
-        .addContainerGap(19, Short.MAX_VALUE))
+          .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+          .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
+        .addContainerGap(27, Short.MAX_VALUE))
     );
 
     pack();

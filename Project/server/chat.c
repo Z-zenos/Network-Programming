@@ -130,6 +130,7 @@ int chat(
     return SUCCESS;
   }
 
+  // TODO: Chat local
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);
   if(!game_found) {
