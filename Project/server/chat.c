@@ -116,12 +116,14 @@ int chat(
     msg->content_l == 0 || strlen(msg->content) == 0 ||
     msg->content_l > CHAT_L || strlen(msg->content) > CHAT_L
   ) {
-    responsify(msg, "chat_fail", NULL);
+    sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), "Tin nhắn không hợp lệ (dài quá quá 2000 ký tự)");
+    responsify(msg, "chat_fail", dataStr);
     return FAILURE;
   }
 
   // TODO: Chat global
   if(game_id == 0) {
+    // TODO: Filter bad words and trim space
     sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), str_trim(bad_words_filter(bad_words_storage, content)));
     receiver[0] = -1; // -1 mean sent for all player
     responsify(msg, "chat_global", dataStr);
@@ -130,7 +132,6 @@ int chat(
 
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);
-
   if(!game_found) {
     responsify(msg, "game_null", NULL);
     return FAILURE;

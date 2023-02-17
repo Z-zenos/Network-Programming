@@ -189,6 +189,16 @@ public class SocketHandle implements Runnable {
           Client.gameClientFrm.addMessage(res.getData());
         }
         
+        // Xử lý chat không hợp lệ 
+        if(res.getState().equals("chat_fail")){
+          if(Client.homePageFrm != null){
+            Client.homePageFrm.addMessage(res.getData());
+          }
+          else {
+            Client.gameClientFrm.addMessage(res.getData());
+          }
+        }
+        
         /* ---------------------------------------------------------------------------------- */
         /*                                      ROOM                                          */
         /* ---------------------------------------------------------------------------------- */
