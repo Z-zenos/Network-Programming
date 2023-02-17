@@ -743,9 +743,6 @@ public class GameClientFrm extends javax.swing.JFrame{
         if (jTextField1.getText().isEmpty()) {
           throw new Exception("Vui lòng nhập nội dung tin nhắn");
         }
-        String temp = jTextArea1.getText();
-        temp += "Tôi: " + jTextField1.getText() + "\n";
-        jTextArea1.setText(temp);
         Client.socketHandle.write(
           Client.socketHandle.requestify(
             "CHAT", jTextField1.getText().length(), "game_id=" + this.roomId + "&player_id=" + Client.user.getID(), jTextField1.getText()
@@ -823,9 +820,6 @@ public class GameClientFrm extends javax.swing.JFrame{
           if (jTextField1.getText().isEmpty()) {
             return;
           }
-          String temp = jTextArea1.getText();
-          temp += "Tôi: " + jTextField1.getText() + "\n";
-          jTextArea1.setText(temp);
           Client.socketHandle.write(
             Client.socketHandle.requestify(
               "CHAT", jTextField1.getText().length(), "game_id=" + this.roomId + "&player_id=" + Client.user.getID(), jTextField1.getText()

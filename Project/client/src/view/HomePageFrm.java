@@ -504,9 +504,7 @@ public class HomePageFrm extends javax.swing.JFrame {
       if (jTextField1.getText().isEmpty()) {
         throw new Exception("Vui lòng nhập nội dung tin nhắn");
       }
-      String temp = jTextArea1.getText();
-      temp += "Me: " + jTextField1.getText() + "\n";
-      jTextArea1.setText(temp);
+
       Client.socketHandle.write(
         Client.socketHandle.requestify("CHAT", jTextField1.getText().length(), "game_id=0&player_id=" + Client.user.getID(), jTextField1.getText())
       );
