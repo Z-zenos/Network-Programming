@@ -23,6 +23,7 @@ import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 public class FriendRequestFrm extends javax.swing.JFrame {
   private int ID;
   private Timer timer;
+  private String username;
   private String type;
   /**
    * Creates new form FriendRequestFrm
@@ -30,6 +31,7 @@ public class FriendRequestFrm extends javax.swing.JFrame {
   public FriendRequestFrm(String type, int ID, String username) {
     this.ID = ID;
     this.type = type;
+    this.username = username;
         
     
     initComponents();
@@ -48,7 +50,7 @@ public class FriendRequestFrm extends javax.swing.JFrame {
     this.setLocationRelativeTo(null);
     jLabel7.setText("Từ " + username + "(ID=" + ID + ")");
     timer = new Timer(1000, new ActionListener() {
-      int count = 10;
+      int count = 15;
 
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -58,6 +60,8 @@ public class FriendRequestFrm extends javax.swing.JFrame {
         } else {
           ((Timer) (e.getSource())).stop();
           if(type.equals("duel")) {
+            if(Client.homePageFrm != null)
+              Client.homePageFrm.addMessage("username=" + username + ",content=Đã gửi lời mới thách đấu đến bạn");
             try {
               Client.socketHandle.write(
                 Client.socketHandle.requestify(
@@ -67,7 +71,14 @@ public class FriendRequestFrm extends javax.swing.JFrame {
             } catch (IOException ex) {
               Logger.getLogger(FriendRequestFrm.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }
+          }
+          else if(type.equals("friend")) {
+            if(Client.homePageFrm != null)
+              Client.homePageFrm.addMessage("username=" + username + ",content=Vừa gửi lời mới kết bạn");
+            else {
+              Client.gameClientFrm.addMessage("username=" + username + ",content=Vừa gửi lời mới kết bạn");
+            }
+          }
           disposeFrame();
         }
       }
