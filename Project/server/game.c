@@ -233,6 +233,13 @@ int game_join(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *
   char *temp_pwd = map_val(msg->params, "password");
   strcpy(game_pwd, temp_pwd ? temp_pwd : "");
 
+  // TODO: Check if player already played
+  Player *player_found = player_find(playertree, player_id);
+  if(player_found->is_playing) {
+    responsify(msg, "game_playing", NULL);
+    return FAILURE;
+  }
+
   // TODO: Find game room for player
   Game *game_found = game_find(gametree, game_id);
 
@@ -255,7 +262,6 @@ int game_join(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *
   if(game_found->player1_id) game_found->player2_id = player_id;
   else game_found->player1_id = player_id;
 
-  Player *player_found = player_find(playertree, player_id);
   player_found->is_playing = true;
 
   Player *opponent = player_find(playertree, (game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id));

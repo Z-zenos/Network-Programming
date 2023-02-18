@@ -236,6 +236,11 @@ public class SocketHandle implements Runnable {
           JOptionPane.showMessageDialog(Client.homePageFrm, "Phòng chơi đã đủ 2 người chơi");
         }
         
+        // Xử lý đã vào 1 phòng thì không thể vào các phòng khác
+        if(res.getState().equals("game_playing")){
+          JOptionPane.showMessageDialog(Client.gameClientFrm, "Bạn đã vào phòng");
+        }
+        
         // Xử lý không tìm thấy phòng trong chức năng vào phòng
         if(res.getState().equals("game_null")){
           Client.closeAllViews();
@@ -300,6 +305,7 @@ public class SocketHandle implements Runnable {
           }
           Client.closeAllViews();
           System.out.println("Đã vào phòng: " + roomID);
+          Client.user.setIsPlaying(true);
           
           Client.openView(Client.View.GAMECLIENT, competitor, roomID, isStart, competitorIP);
           Client.gameClientFrm.newgame();
