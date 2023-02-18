@@ -5,7 +5,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <ctype.h>
 
 #include "map.h"
 #include "config.h"

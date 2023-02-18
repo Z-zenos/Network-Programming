@@ -202,7 +202,7 @@ public class RoomListFrm extends javax.swing.JFrame {
           }
           else{
             Client.closeView(Client.View.ROOMLIST);
-            Client.openView(Client.View.JOINROOMPASSWORD, room, password);
+            Client.openView(Client.View.JOINROOMPASSWORD, "", room, password);
           }
         } catch (IOException ex) {
           JOptionPane.showMessageDialog(rootPane, ex.getMessage());

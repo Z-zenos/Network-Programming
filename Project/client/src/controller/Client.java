@@ -149,15 +149,15 @@ public class Client {
     }
   }
   
-  public static void openView(View viewName, int arg1, String arg2){
+  public static void openView(View viewName, String arg1, int arg2, String arg3){
     if(viewName != null){
       switch(viewName){
         case JOINROOMPASSWORD:
-          joinRoomPasswordFrm = new JoinRoomPasswordFrm(arg1, arg2);
+          joinRoomPasswordFrm = new JoinRoomPasswordFrm(arg2, arg3);
           joinRoomPasswordFrm.setVisible(true);
           break;
         case FRIENDREQUEST:
-          friendRequestFrm = new FriendRequestFrm(arg1, arg2);
+          friendRequestFrm = new FriendRequestFrm(arg1, arg2, arg3);
           friendRequestFrm.setVisible(true);
       }
     }

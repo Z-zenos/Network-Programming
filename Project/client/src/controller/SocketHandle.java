@@ -347,7 +347,7 @@ public class SocketHandle implements Runnable {
           m.find();
           int ID = Integer.parseInt(m.group(1));
           String username = m.group(2);
-          Client.openView(Client.View.FRIENDREQUEST, ID, username);
+          Client.openView(Client.View.FRIENDREQUEST, "friend", ID, username);
         }
         
         // Xử lý xem rank
@@ -366,22 +366,9 @@ public class SocketHandle implements Runnable {
           Pattern p = Pattern.compile("player_id=(\\d+),username=([a-zA-Z0-9]+)");
           Matcher m = p.matcher(res.getData());
           m.find();
-          int ret = JOptionPane.showConfirmDialog(
-            Client.getVisibleJFrame(), 
-            "Bạn nhận được lời thách đấu của " + m.group(2) + " (ID=" + m.group(1) + ")", 
-            "Xác nhận thách đấu", 
-            JOptionPane.YES_NO_OPTION
-          );
-          if(ret == JOptionPane.YES_OPTION){
-            Client.socketHandle.write(
-              Client.socketHandle.requestify("DUEL", 0, "player_id=" + Client.user.getID() + "&friend_id=" + m.group(1) + "&agree=1", "")
-            );
-          }
-          else{
-            Client.socketHandle.write(
-              Client.socketHandle.requestify("DUEL", 0, "player_id=" + Client.user.getID() + "&friend_id=" + m.group(1) + "&agree=0", "")
-            );
-          }
+          int ID = Integer.parseInt(m.group(1));
+          String username = m.group(2);
+          Client.openView(Client.View.FRIENDREQUEST, "duel", ID, username);
         }
         
         // Xử lý không đồng ý thách đấu

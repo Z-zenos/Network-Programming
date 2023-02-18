@@ -9,6 +9,8 @@ import controller.Client;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
@@ -21,13 +23,25 @@ import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 public class FriendRequestFrm extends javax.swing.JFrame {
   private int ID;
   private Timer timer;
+  private String type;
   /**
    * Creates new form FriendRequestFrm
    */
-  public FriendRequestFrm(int ID, String username) {
+  public FriendRequestFrm(String type, int ID, String username) {
     this.ID = ID;
+    this.type = type;
+        
+    
     initComponents();
     this.setTitle("Caro Master");
+    if(type.equals("friend")) {
+      jLabel1.setText("Yêu cầu kết bạn");
+      jLabel2.setText("Bạn nhận được một lời mời kết bạn");
+    }
+    else if(type.equals("duel")) {
+      jLabel1.setText("Yêu cầu thách đấu");
+      jLabel2.setText("Bạn nhận được một lời mời thách đấu");
+    }
     this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
     this.setResizable(false);
     this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -43,6 +57,17 @@ public class FriendRequestFrm extends javax.swing.JFrame {
           jLabel3.setText("Tự động đóng trong " + count);
         } else {
           ((Timer) (e.getSource())).stop();
+          if(type.equals("duel")) {
+            try {
+              Client.socketHandle.write(
+                Client.socketHandle.requestify(
+                  "DUEL", 0, "player_id=" + Client.user.getID() + "&friend_id=" + ID + "&agree=0", ""
+                )
+              );
+            } catch (IOException ex) {
+              Logger.getLogger(FriendRequestFrm.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
           disposeFrame();
         }
       }
@@ -77,7 +102,7 @@ public class FriendRequestFrm extends javax.swing.JFrame {
     jLabel1.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
     jLabel1.setForeground(new java.awt.Color(255, 255, 255));
     jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-    jLabel1.setText("Yêu cầu kết bạn");
+    jLabel1.setText("{Title}");
 
     javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
     jPanel1.setLayout(jPanel1Layout);
@@ -87,16 +112,16 @@ public class FriendRequestFrm extends javax.swing.JFrame {
     );
     jPanel1Layout.setVerticalGroup(
       jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-      .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-        .addContainerGap(29, Short.MAX_VALUE)
+      .addGroup(jPanel1Layout.createSequentialGroup()
+        .addGap(28, 28, 28)
         .addComponent(jLabel1)
-        .addGap(28, 28, 28))
+        .addContainerGap(29, Short.MAX_VALUE))
     );
 
     jLabel2.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
     jLabel2.setForeground(new java.awt.Color(0, 102, 204));
     jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-    jLabel2.setText("Bạn nhận được một lời mời kết bạn ");
+    jLabel2.setText("{Heading}");
 
     jLabel7.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
     jLabel7.setForeground(new java.awt.Color(0, 102, 204));
@@ -136,17 +161,17 @@ public class FriendRequestFrm extends javax.swing.JFrame {
     layout.setHorizontalGroup(
       layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
       .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-      .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 348, Short.MAX_VALUE)
+      .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 360, Short.MAX_VALUE)
       .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
       .addGroup(layout.createSequentialGroup()
-        .addGap(34, 34, 34)
+        .addGap(38, 38, 38)
         .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 126, javax.swing.GroupLayout.PREFERRED_SIZE)
-        .addGap(26, 26, 26)
+        .addGap(32, 32, 32)
         .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE)
         .addGap(0, 0, Short.MAX_VALUE))
       .addGroup(layout.createSequentialGroup()
         .addGap(169, 169, 169)
-        .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE)
+        .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 185, Short.MAX_VALUE)
         .addContainerGap())
     );
     layout.setVerticalGroup(
@@ -170,17 +195,44 @@ public class FriendRequestFrm extends javax.swing.JFrame {
   }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-      try {
-        timer.stop();
-        Client.socketHandle.write(Client.socketHandle.requestify("FRIEND_ACCEPT", 0, "player_id=" + Client.user.getID() + "&friend_id=" + ID, ""));
-        this.dispose();
-      } catch (IOException ex) {
-        JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
+      timer.stop();
+      if(this.type.equals("friend")) {
+        try {
+          Client.socketHandle.write(
+            Client.socketHandle.requestify(
+              "FRIEND_ACCEPT", 0, "player_id=" + Client.user.getID() + "&friend_id=" + ID, ""
+            )
+          );
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
+        }
       }
+      else if(this.type.equals("duel")) {
+        try {
+          Client.socketHandle.write(
+            Client.socketHandle.requestify("DUEL", 0, "player_id=" + Client.user.getID() + "&friend_id=" + this.ID + "&agree=1", "")
+          );
+          
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
+        }
+      }
+      this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
       timer.stop();
+      if(this.type.equals("duel")) {
+        try {
+          Client.socketHandle.write(
+            Client.socketHandle.requestify(
+              "DUEL", 0, "player_id=" + Client.user.getID() + "&friend_id=" + this.ID + "&agree=0", ""
+            )
+          );
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, "Có lỗi xảy ra");
+        }
+      }
       this.dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
 
