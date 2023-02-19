@@ -157,6 +157,7 @@ public class GameClientFrm extends javax.swing.JFrame{
           minute = 0;
           try {
             Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
+            Client.user.updateAchieve("loss");
             increaseWinMatchToCompetitor();
             Client.socketHandle.write(
               Client.socketHandle.requestify(
@@ -202,6 +203,7 @@ public class GameClientFrm extends javax.swing.JFrame{
   public void exitGame() {
     try {
       timer.stop();
+      Client.user.updateAchieve("loss");
       Client.socketHandle.write(
         Client.socketHandle.requestify(
           "GAME_QUIT", 0, "game_id=" + this.roomId + "&player_id=" + Client.user.getID() + "&opponent_id=" + competitor.getID(), ""
@@ -895,6 +897,7 @@ public class GameClientFrm extends javax.swing.JFrame{
                     setEnableButton(false);
                     increaseWinMatchToUser();
                     Client.openView(Client.View.GAMENOTICE, "Bạn đã thắng", "Đang thiết lập ván chơi mới");
+                    Client.user.updateAchieve("win");
                     Client.socketHandle.write(
                       Client.socketHandle.requestify(
                         "GAME_FINISH", 0, 
@@ -1029,6 +1032,7 @@ public class GameClientFrm extends javax.swing.JFrame{
         try {
           timer.stop();
           setEnableButton(false);
+          Client.user.updateAchieve("draw");
           Client.socketHandle.write(
             Client.socketHandle.requestify(
               "DRAW", 0, 
@@ -1494,6 +1498,7 @@ public class GameClientFrm extends javax.swing.JFrame{
           increaseWinMatchToCompetitor();
 
           Client.closeView(Client.View.GAMENOTICE);
+          Client.user.updateAchieve("loss");
           Client.socketHandle.write(
             Client.socketHandle.requestify(
               "GAME_FINISH", 0, 

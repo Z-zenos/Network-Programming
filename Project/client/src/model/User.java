@@ -214,4 +214,20 @@ public class User {
   public void setPoints(int points) {
     this.points = points;
   }
+  
+  public void updateAchieve(String result) {
+    this.numberOfGame++;
+    if(result.equals("win")) {
+      this.numberOfWin++;
+      this.points += 3;
+
+    }
+    else if(result.equals("loss")) {
+      this.numberOfLoss++;
+    }
+    else {
+      this.numberOfDraw++;
+      this.points++;
+    }
+  }
 }

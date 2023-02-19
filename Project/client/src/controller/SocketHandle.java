@@ -474,6 +474,7 @@ public class SocketHandle implements Runnable {
           Client.openView(Client.View.GAMENOTICE, "Bạn đã thắng do đối thủ quá thời gian", "Đang thiết lập ván chơi mới");
           Thread.sleep(4000);
           Client.closeView(Client.View.GAMENOTICE);
+          Client.user.updateAchieve("win");
           Client.socketHandle.write(
             Client.socketHandle.requestify(
               "GAME_FINISH", 0, 
