@@ -77,7 +77,7 @@ public class Client {
   }
   
   public static void serverCrash() {
-    if(Client.homePageFrm == null) {
+    if(getVisibleJFrame() != homePageFrm) {
       Client.closeAllViews();
       Client.openView(Client.View.HOMEPAGE);
     }
