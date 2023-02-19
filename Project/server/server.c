@@ -141,12 +141,20 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
   return SUCCESS;
 }
 
+int keepalive() {
+  responsify(&msg, "stable", NULL);
+  return SUCCESS;
+}
+
 int route_handler(
   MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree,
   PlayerTree *playertree, int *receiver
 ) {
   char cmd[CMD_L];
   strcpy(cmd, msg.command);
+
+  /* CONNECTION */
+  if (strcmp(cmd, "KEEP_ALIVE") == 0)      return keepalive();
 
   /* GAME */
   if (strcmp(cmd, "GAME_FINISH") == 0)      return game_finish(conn, gametree, playertree, &msg, receiver);
@@ -285,6 +293,8 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
       pthread_mutex_unlock(&mutex);
       continue;
     }
+
+//    keepalive(client_addr.sock);
 
     time_print(client_addr.address, "ONLINE", "", 0, "");
     client_fds[number_clients++] = client_addr.sock;

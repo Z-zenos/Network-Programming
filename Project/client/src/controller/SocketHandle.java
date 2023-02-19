@@ -13,7 +13,11 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
@@ -28,20 +32,20 @@ public class SocketHandle implements Runnable {
   private BufferedWriter os;
   private BufferedReader is;
   private Socket socketOfClient;
-  private int ID_Server;
+//  private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);   
   
   public List<User> getListUser(String[] message){
     Pattern p = Pattern.compile("id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),is_online=([a-z]+),is_playing=([a-z]+)");
     Matcher m;
     List<User> friend = new ArrayList<>();
-    for(int i = 0; i < message.length; i++){
-      m = p.matcher(message[i]);
+    for (String message1 : message) {
+      m = p.matcher(message1);
       if(m.find())
         friend.add(new User(
-          Integer.parseInt(m.group(1)), 
-          m.group(2), 
-          m.group(3), 
-          Boolean.parseBoolean(m.group(4)), 
+          Integer.parseInt(m.group(1)),
+          m.group(2),
+          m.group(3),
+          Boolean.parseBoolean(m.group(4)),
           Boolean.parseBoolean(m.group(5))
         ));
     }
@@ -53,17 +57,17 @@ public class SocketHandle implements Runnable {
     List<User> player = new ArrayList<>();
     Pattern pattern = Pattern.compile("id=(\\d+),username=([a-zA-Z0-9]+),avatar=([a-zA-Z0-9/\\.]+),win=(\\d+),loss=(\\d+),points=(-?\\d+)");
     Matcher m;
-    for(int i = 0; i < splitter.length; i++){
-      m = pattern.matcher(splitter[i]);
+    for (String splitter1 : splitter) {
+      m = pattern.matcher(splitter1);
       if(m.find()) {
         player.add(new User(
-            Integer.parseInt(m.group(1)), 
-            m.group(2), 
-            m.group(3), 
-            Integer.parseInt(m.group(4)), 
-            Integer.parseInt(m.group(5)), 
-            Integer.parseInt(m.group(6))
-          )
+          Integer.parseInt(m.group(1)),
+          m.group(2),
+          m.group(3),
+          Integer.parseInt(m.group(4)),
+          Integer.parseInt(m.group(5)), 
+          Integer.parseInt(m.group(6))
+        )
         );
       }
     }
@@ -100,6 +104,7 @@ public class SocketHandle implements Runnable {
       // Gửi yêu cầu kết nối tới Server đang lắng nghe
 //      socketOfClient = new Socket("0.tcp.ap.ngrok.io", 10874);
       socketOfClient = new Socket("127.0.0.1", 12121);
+      socketOfClient.setKeepAlive(true);
       System.out.println("Kết nối thành công!");
       
       // Tạo luồng đầu ra tại client (Gửi dữ liệu tới server)
@@ -108,17 +113,23 @@ public class SocketHandle implements Runnable {
       is = new BufferedReader(new InputStreamReader(socketOfClient.getInputStream()));
       String message;
       Response res;
+     
       
       while (true) {
         // Nhận response từ server
         message = is.readLine();
         if (message == null) {
+          System.out.println("Server crash...");
+          JOptionPane.showMessageDialog(null, "Server crash...");
           break;
         }
         System.out.println("Server response: " + message);
         res = new Response(message);
 
-        
+        if(res.getState().equals("stable")) {
+          System.out.println("SERVER OK 200");
+        }
+
         /* ---------------------------------------------------------------------------------- */
         /*                                AUTHENTICATION                                      */
         /* ---------------------------------------------------------------------------------- */
@@ -129,6 +140,17 @@ public class SocketHandle implements Runnable {
           Client.closeAllViews();
           User user = getUserFromString(res.getData());
           Client.user = user;
+
+          // Gửi request keep-alive cho server để kiểm tra kết nối định kì mỗi 5s
+          new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+              try {
+                write("KEEP_ALIVE#0#0#");
+              } catch (IOException ex) {
+              }
+            }
+          }, 0, 5000);
           Client.openView(Client.View.HOMEPAGE);
         }     
         

@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -10,6 +12,9 @@
 #include "config.h"
 #include "http.h"
 #include "utils.h"
+
+#define check(expr) if (!(expr)) { perror(#expr); kill(0, SIGTERM); }
+
 
 void cleanup(Message *msg, int *receiver) {
   memset(msg->command, '\0', CMD_L);
@@ -85,6 +90,20 @@ char *socket_addr(const struct sockaddr *address) {
   }
 }
 
+//void keepalive(int sock) {
+//  int yes = 1;
+//  check(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(int)) != -1);
+//
+//  int idle = 1;
+//  check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(int)) != -1);
+//
+//  int interval = 1;
+//  check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(int)) != -1);
+//
+//  int maxpkt = 10;
+//  check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &maxpkt, sizeof(int)) != -1);
+//}
+
 int server_init(char *service) {
   struct addrinfo addrConfig;
   memset(&addrConfig, 0, sizeof(addrConfig));
@@ -101,6 +120,10 @@ int server_init(char *service) {
   for(struct addrinfo *addr = server; addr != NULL; addr = addr->ai_next) {
     server_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
     if (server_fd < 0) continue;
+
+    // TODO: configure socket
+    int flag = 1;
+    check(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) != -1);
 
     if ((bind(server_fd, addr->ai_addr, addr->ai_addrlen) == 0) && (listen(server_fd, BACKLOG) == 0)) {
       struct sockaddr_storage localAddr;
