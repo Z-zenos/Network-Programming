@@ -491,6 +491,10 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jLabel1AncestorMoved
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       int res = JOptionPane.showConfirmDialog(rootPane, "Bạn có muốn đặt mật khẩu cho phòng không?", "Tạo phòng", JOptionPane.YES_NO_OPTION);
       if(res == JOptionPane.YES_OPTION) {
         Client.closeView(Client.View.HOMEPAGE);
@@ -507,6 +511,10 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       try {
         Client.closeView(Client.View.HOMEPAGE);
         Client.openView(Client.View.ROOMLIST);
@@ -517,10 +525,18 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       Client.openView(Client.View.RANK);
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       try {
         Client.socketHandle.write(Client.socketHandle.requestify("LOGOUT", 0, "player_id=" + Client.user.getID(), ""));
       } catch (IOException ex) {
@@ -535,11 +551,19 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       Client.closeView(Client.View.HOMEPAGE);
       Client.openView(Client.View.FRIENDLIST);
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       Client.closeView(Client.View.HOMEPAGE);
       Client.openView(Client.View.FINDROOM);
     }//GEN-LAST:event_jButton6ActionPerformed
@@ -550,14 +574,26 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       Client.openView(Client.View.ROOMNAMEFRM);
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       sendMessage();
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jTextField1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyPressed
+      if(!Client.isKeepAlive) {
+        Client.serverCrash();
+        return;
+      }
       if(evt.getKeyCode() == 10){
           sendMessage();
       }

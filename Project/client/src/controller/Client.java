@@ -6,7 +6,9 @@
 package controller;
 
 
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import model.User;
 import view.CompetitorInfoFrm;
 import view.CreateRoomPasswordFrm;
@@ -69,8 +71,22 @@ public class Client {
   public static RoomNameFrm roomNameFrm;
   //Thiết lập socket
   public static SocketHandle socketHandle;
+  public static boolean isKeepAlive;
 
   public Client() {
+  }
+  
+  public static void serverCrash() {
+    if(Client.homePageFrm == null) {
+      Client.closeAllViews();
+      Client.openView(Client.View.HOMEPAGE);
+    }
+    ImageIcon icon = new ImageIcon("assets/icon/loading2.gif");
+    JOptionPane.showMessageDialog(
+      null,
+      "Server crash...\nYou can play with my AI",
+      "Error", JOptionPane.ERROR_MESSAGE,
+      icon);
   }
 
   public static JFrame getVisibleJFrame(){

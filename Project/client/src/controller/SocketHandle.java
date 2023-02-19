@@ -105,6 +105,7 @@ public class SocketHandle implements Runnable {
 //      socketOfClient = new Socket("0.tcp.ap.ngrok.io", 10874);
       socketOfClient = new Socket("127.0.0.1", 12121);
       socketOfClient.setKeepAlive(true);
+      Client.isKeepAlive = true;
       System.out.println("Kết nối thành công!");
       
       // Tạo luồng đầu ra tại client (Gửi dữ liệu tới server)
@@ -120,14 +121,15 @@ public class SocketHandle implements Runnable {
         message = is.readLine();
         if (message == null) {
           System.out.println("Server crash...");
-          JOptionPane.showMessageDialog(null, "Server crash...");
+          Client.isKeepAlive = false;
+          Client.serverCrash();
           break;
         }
         System.out.println("Server response: " + message);
         res = new Response(message);
 
         if(res.getState().equals("stable")) {
-          System.out.println("SERVER OK 200");
+          System.out.println("SERVER 200/OK");
         }
 
         /* ---------------------------------------------------------------------------------- */
@@ -148,6 +150,7 @@ public class SocketHandle implements Runnable {
               try {
                 write("KEEP_ALIVE#0#0#");
               } catch (IOException ex) {
+                Client.isKeepAlive = false;
               }
             }
           }, 0, 5000);
