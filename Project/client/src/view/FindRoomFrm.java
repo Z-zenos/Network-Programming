@@ -9,12 +9,9 @@ import controller.Client;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
-import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 
 /**
  *
@@ -31,14 +28,13 @@ public class FindRoomFrm extends javax.swing.JFrame {
     this.setTitle("Caro Master");
     this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
     this.setResizable(false);
-    this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
     this.setLocationRelativeTo(null);
     jLabel5.setIcon(new ImageIcon("assets/icon/loading1.gif"));
     jButton1.setIcon(new ImageIcon("assets/icon/door_exit.png"));
     jProgressBar1.setValue(70);
     isFinded = false;
     startFind();
-    
   }
   
   public void stopAllThread(){
@@ -115,6 +111,11 @@ public class FindRoomFrm extends javax.swing.JFrame {
     jButton1 = new javax.swing.JButton();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+    addWindowListener(new java.awt.event.WindowAdapter() {
+      public void windowClosing(java.awt.event.WindowEvent evt) {
+        formWindowClosing(evt);
+      }
+    });
 
     jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
@@ -214,6 +215,11 @@ public class FindRoomFrm extends javax.swing.JFrame {
       Client.closeView(Client.View.FINDROOM);
       Client.openView(Client.View.HOMEPAGE);
     }//GEN-LAST:event_jButton1ActionPerformed
+
+  private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    Client.closeAllViews();
+    Client.openView(Client.View.HOMEPAGE);
+  }//GEN-LAST:event_formWindowClosing
 
 
   // Variables declaration - do not modify//GEN-BEGIN:variables

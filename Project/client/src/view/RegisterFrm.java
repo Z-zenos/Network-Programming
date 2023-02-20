@@ -5,7 +5,6 @@ import controller.Client;
 import java.sql.SQLException;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import model.User;
 
 /*
  * To change this license header, choose License Headers in Project Properties.

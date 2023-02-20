@@ -6,9 +6,9 @@
 package controller;
 
 
-import javax.swing.ImageIcon;
+import java.util.Timer;
+import java.util.TimerTask;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import model.User;
 import view.CompetitorInfoFrm;
 import view.CreateRoomPasswordFrm;
@@ -81,12 +81,13 @@ public class Client {
       Client.closeAllViews();
       Client.openView(Client.View.HOMEPAGE);
     }
-    ImageIcon icon = new ImageIcon("assets/icon/loading2.gif");
-    JOptionPane.showMessageDialog(
-      null,
-      "Server crash...\nYou can play with my AI",
-      "Error", JOptionPane.ERROR_MESSAGE,
-      icon);
+    Client.openView(Client.View.GAMENOTICE, "Server crash", "You can play with my AI");
+    new Timer().schedule(new TimerTask() {
+      @Override
+      public void run() {
+        Client.closeView(Client.View.GAMENOTICE);
+      }
+    }, 1500);
   }
 
   public static JFrame getVisibleJFrame(){
