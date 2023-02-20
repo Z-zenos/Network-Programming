@@ -46,7 +46,7 @@ public class GameNoticeFrm extends javax.swing.JFrame {
     jLabel3 = new javax.swing.JLabel();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-    setBackground(new java.awt.Color(231, 233, 237));
+    setBackground(new java.awt.Color(218, 226, 232));
 
     jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
@@ -64,10 +64,12 @@ public class GameNoticeFrm extends javax.swing.JFrame {
     jPanel1Layout.setVerticalGroup(
       jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
       .addGroup(jPanel1Layout.createSequentialGroup()
-        .addGap(30, 30, 30)
+        .addGap(36, 36, 36)
         .addComponent(jLabel1)
-        .addContainerGap(43, Short.MAX_VALUE))
+        .addContainerGap(37, Short.MAX_VALUE))
     );
+
+    jLabel2.setBackground(new java.awt.Color(218, 226, 232));
 
     jLabel3.setFont(new java.awt.Font("Tahoma", 3, 14)); // NOI18N
     jLabel3.setForeground(new java.awt.Color(81, 81, 104));
