@@ -118,8 +118,10 @@ int server_init(char *service) {
     if (server_fd < 0) continue;
 
     // TODO: configure socket
-//    int flag = 1;
-//    check(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) != -1);
+    int flag = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+    flag = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &flag, sizeof(flag));
 
     if ((bind(server_fd, addr->ai_addr, addr->ai_addrlen) == 0) && (listen(server_fd, BACKLOG) == 0)) {
       struct sockaddr_storage localAddr;

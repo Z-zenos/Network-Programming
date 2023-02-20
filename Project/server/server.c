@@ -311,6 +311,8 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     tv.tv_sec = 10;
     tv.tv_usec = 0;
     setsockopt(client_addr.sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+
+    /* NOTE: Although it only works once every 2 hours, it does not affect the server. */
     int flag = 1;
     setsockopt(client_addr.sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(int));
 
