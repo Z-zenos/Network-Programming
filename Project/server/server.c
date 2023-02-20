@@ -142,7 +142,7 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
 }
 
 int keepalive() {
-  responsify(&msg, "stable", NULL);
+  responsify(&msg, "server_ok", NULL);
   return SUCCESS;
 }
 
@@ -201,10 +201,22 @@ int route_handler(
 }
 
 void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
-  int nbytes, state;
+  int nBytesRcvd, nBytesSent, state;
   while(1) {
-    if ((nbytes = get_msg(clnt_addr.sock, &msg)) <= 0) {
-      time_print(clnt_addr.address, "EXIT APP", "", 0, "");
+    if ((nBytesRcvd = get_msg(clnt_addr.sock, &msg)) <= 0) {
+      // TODO: Test connection of client one last time
+      pthread_mutex_lock(&mutex);
+      receiver[0] = clnt_addr.sock;
+      responsify(&msg, "keep_alive", NULL);
+      if((nBytesSent = send_msg(receiver, msg)) > 0) {
+        pthread_mutex_unlock(&mutex);
+        cleanup(&msg, receiver);
+        time_print("CHECK CLIENT ->", clnt_addr.address, "", nBytesSent, "--#--#--");
+        continue;
+      }
+      pthread_mutex_unlock(&mutex);
+
+      time_print(clnt_addr.address, "NO RESPONSE", "", 0, "");
       for (int i = 0; i < MAX_CLIENT; i++) {
         if (client_fds[i] == clnt_addr.sock) {
           client_fds[i] = 0;
@@ -218,7 +230,7 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     // LOCK resource
     pthread_mutex_lock(&mutex);
 
-    time_print(clnt_addr.address, msg.command, msg.__params__, nbytes, msg.content);
+    time_print(clnt_addr.address, msg.command, msg.__params__, nBytesRcvd, msg.content);
 
     /*
      * receiver[0] no change -> send me
@@ -294,7 +306,13 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
       continue;
     }
 
-//    keepalive(client_addr.sock);
+    // TODO: set up checking period connection of client
+    struct timeval tv;
+    tv.tv_sec = 10;
+    tv.tv_usec = 0;
+    setsockopt(client_addr.sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+    int flag = 1;
+    setsockopt(client_addr.sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(int));
 
     time_print(client_addr.address, "ONLINE", "", 0, "");
     client_fds[number_clients++] = client_addr.sock;
@@ -374,5 +392,6 @@ int main(int argc, char *argv[]) {
   queue_msg->free(queue_msg);
   mysql_close(conn);
   close(server_fd);
+  logger(L_SUCCESS, "Mission complete!");
   return SUCCESS;
 }

@@ -47,6 +47,7 @@ void server_error(Message *);
 void parse_params(Message *, char *);
 char *socket_addr(const struct sockaddr *);
 //void keepalive(int);
+bool enable_blocking(int, bool);
 int server_init(char *);
 ClientAddr accept_conn(int);
 int get_msg(int, Message *);

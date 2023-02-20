@@ -94,7 +94,7 @@ void time_print(char *addr, char *cmd, char *params, int nbytes, char *content) 
   strftime(req_time, 100, "%Y-%m-%d %H:%M:%S", localtime(&now));
   printf(
     "\x1b[1;38;5;256m%s>\x1b[0m "
-    "[@\x1b[1;38;5;202m%s\x1b[0m] "
+    "\x1b[1;38;5;202m%s\x1b[0m "
     "\x1b[1;38;5;47m%s\x1b[0m "
     "\x1b[4m%s\x1b[0m "
     "\x1b[1;38;5;014m%d\x1b[0m "

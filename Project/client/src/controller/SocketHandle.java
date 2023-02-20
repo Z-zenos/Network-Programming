@@ -128,7 +128,11 @@ public class SocketHandle implements Runnable {
         System.out.println("Server response: " + message);
         res = new Response(message);
 
-        if(res.getState().equals("stable")) {
+        if(res.getState().equals("keep_alive")) {
+          write("KEEP_ALIVE#0#0#");
+        }
+        
+        if(res.getState().equals("server_ok")) {
           System.out.println("SERVER 200/OK");
         }
 
@@ -143,7 +147,7 @@ public class SocketHandle implements Runnable {
           User user = getUserFromString(res.getData());
           Client.user = user;
 
-          // Gửi request keep-alive cho server để kiểm tra kết nối định kì mỗi 5s
+          // Gửi request keep-alive cho server để kiểm tra kết nối định kì mỗi 30s
           new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -153,7 +157,7 @@ public class SocketHandle implements Runnable {
                 Client.isKeepAlive = false;
               }
             }
-          }, 0, 5000);
+          }, 0, 20000);
           Client.openView(Client.View.HOMEPAGE);
         }     
         

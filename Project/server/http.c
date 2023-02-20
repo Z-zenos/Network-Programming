@@ -1,10 +1,9 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -12,9 +11,6 @@
 #include "config.h"
 #include "http.h"
 #include "utils.h"
-
-#define check(expr) if (!(expr)) { perror(#expr); kill(0, SIGTERM); }
-
 
 void cleanup(Message *msg, int *receiver) {
   memset(msg->command, '\0', CMD_L);
@@ -90,19 +86,19 @@ char *socket_addr(const struct sockaddr *address) {
   }
 }
 
-//void keepalive(int sock) {
-//  int yes = 1;
-//  check(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(int)) != -1);
-//
-//  int idle = 1;
-//  check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(int)) != -1);
-//
-//  int interval = 1;
-//  check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(int)) != -1);
-//
-//  int maxpkt = 10;
-//  check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &maxpkt, sizeof(int)) != -1);
-//}
+bool enable_blocking(int fd, bool blocking) {
+  if(fd < 0) return false;
+
+  #ifdef _WIN32
+    unsigned long mode = blocking ? 0 : 1;
+    return (ioctlsocket(fd, FIONBIO, &mode) == 0) ? true : false;
+  #else
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) return false;
+    flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+    return (fcntl(fd, F_SETFL, flags) == 0) ? true : false;
+  #endif
+}
 
 int server_init(char *service) {
   struct addrinfo addrConfig;
@@ -122,8 +118,8 @@ int server_init(char *service) {
     if (server_fd < 0) continue;
 
     // TODO: configure socket
-    int flag = 1;
-    check(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) != -1);
+//    int flag = 1;
+//    check(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) != -1);
 
     if ((bind(server_fd, addr->ai_addr, addr->ai_addrlen) == 0) && (listen(server_fd, BACKLOG) == 0)) {
       struct sockaddr_storage localAddr;
@@ -163,16 +159,16 @@ int get_msg(int client_fd, Message *msg) {
   if(numBytesRcvd <= 0 || strlen(msg_str) <= 0) {
     return 0;
   }
-  logger(L_INFO, msg_str);
   if(!msg_parse(msg, msg_str)) return 0;
   return numBytesRcvd;
 }
 
 int send_msg(int *receiver, Message msg) {
   char msg_str[MSG_L];
+  ssize_t numBytesSent;
   sprintf(msg_str, "%s#%d#%s#%s\n", msg.command, msg.content_l, msg.__params__, msg.content);
   size_t msg_l = strlen(msg_str);
   for(int i = 0; i < MAX_CLIENT; i++)
-    if(receiver[i] > 0) send(receiver[i], msg_str, msg_l, 0);
-  return SUCCESS;
+    if(receiver[i] > 0) numBytesSent = send(receiver[i], msg_str, msg_l, 0);
+  return numBytesSent;
 }
