@@ -214,7 +214,6 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
         time_print("CHECK CLIENT ->", clnt_addr.address, "", nBytesSent, "--#--#--");
         continue;
       }
-      pthread_mutex_unlock(&mutex);
 
       for (int i = 0; i < MAX_CLIENT; i++) {
         if (client_fds[i] == clnt_addr.sock) {
@@ -222,6 +221,7 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
           number_clients--;
         }
       }
+      pthread_mutex_unlock(&mutex);
       time_print(clnt_addr.address, "NO RESPONSE", "", 0, "");
       close(clnt_addr.sock);
       break;
@@ -373,9 +373,18 @@ int main(int argc, char *argv[]) {
   logger(L_SUCCESS, "Build global message queue successfully...");
 
   GameTree *gametree;
-  PlayerTree *playertree;
-
   gametree = game_new();
+  Game g = {
+    .id = 1,
+    .num_move = 48,
+    .result = -1,
+    .player1_id = 2,
+    .player2_id = 0,
+    .password = ""
+  };
+  game_add(gametree, g);
+
+  PlayerTree *playertree;
   playertree = player_build(conn);
 
   cleanup(&msg, receiver);

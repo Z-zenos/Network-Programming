@@ -7,9 +7,6 @@ package view;
 import controller.Client;
 import java.io.IOException;
 import java.util.List;
-import java.util.Vector;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
@@ -34,7 +31,7 @@ public class FriendListFrm extends javax.swing.JFrame {
     this.setTitle("Caro Master");
     this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
     this.setResizable(false);
-    this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
     this.setLocationRelativeTo(null);
     isClicked = false;
     startThread();
@@ -128,6 +125,11 @@ public class FriendListFrm extends javax.swing.JFrame {
     jTable1 = new javax.swing.JTable();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+    addWindowListener(new java.awt.event.WindowAdapter() {
+      public void windowClosing(java.awt.event.WindowEvent evt) {
+        formWindowClosing(evt);
+      }
+    });
 
     jPanel1.setBackground(new java.awt.Color(81, 81, 104));
 
@@ -235,6 +237,11 @@ public class FriendListFrm extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(rootPane, ex.getMessage());
       }
     }//GEN-LAST:event_jTable1MouseClicked
+
+  private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    Client.closeAllViews();
+    Client.openView(Client.View.HOMEPAGE);
+  }//GEN-LAST:event_formWindowClosing
 
 
   // Variables declaration - do not modify//GEN-BEGIN:variables

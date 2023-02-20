@@ -9,15 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -26,14 +19,9 @@ import javax.swing.Timer;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.TargetDataLine;
 import javax.swing.JOptionPane;
 import model.User;
 
@@ -69,10 +57,6 @@ public class GameClientFrm extends javax.swing.JFrame{
   private JButton preButton;
   private int userWin;
   private int competitorWin;
-  private Thread sendThread;
-  private boolean isSending;
-  private Thread listenThread;
-  private boolean isListening;
   private String competitorIP;
 
   public GameClientFrm(User competitor, int room_ID, int isStart, String competitorIP) {
@@ -81,9 +65,6 @@ public class GameClientFrm extends javax.swing.JFrame{
     numberOfMatch = isStart;
     this.competitor = competitor;
     this.competitorIP = competitorIP;
-    //
-    isSending = false;
-    isListening = false;
     //init score
     userWin = 0;
     competitorWin = 0;
@@ -140,38 +121,35 @@ public class GameClientFrm extends javax.swing.JFrame{
     //Setup timer
     second = 60;
     minute = 0;
-    timer = new Timer(1000, new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        String temp = minute.toString();
-        String temp1 = second.toString();
-        if (temp.length() == 1) {
-          temp = "0" + temp;
+    timer = new Timer(1000, (ActionEvent e) -> {
+      String temp = minute.toString();
+      String temp1 = second.toString();
+      if (temp.length() == 1) {
+        temp = "0" + temp;
+      }
+      if (temp1.length() == 1) {
+        temp1 = "0" + temp1;
+      }
+      if (second == 0) {
+        timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
+        second = 60;
+        minute = 0;
+        try {
+          Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
+          Client.user.updateAchieve("loss");
+          increaseWinMatchToCompetitor();
+          Client.socketHandle.write(
+            Client.socketHandle.requestify(
+              "GAME_FINISH", 0,
+              "game_id=" + room_ID + "&player_id=" + Client.user.getID() + "&opponent_id=" + competitor.getID() + "&x=-1&y=-1&result=-1&type=timeout", ""
+            )
+          );
+        } catch (IOException ex) {
+          JOptionPane.showMessageDialog(rootPane, ex.getMessage());
         }
-        if (temp1.length() == 1) {
-          temp1 = "0" + temp1;
-        }
-        if (second == 0) {
-          timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
-          second = 60;
-          minute = 0;
-          try {
-            Client.openView(Client.View.GAMECLIENT, "Bạn đã thua do quá thời gian", "Đang thiết lập ván chơi mới");
-            Client.user.updateAchieve("loss");
-            increaseWinMatchToCompetitor();
-            Client.socketHandle.write(
-              Client.socketHandle.requestify(
-                "GAME_FINISH", 0, 
-                "game_id=" + room_ID + "&player_id=" + Client.user.getID() + "&opponent_id=" + competitor.getID() + "&x=-1&y=-1&result=-1&type=timeout", ""
-              )
-            );
-          } catch (IOException ex) {
-            JOptionPane.showMessageDialog(rootPane, ex.getMessage());
-          }
-        } else {
-          timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
-          second--;
-        }
+      } else {
+        timerjLabel19.setText("Thời Gian:" + temp + ":" + temp1);
+        second--;
       }
     });
 
