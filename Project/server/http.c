@@ -19,7 +19,7 @@ void cleanup(Message *msg, int *receiver) {
   msg->content_l = 0;
   if(msg->params) map_drop(msg->params);
   msg->params = map_new();
-  memset(receiver, 0, MAX_CLIENT);
+  memset(receiver, 0, sizeof(*receiver));
 }
 
 void parse_params(Message *msg, char *params) {
@@ -117,7 +117,11 @@ int server_init(char *service) {
     server_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
     if (server_fd < 0) continue;
 
-    // TODO: configure socket
+    /* TODO: configure socket
+     NOTE:
+     * The purpose of SO_REUSEADDR/SO_REUSEPORT is to allow to reuse the port even
+       if the process crash or been killed.
+    */
     int flag = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
     flag = 1;

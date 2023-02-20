@@ -216,13 +216,13 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
       }
       pthread_mutex_unlock(&mutex);
 
-      time_print(clnt_addr.address, "NO RESPONSE", "", 0, "");
       for (int i = 0; i < MAX_CLIENT; i++) {
         if (client_fds[i] == clnt_addr.sock) {
           client_fds[i] = 0;
           number_clients--;
         }
       }
+      time_print(clnt_addr.address, "NO RESPONSE", "", 0, "");
       close(clnt_addr.sock);
       break;
     }
@@ -317,7 +317,13 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
     setsockopt(client_addr.sock, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(int));
 
     time_print(client_addr.address, "ONLINE", "", 0, "");
-    client_fds[number_clients++] = client_addr.sock;
+    for(int i = 0; i < MAX_CLIENT; i++) {
+      if(!client_fds[i]) {
+        client_fds[i] = client_addr.sock;
+        number_clients++;
+        break;
+      }
+    }
 
     ThreadArgs *threadArgs = (ThreadArgs *) malloc(sizeof (ThreadArgs));
     if(threadArgs == NULL) {
@@ -355,38 +361,30 @@ int main(int argc, char *argv[]) {
   handle_signal();
 
   MYSQL *conn = mysql_init(NULL);
-  bad_word_storage = bad_words_build();
-
-  queue_msg = CList_init(sizeof(Chat));
-  logger(L_SUCCESS, "Build global message successfully...");
-
-  GameTree *gametree;
-  PlayerTree *playertree;
-
   if(conn == NULL) {
     logger(L_ERROR, mysql_error(conn));
     exit(FAILURE);
   }
 
   connect_database(conn);
-  gametree = game_new();
-  Game g = {
-    .id = 1,
-    .num_move = 48,
-    .result = -1,
-    .player1_id = 2,
-    .player2_id = 0,
-    .password = ""
-  };
 
-  game_add(gametree, g);
+  bad_word_storage = bad_words_build();
+  queue_msg = CList_init(sizeof(Chat));
+  logger(L_SUCCESS, "Build global message queue successfully...");
+
+  GameTree *gametree;
+  PlayerTree *playertree;
+
+  gametree = game_new();
   playertree = player_build(conn);
 
-  server_fd = server_init(argv[1]);
   cleanup(&msg, receiver);
+  memset(client_fds, 0, sizeof(client_fds));
 
+  server_fd = server_init(argv[1]);
   server_listen(conn, gametree, playertree);
 
+  // TODO: Free resource
   game_drop(gametree);
   player_drop(playertree);
   bad_words_drop(bad_word_storage);
