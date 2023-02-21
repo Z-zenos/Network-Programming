@@ -5,6 +5,7 @@ import controller.Client;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -102,13 +103,21 @@ public class GameClientFrm extends javax.swing.JFrame{
     jLabel12.setText(Client.user.getUsername());
     jLabel13.setText(Integer.toString(Client.user.getNumberOfGame()));
     jLabel14.setText(Integer.toString(Client.user.getnumberOfWin()));
-    jLabel19.setIcon(new ImageIcon(Client.user.getAvatar()));
+    ImageIcon imageIcon = new ImageIcon(Client.user.getAvatar()); // load the image to a imageIcon
+    Image image = imageIcon.getImage(); // transform it 
+    Image newimg = image.getScaledInstance(60, 60,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way  
+    imageIcon = new ImageIcon(newimg);
+    jLabel19.setIcon(imageIcon);
     jLabel18.setText("Phòng: " + room_ID);
     jLabel22.setIcon(new ImageIcon("assets/game/swords-1.png"));
     jLabel15.setText(competitor.getUsername());
     jLabel16.setText(Integer.toString(competitor.getNumberOfGame()));
     jLabel17.setText(Integer.toString(competitor.getnumberOfWin()));
-    jButton3.setIcon(new ImageIcon(competitor.getAvatar()));
+    ImageIcon imageIcon1 = new ImageIcon(competitor.getAvatar()); // load the image to a imageIcon
+    Image image1 = imageIcon1.getImage(); // transform it 
+    Image newimg1 = image1.getScaledInstance(60, 60,  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way  
+    imageIcon = new ImageIcon(newimg1);
+    jButton3.setIcon(imageIcon);
     jButton3.setToolTipText("Xem thông tin đối thủ");
     jLabel3.setVisible(false);
     jLabel5.setVisible(false);
@@ -524,7 +533,7 @@ public class GameClientFrm extends javax.swing.JFrame{
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
         .addComponent(jLabel22, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-        .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)
+        .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
         .addGap(0, 12, Short.MAX_VALUE))
     );
 
