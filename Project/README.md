@@ -69,7 +69,7 @@
   - Use netbeans: Run Client.java
 
 ## Run on multiple computers
-- ``ngrok``
+- ``Coming soon``
 
 ## Reference
 [UI Caro] <https://github.com/Duc-ju/caro-game-client>
