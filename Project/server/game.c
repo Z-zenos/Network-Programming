@@ -291,13 +291,13 @@ int game_join(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *
 int game_quit(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *msg, int *receiver) {
   int player_id = atoi(map_val(msg->params, "player_id"));
   int game_id = atoi(map_val(msg->params, "game_id"));
-  int opponent_id = atoi(map_val(msg->params, "opponent_id"));
+  int winner_id = atoi(map_val(msg->params, "opponent_id"));
 
   // TODO: Find game room for player
   Game *game = game_find(gametree, game_id);
 
   Player *quit_player = player_find(playertree, player_id);
-  Player *winner = player_find(playertree, opponent_id);
+  Player *winner = player_find(playertree, winner_id);
   quit_player->is_playing = false;
   winner->is_playing = false;
 
@@ -306,19 +306,12 @@ int game_quit(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *
     char query[QUERY_L];
     memset(query, '\0', QUERY_L);
     game->result = winner->id;
-    ++quit_player->game;
-    ++quit_player->achievement.loss;
+    quit_player->game += 1;
+    quit_player->achievement.loss += 1;
 
-    ++winner->game;
-    ++winner->achievement.win;
+    winner->game += 1;
+    winner->achievement.win += 1;
     winner->achievement.points += 3;
-
-    sprintf(
-      query,
-      "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
-      winner->game, winner->achievement.win, winner->achievement.points, opponent_id
-    );
-    mysql_query(conn, query);
 
     sprintf(
       query,
@@ -329,10 +322,16 @@ int game_quit(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *
 
     sprintf(
       query,
+      "UPDATE players SET game = %d, win = %d, points = %d WHERE id = %d",
+      winner->game, winner->achievement.win, winner->achievement.points, winner_id
+    );
+    mysql_query(conn, query);
+
+    sprintf(
+      query,
       "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
       winner->id, quit_player->id, game->num_move
     );
-    mysql_query(conn, query);
   }
 
   game_delete(gametree, game_id);

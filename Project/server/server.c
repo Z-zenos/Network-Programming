@@ -308,7 +308,7 @@ void server_listen(MYSQL *conn, GameTree *gametree, PlayerTree *playertree) {
 
     // TODO: set up checking period connection of client
     struct timeval tv;
-    tv.tv_sec = 10;
+    tv.tv_sec = 30;
     tv.tv_usec = 0;
     setsockopt(client_addr.sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
 
