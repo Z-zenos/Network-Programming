@@ -332,6 +332,7 @@ int game_quit(MYSQL *conn, GameTree *gametree, PlayerTree *playertree, Message *
       "INSERT INTO histories (player1_id, player2_id, result, num_moves) VALUES (%d, %d, 1, %d)",
       winner->id, quit_player->id, game->num_move
     );
+    mysql_query(conn, query);
   }
 
   game_delete(gametree, game_id);

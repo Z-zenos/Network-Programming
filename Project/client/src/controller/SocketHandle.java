@@ -201,9 +201,7 @@ public class SocketHandle implements Runnable {
  
         // Xử lý chat global
         if(res.getState().equals("chat_global")){
-          if(Client.homePageFrm != null){
-            Client.homePageFrm.addMessage(res.getData());
-          }
+          Client.homePageFrm.addMessage(res.getData());
         }
         
         // Xử lý chat trong game
@@ -474,7 +472,7 @@ public class SocketHandle implements Runnable {
 
         if(res.getState().equals("new_game")){
           System.out.println("New game");
-          Thread.sleep(4000);
+          Thread.sleep(2000);
           Client.gameClientFrm.updateNumberOfGame();
           Client.closeView(Client.View.GAMENOTICE);
           Client.gameClientFrm.newgame();
@@ -485,7 +483,7 @@ public class SocketHandle implements Runnable {
           Client.closeView(Client.View.GAMENOTICE);
           Client.openView(Client.View.GAMENOTICE, "Ván chơi hòa", "Ván chơi mới dang được thiết lập");
           Client.gameClientFrm.displayDrawGame();
-          Thread.sleep(4000);
+          Thread.sleep(2000);
           Client.gameClientFrm.updateNumberOfGame();
           Client.closeView(Client.View.GAMENOTICE);
           Client.gameClientFrm.newgame();
@@ -500,7 +498,7 @@ public class SocketHandle implements Runnable {
           Client.gameClientFrm.increaseWinMatchToUser();
 
           Client.openView(Client.View.GAMENOTICE, "Bạn đã thắng do đối thủ quá thời gian", "Đang thiết lập ván chơi mới");
-          Thread.sleep(4000);
+          Thread.sleep(2000);
           Client.closeView(Client.View.GAMENOTICE);
           Client.user.updateAchieve("win");
           Client.socketHandle.write(

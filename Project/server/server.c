@@ -138,7 +138,7 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
   }
 
   close(clnt_addr.sock);
-  return SUCCESS;
+  return NOT_SEND;
 }
 
 int keepalive() {
@@ -209,8 +209,8 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
       receiver[0] = clnt_addr.sock;
       responsify(&msg, "keep_alive", NULL);
       if((nBytesSent = send_msg(receiver, msg)) > 0) {
-        pthread_mutex_unlock(&mutex);
         cleanup(&msg, receiver);
+        pthread_mutex_unlock(&mutex);
         time_print("CHECK CLIENT ->", clnt_addr.address, "", nBytesSent, "--#--#--");
         continue;
       }
@@ -241,7 +241,7 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     receiver[0] = clnt_addr.sock;
 
     state = route_handler(conn, clnt_addr, gametree, playertree, receiver);
-    send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
+    if(state != NOT_SEND) send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
 
     // TODO: Update the latest information for player after loging or registering
     if(state == UPDATE) {

@@ -811,6 +811,7 @@ public class GameClientFrm extends javax.swing.JFrame{
     public void showMessage(String message){
       JOptionPane.showMessageDialog(rootPane, message);
     }
+    
     public void playSound() {
       try {
         AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/click.wav").getAbsoluteFile());
@@ -826,18 +827,6 @@ public class GameClientFrm extends javax.swing.JFrame{
     public void playSound1() {
       try {
         AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/1click.wav").getAbsoluteFile());
-        Clip clip = AudioSystem.getClip();
-        clip.open(audioInputStream);
-        clip.start();
-      } catch (Exception ex) {
-        System.out.println("Error with playing sound.");
-        ex.printStackTrace();
-      }
-    }
-
-    public void playSound2() {
-      try {
-        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("assets/sound/win.wav").getAbsoluteFile());
         Clip clip = AudioSystem.getClip();
         clip.open(audioInputStream);
         clip.start();
@@ -1054,27 +1043,6 @@ public class GameClientFrm extends javax.swing.JFrame{
         if(bytes[i] > max) max = bytes[i];
       }
       return max;
-    }
-    
-    public double volumeRMS(byte[] raw) {
-      double sum = 0d;
-      if (raw.length == 0) {
-        return sum;
-      } else {
-        for (int ii = 0; ii < raw.length; ii++) {
-          sum += raw[ii];
-        }
-      }
-      double average = sum / raw.length;
-
-      double sumMeanSquare = 0d;
-      for (int ii = 0; ii < raw.length; ii++) {
-        sumMeanSquare += Math.pow(raw[ii] - average, 2d);
-      }
-      double averageMeanSquare = sumMeanSquare / raw.length;
-      double rootMeanSquare = Math.sqrt(averageMeanSquare);
-
-      return rootMeanSquare;
     }
     
     public void newgame() {
