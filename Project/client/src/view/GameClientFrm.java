@@ -779,7 +779,7 @@ public class GameClientFrm extends javax.swing.JFrame{
         + "Hai người chơi luân phiên nhau chơi trước\n"
         + "Người chơi trước đánh X, người chơi sau đánh O\n"
         + "Bạn có 60 giây cho mỗi lượt đánh, quá 60 giây bạn sẽ thua\n"
-        + "Khi cầu hòa, nếu đối thủ đồng ý thì ván hiện tại được hủy kết quả\n"
+        + "Khi cầu hòa, nếu đối thủ đồng ý thì ván hiện tại sẽ được tính là hòa\n"
         + "Với mỗi ván chơi bạn có thêm 3 điểm nếu thắng, 1 điểm nếu hòa,\n"
         + " và 0 điểm nếu thua\n"
         + "Chúc bạn chơi game vui vẻ :)");
