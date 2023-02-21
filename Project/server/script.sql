@@ -15,7 +15,8 @@ CREATE TABLE players (
     draw int not null default 0,
     loss int not null default 0,
     streak int not null default 0,
-    points int not null default 0
+    points int not null default 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 UPDATE players SET game = 5, win = 4, loss = 1, points = 12 WHERE id = 1;
@@ -45,11 +46,12 @@ VALUES
     (2, 4, 1);
 
 CREATE TABLE histories (
+    id int primary key not null auto_increment,
     player1_id int not null,
     player2_id int not null,
     result tinyint not null,
     num_moves int not null,
-    primary key (player1_id, player2_id),
+    time DATETIME not null DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `FK_PLAYER_1` FOREIGN KEY (`player1_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT `FK_PLAYER_2` FOREIGN KEY (`player2_id`) REFERENCES `players` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
 )
