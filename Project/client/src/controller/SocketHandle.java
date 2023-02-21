@@ -155,7 +155,7 @@ public class SocketHandle implements Runnable {
                 Client.isKeepAlive = false;
               }
             }
-          }, 0, 20000);
+          }, 0, 60000);
           Client.openView(Client.View.HOMEPAGE);
         }     
         
@@ -343,7 +343,8 @@ public class SocketHandle implements Runnable {
           Client.gameClientFrm.stopTimer();
           Client.closeAllViews();
           Client.openView(Client.View.GAMENOTICE, "Đối thủ đã thoát khỏi phòng", "Đang trở về trang chủ");
-          Thread.sleep(3000);       
+          Client.user.updateAchieve("win");
+          Thread.sleep(2000);       
           Client.closeAllViews();
           Client.openView(Client.View.HOMEPAGE);
         }
