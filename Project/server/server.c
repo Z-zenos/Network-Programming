@@ -388,7 +388,8 @@ int main(int argc, char *argv[]) {
   playertree = player_build(conn);
 
   cleanup(&msg, receiver);
-  memset(client_fds, 0, sizeof(client_fds));
+  for(int i = 0; i < MAX_CLIENT; i++)
+    client_fds[i] = 0;
 
   server_fd = server_init(argv[1]);
   server_listen(conn, gametree, playertree);

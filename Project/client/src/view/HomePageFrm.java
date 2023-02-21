@@ -29,7 +29,7 @@ public class HomePageFrm extends javax.swing.JFrame {
     this.setTitle("Caro Master");
     this.setIconImage(new ImageIcon("assets/image/caroicon.png").getImage());
     this.setResizable(false);
-    this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    this.setDefaultCloseOperation(EXIT_ON_CLOSE);
     this.setLocationRelativeTo(null);
     jLabel4.setText(Client.user.getUsername());
     jLabel7.setText(Integer.toString(Client.user.getnumberOfWin()));
@@ -607,6 +607,7 @@ public class HomePageFrm extends javax.swing.JFrame {
 
   private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
     Client.socketHandle.requestify("EXIT", 0, "0", "");
+    this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
   }//GEN-LAST:event_formWindowClosing
 
   /**

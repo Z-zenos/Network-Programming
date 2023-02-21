@@ -1,4 +1,3 @@
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +18,8 @@ void cleanup(Message *msg, int *receiver) {
   msg->content_l = 0;
   if(msg->params) map_drop(msg->params);
   msg->params = map_new();
-  memset(receiver, 0, sizeof(*receiver));
+  for(int i = 0; i < MAX_CLIENT; i++)
+    receiver[i] = 0;
 }
 
 void parse_params(Message *msg, char *params) {
@@ -84,20 +84,6 @@ char *socket_addr(const struct sockaddr *address) {
     sprintf(addr, "%s:%u", addrBuffer, port);
     return addr;
   }
-}
-
-bool enable_blocking(int fd, bool blocking) {
-  if(fd < 0) return false;
-
-  #ifdef _WIN32
-    unsigned long mode = blocking ? 0 : 1;
-    return (ioctlsocket(fd, FIONBIO, &mode) == 0) ? true : false;
-  #else
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1) return false;
-    flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
-    return (fcntl(fd, F_SETFL, flags) == 0) ? true : false;
-  #endif
 }
 
 int server_init(char *service) {

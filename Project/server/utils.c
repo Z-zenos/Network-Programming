@@ -145,3 +145,10 @@ char **str_split(char *a_str, const char a_delim) {
 
   return result;
 }
+
+void print_arr(char *name, int *arr) {
+  printf("%s: [ ", name);
+  for(int i = 0; i < sizeof(*arr) / sizeof(arr[0]); i++)
+    printf("%d ", arr[i]);
+  printf("]\n");
+}
