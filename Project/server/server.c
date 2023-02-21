@@ -77,22 +77,17 @@ void connect_database(MYSQL *conn) {
   logger(L_SUCCESS, "Connect database successfully...");
 }
 
-int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree, Message *msg) {
-  int player_id = atoi(map_val(msg->params, "player_id"));
+void disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree *playertree) {
+  int player_id = find_player_bind_socket(playertree, clnt_addr.sock);
 
   Player *player_found = player_find(playertree, player_id);
-  player_found->sock = 0;
-  player_found->is_online = false;
-  time_print(clnt_addr.address, "EXIT APP", "", 0, "");
-  for (int i = 0; i < MAX_CLIENT; i++) {
-    if (client_fds[i] == clnt_addr.sock) {
-      client_fds[i] = 0;
-      number_clients--;
-    }
+  if(player_found) {
+    player_found->sock = 0;
+    player_found->is_online = false;
   }
 
   // TODO: Handle player quit app while playing game
-  if(player_found->is_playing) {
+  if(player_found && player_found->is_playing) {
     Game *game;
     rbtrav_t *rbtrav;
     rbtrav = rbtnew();
@@ -137,8 +132,14 @@ int disconnect(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, PlayerTree
     } while ((game = rbtnext(rbtrav)) != NULL);
   }
 
+  for (int i = 0; i < MAX_CLIENT; i++) {
+    if (client_fds[i] == clnt_addr.sock) {
+      client_fds[i] = 0;
+      number_clients--;
+    }
+  }
   close(clnt_addr.sock);
-  return NOT_SEND;
+  time_print(clnt_addr.address, "EXIT APP", "", 0, "");
 }
 
 int keepalive() {
@@ -193,9 +194,6 @@ int route_handler(
   /* CHAT */
   if(strcmp(cmd, "CHAT") == 0)              return chat(gametree, playertree, queue_msg, bad_word_storage, &msg, receiver);
 
-  /* EXIT APP */
-  if(strcmp(cmd, "EXIT") == 0)              return disconnect(conn, clnt_addr, gametree, playertree, &msg);
-
   server_error(&msg);
   return FAILURE;
 }
@@ -215,14 +213,9 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
         continue;
       }
 
-      for (int i = 0; i < MAX_CLIENT; i++) {
-        if (client_fds[i] == clnt_addr.sock) {
-          client_fds[i] = 0;
-          number_clients--;
-        }
-      }
+      /* EXIT APP */
+      disconnect(conn, clnt_addr, gametree, playertree);
       pthread_mutex_unlock(&mutex);
-      time_print(clnt_addr.address, "NO RESPONSE", "", 0, "");
       close(clnt_addr.sock);
       break;
     }
@@ -241,7 +234,7 @@ void handle_client(MYSQL *conn, ClientAddr clnt_addr, GameTree *gametree, Player
     receiver[0] = clnt_addr.sock;
 
     state = route_handler(conn, clnt_addr, gametree, playertree, receiver);
-    if(state != NOT_SEND) send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
+    send_msg(receiver[0] == -1 ? client_fds : receiver, msg);
 
     // TODO: Update the latest information for player after loging or registering
     if(state == UPDATE) {

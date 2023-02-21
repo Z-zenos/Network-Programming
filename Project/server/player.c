@@ -148,6 +148,24 @@ char *player_username(PlayerTree *playertree, int player_id) {
   return player_found->username;
 }
 
+int find_player_bind_socket(PlayerTree *playertree, int fd) {
+  int id = 0;
+  Player *player;
+
+  rbtrav_t *rbtrav;
+  rbtrav = rbtnew();
+  player = rbtfirst(rbtrav, playertree);
+
+  do {
+    if(player->sock == fd) {
+      id = player->id;
+      break;
+    }
+  } while ((player = rbtnext(rbtrav)) != NULL);
+
+  return id;
+}
+
 int my_rank(MYSQL *conn, int player_id, char *dataStr) {
   // TODO: QUERY find rank of specified player id
   char query[QUERY_L] = ""

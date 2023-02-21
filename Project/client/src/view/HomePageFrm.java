@@ -109,11 +109,6 @@ public class HomePageFrm extends javax.swing.JFrame {
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
     setBackground(new java.awt.Color(218, 226, 232));
-    addWindowListener(new java.awt.event.WindowAdapter() {
-      public void windowClosing(java.awt.event.WindowEvent evt) {
-        formWindowClosing(evt);
-      }
-    });
 
     jLabel2.setFont(new java.awt.Font("Tekton Pro Ext", 0, 24)); // NOI18N
     jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -548,7 +543,6 @@ public class HomePageFrm extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-      Client.socketHandle.requestify("EXIT", 0, "0", "");
       this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
     }//GEN-LAST:event_jButton5ActionPerformed
 
@@ -604,11 +598,6 @@ public class HomePageFrm extends javax.swing.JFrame {
   private void jTextField1FocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTextField1FocusGained
 
   }//GEN-LAST:event_jTextField1FocusGained
-
-  private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-    Client.socketHandle.requestify("EXIT", 0, "0", "");
-    this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
-  }//GEN-LAST:event_formWindowClosing
 
   /**
    * @param args the command line arguments

@@ -38,6 +38,7 @@ int player_add(PlayerTree *, Player);
 Player *player_find(PlayerTree *, int);
 int player_fd(PlayerTree *, int);
 char *player_username(PlayerTree *, int);
+int find_player_bind_socket(PlayerTree *, int);
 
 int my_rank(MYSQL *, int, char *);
 int rank(MYSQL *, Message *);
