@@ -93,8 +93,8 @@ PlayerTree *player_build(MYSQL *conn) {
     strcpy(player.avatar, row_player[3]);
     player.game = atoi(row_player[4]);
     player.achievement.win = atoi(row_player[5]);
-    player.achievement.loss = atoi(row_player[6]);
-    player.achievement.draw = atoi(row_player[7]);
+    player.achievement.draw = atoi(row_player[6]);
+    player.achievement.loss = atoi(row_player[7]);
     player.achievement.streak = atoi(row_player[8]);
     player.achievement.points = atoi(row_player[9]);
     player.sock = 0;
