@@ -66,7 +66,9 @@
   - `./server 12121`
     <br /> <br />
 - Client:
-  - Use netbeans: Run Client.java
+  - Click right mouse -> Open in Terminal
+  - First you need to grant permission for the application to execute: ``sudo chmod +x dist/CaroMaster.java`` 
+  - Good! Now run app by command: ``javac -jar dist/CaroMaster.java``
 
 ## Run on multiple computers
 - ``Coming soon``
