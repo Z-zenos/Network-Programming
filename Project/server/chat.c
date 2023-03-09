@@ -147,7 +147,7 @@ int chat(
     return FAILURE;
   }
 
-  receiver[0] = player_fd(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id);
+  receiver[1] = player_fd(playertree, game_found->player1_id == player_id ? game_found->player2_id : game_found->player1_id);
   sprintf(dataStr, "username=%s,content=%s", player_username(playertree, player_id), str_trim(bad_words_filter(bad_words_storage, content)));
   responsify(msg, "chat_local", dataStr);
   return SUCCESS;

@@ -591,7 +591,7 @@ public class HomePageFrm extends javax.swing.JFrame {
         return;
       }
       if(evt.getKeyCode() == 10){
-          sendMessage();
+        sendMessage();
       }
     }//GEN-LAST:event_jTextField1KeyPressed
 
