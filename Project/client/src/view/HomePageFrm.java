@@ -384,7 +384,7 @@ public class HomePageFrm extends javax.swing.JFrame {
 
     jTextArea1.setColumns(20);
     jTextArea1.setRows(5);
-    jTextArea1.setText("<<Tin nhắn và tin tức>>\n");
+    jTextArea1.setText(Client.messageStack);
     jTextArea1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(80, 85, 103)));
     jTextArea1.setFocusable(false);
     jScrollPane1.setViewportView(jTextArea1);
@@ -624,12 +624,11 @@ public class HomePageFrm extends javax.swing.JFrame {
    * @param message Message contains username and content
    */
   public void addMessage(String message){
-    String temp = jTextArea1.getText();
     Pattern pattern = Pattern.compile("username=([a-zA-Z0-9]+),content=(.+)");
     Matcher m = pattern.matcher(message);
     m.find();
-    temp += "@" + m.group(1) + ": " + m.group(2) + "\n";
-    jTextArea1.setText(temp);
+    Client.messageStack += "@" + m.group(1) + ": " + m.group(2) + "\n";
+    jTextArea1.setText(Client.messageStack);
     jTextArea1.setCaretPosition(jTextArea1.getDocument().getLength());
   }
 

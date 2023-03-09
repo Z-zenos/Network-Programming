@@ -52,6 +52,7 @@ public class Client {
   }
   
   public static User user;
+  public static String messageStack = "<<< Tin nhắn + Thông báo >>>";
   //Danh sách giao diện
   public static LoginFrm loginFrm;
   public static RegisterFrm registerFrm;
