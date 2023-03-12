@@ -141,7 +141,7 @@ public class JoinRoomPasswordFrm extends javax.swing.JFrame {
           throw new Exception("Mật khẩu không chính xác");
         Client.socketHandle.write(
           Client.socketHandle.requestify(
-            "GAME_JOIN", 0, "game_id=" + this.room + "&player_id" + Client.user.getID() + "&password=" + password, ""
+            "GAME_JOIN", 0, "game_id=" + this.room + "&player_id=" + Client.user.getID() + "&password=" + password, ""
           )
         );
       } catch (Exception ex) {
